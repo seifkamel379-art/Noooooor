@@ -215,6 +215,7 @@ export function HomeTracker() {
     `daily_tracker_${currentDateKey}`,
     DEFAULT_STATE,
   );
+  const [wardType, setWardTypePref] = useLocalStorage<WardType>('quran_ward_type', 'hizb');
   const [bookmark] = useLocalStorage<{ surah: number; ayah: number } | null>(
     'quran_bookmark',
     null,
@@ -243,7 +244,7 @@ export function HomeTracker() {
   };
 
   const setWardType = (t: WardType) => {
-    setState(prev => ({ ...prev, wardType: t }));
+    setWardTypePref(t);
   };
 
   // Auto reset on new day
@@ -255,7 +256,7 @@ export function HomeTracker() {
     return () => clearInterval(id);
   }, [currentDateKey]);
 
-  const wardTarget = bookmark ? getWardTarget(bookmark, state.wardType) : null;
+  const wardTarget = bookmark ? getWardTarget(bookmark, wardType) : null;
 
   // ── Heatmap data ──────────────────────────────────────────────────────────
   const { weeks, monthLabels } = useMemo(() => {
@@ -556,10 +557,10 @@ export function HomeTracker() {
                         className="px-3 py-1 text-xs font-bold transition-all"
                         style={{
                           fontFamily: '"Tajawal", sans-serif',
-                          background: state.wardType === t
+                          background: wardType === t
                             ? 'linear-gradient(135deg, #c5a059, #9a7430)'
                             : 'transparent',
-                          color: state.wardType === t ? '#fff' : 'var(--muted-foreground)',
+                          color: wardType === t ? '#fff' : 'var(--muted-foreground)',
                         }}
                       >
                         {t === 'hizb' ? 'حزب' : 'جزء'}
