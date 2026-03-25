@@ -111,7 +111,7 @@ export function MoreMenu() {
   const handleLogoutConfirm = async () => {
     await firebaseSignOut();
     localStorage.removeItem('user_profile');
-    window.location.reload();
+    window.dispatchEvent(new Event('app-logout'));
   };
 
   const userProfileRaw = localStorage.getItem('user_profile');

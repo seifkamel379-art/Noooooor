@@ -105,6 +105,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const handleLogout = () => setIsLoggedIn(false);
+    window.addEventListener('app-logout', handleLogout);
+    return () => window.removeEventListener('app-logout', handleLogout);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.dir = 'rtl';
     const theme = localStorage.getItem('theme');
     if (theme === '"dark"') {
