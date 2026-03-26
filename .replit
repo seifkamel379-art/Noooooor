@@ -9,6 +9,8 @@ id = "artifacts/mockup-sandbox"
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+run = ["node", "./dist/index.cjs"]
+build = ["npm", "run", "build"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
@@ -35,8 +37,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=19382 BASE_PATH=/ pnpm run dev"
-waitForPort = 19382
+args = "PORT=5000 BASE_PATH=/ /home/runner/workspace/node_modules/.bin/vite --config /home/runner/workspace/vite.config.ts --host 0.0.0.0 --port 5000"
 
 [agent]
 stack = "PNPM_WORKSPACE"
