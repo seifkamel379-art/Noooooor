@@ -22,6 +22,7 @@ import { SpeedReader } from "@/pages/SpeedReader";
 import { Adhan } from "@/pages/Adhan";
 import { EgyptianRadio } from "@/pages/EgyptianRadio";
 import { Qibla } from "@/pages/Qibla";
+import { MosquesFinder } from "@/pages/MosquesFinder";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,9 @@ function Router() {
       </Route>
       <Route path="/qibla">
         <FullScreenShell><Qibla /></FullScreenShell>
+      </Route>
+      <Route path="/mosques">
+        <FullScreenShell><MosquesFinder /></FullScreenShell>
       </Route>
 
       <Route component={NotFound} />

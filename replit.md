@@ -20,10 +20,14 @@ A comprehensive Arabic Islamic mobile-first web app built with React + Vite in a
 - **Quran** (`/quran`): Full Quran with 114 surahs, sound mode (Ahmad Al-Ajami), tafsir mode (Al-Jalalayn), bookmarks, memorization tracking, Juz/Hizb display while scrolling
 - **Azkar** (`/azkar`): Morning/Evening azkar with progress counters, source citations, daily reset via `azkar_YYYY-MM-DD` localStorage key
 - **Tasbih** (`/tasbih`): Electronic tasbih counter with 6 dhikr types, neumorphic button, haptic feedback
-- **More Menu** (`/more`): Navigation to Qibla, Asma, Reciters; dark mode toggle
+- **More Menu** (`/more`): Navigation to Qibla, Asma, Reciters, MosquesFinder, Radio, SpeedReader; dark mode toggle
 - **Qibla** (`/qibla`): Compass with Kaaba SVG icon using DeviceOrientationEvent, alignment detection
 - **Asma Al-Husna** (`/asma`): All 99 names with Arabic meanings (static local data), search, modal detail view
 - **Reciters** (`/reciters`): 50+ reciters from mp3quran.net API with search, play Al-Fatiha sample
+- **MosquesFinder** (`/mosques`): Map-based mosque finder using OpenStreetMap/Leaflet with distance calculation
+- **Egyptian Radio** (`/radio`): Live Islamic radio stations with fallback stream URLs
+- **Speed Reader** (`/speed-reader`): Word-by-word Quran reading mode
+- **Adhan** (`/adhan`): Adhan settings and reciter selection
 
 ### Key Systems
 - **NotificationsManager**: Checks prayer times every 15s, plays adhan audio or shows browser notification
@@ -56,3 +60,10 @@ A comprehensive Arabic Islamic mobile-first web app built with React + Vite in a
 - Reciters: `https://mp3quran.net/api/v3/reciters?language=ar`
 - Quran audio: `https://everyayah.com/data/Ahmed_ibn_Ali_al_Ajamy_128kbps/`
 - Adhan audio: `https://www.islamicfinder.org/prayer/adhan/`
+
+## Deployment
+
+- **Build**: `npm run build` (chains Vite frontend + API server build + copies to `dist/index.cjs`)
+- **Run**: `node ./dist/index.cjs` (API server serves static frontend from `dist/public`)
+- **API Server**: `artifacts/api-server` — built with `tsx ./build.ts`, output: `artifacts/api-server/dist/index.cjs`
+- **Static files**: Served by API server from `process.cwd()/dist/public`

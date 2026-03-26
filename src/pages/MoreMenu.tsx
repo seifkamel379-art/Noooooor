@@ -158,6 +158,14 @@ export function MoreMenu() {
       bg: 'bg-amber-500/10',
       desc: 'تدبر القرآن كلمةً بكلمة',
     },
+    {
+      Icon: MosqueIcon,
+      label: 'المساجد القريبة',
+      path: '/mosques',
+      color: 'text-teal-500',
+      bg: 'bg-teal-500/10',
+      desc: 'اعثر على أقرب المساجد إليك',
+    },
   ];
 
   return (

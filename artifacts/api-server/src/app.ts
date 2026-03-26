@@ -16,7 +16,7 @@ const staticDir = path.join(process.cwd(), "dist/public");
 app.use(express.static(staticDir));
 
 // SPA fallback — serve index.html for all unmatched routes
-app.get("*", (_req, res) => {
+app.get("/{*path}", (_req, res) => {
   res.sendFile(path.join(staticDir, "index.html"));
 });
 
