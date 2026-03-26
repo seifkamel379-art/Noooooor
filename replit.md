@@ -4,7 +4,7 @@ A comprehensive Arabic Islamic mobile-first web app built with React + Vite in a
 
 ## Architecture
 
-- **Frontend**: `artifacts/noor-app` - React + Vite + TypeScript + Tailwind CSS
+- **Frontend**: Root directory (`src/`) - React + Vite + TypeScript + Tailwind CSS
 - **Routing**: Wouter (path-based)
 - **State**: localStorage via `useLocalStorage` hook
 - **Data fetching**: TanStack React Query

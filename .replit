@@ -35,7 +35,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=19382 BASE_PATH=/ pnpm --filter @workspace/noor-app run dev"
+args = "PORT=19382 BASE_PATH=/ pnpm run dev"
 waitForPort = 19382
 
 [agent]
@@ -59,4 +59,8 @@ VITE_FIREBASE_API_KEY = "AIzaSyA3mM7xwWlHzb3U05zPxcvuUvh9sXrDG4E"
 
 [nix]
 channel = "stable-25_05"
-packages = ["zulu17"]
+packages = ["zulu17", "zip"]
+
+[[ports]]
+localPort = 19382
+externalPort = 80
