@@ -227,18 +227,18 @@ export const PRAYER_MESSAGES: Record<string, string> = {
 };
 
 export const TASBIH_TYPES = [
-  { id: "subhan", text: "سُبْحَانَ اللَّهِ", limit: 33 },
-  { id: "hamd",   text: "الْحَمْدُ لِلَّهِ", limit: 33 },
-  { id: "akbar",  text: "اللَّهُ أَكْبَرُ",   limit: 33 },
-  { id: "laila",  text: "لَا إِلَهَ إِلَّا اللَّهُ", limit: 100 },
-  { id: "istghfar", text: "أَسْتَغْفِرُ اللَّهَ", limit: 100 },
-  { id: "hawl",   text: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", limit: 33 },
-  { id: "subhanw", text: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", limit: 100 },
-  { id: "subhang", text: "سُبْحَانَ اللَّهِ الْعَظِيمِ", limit: 100 },
-  { id: "salah",  text: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", limit: 100 },
-  { id: "hasbi",  text: "حَسْبِيَ اللَّهُ وَنِعْمَ الْوَكِيلُ", limit: 40 },
-  { id: "laila2", text: "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ لَهُ الْمُلْكُ", limit: 10 },
-  { id: "bism",   text: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", limit: 100 },
+  { id: "subhan",   label: "التسبيح",         text: "سُبْحَانَ اللَّهِ", limit: 33 },
+  { id: "hamd",     label: "الحمد",            text: "الْحَمْدُ لِلَّهِ", limit: 33 },
+  { id: "akbar",    label: "التكبير",          text: "اللَّهُ أَكْبَرُ",   limit: 33 },
+  { id: "laila",    label: "التهليل",          text: "لَا إِلَهَ إِلَّا اللَّهُ", limit: 100 },
+  { id: "istghfar", label: "الاستغفار",        text: "أَسْتَغْفِرُ اللَّهَ", limit: 100 },
+  { id: "hawl",     label: "الحوقلة",          text: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", limit: 33 },
+  { id: "subhanw",  label: "سبحانه وبحمده",   text: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", limit: 100 },
+  { id: "subhang",  label: "سبحانه العظيم",   text: "سُبْحَانَ اللَّهِ الْعَظِيمِ", limit: 100 },
+  { id: "salah",    label: "الصلاة على النبي", text: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", limit: 100 },
+  { id: "hasbi",    label: "حسبي الله",        text: "حَسْبِيَ اللَّهُ وَنِعْمَ الْوَكِيلُ", limit: 40 },
+  { id: "laila2",   label: "لا إله إلا الله",  text: "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ لَهُ الْمُلْكُ", limit: 10 },
+  { id: "bism",     label: "البسملة",          text: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", limit: 100 },
 ];
 
 export const MORNING_AZKAR = [

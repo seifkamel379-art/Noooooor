@@ -177,9 +177,9 @@ export function Tasbih() {
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-card text-muted-foreground border-border hover:bg-secondary'
             }`}
-            style={{ fontFamily: '"Amiri", serif' }}
+            style={{ fontFamily: '"Tajawal", sans-serif' }}
           >
-            {t.text.split('ا')[0].substring(0, 8)}...
+            {t.label}
           </button>
         ))}
       </div>
