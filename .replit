@@ -37,7 +37,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "PORT=19382 npm run dev"
 
 [agent]
 stack = "PNPM_WORKSPACE"
