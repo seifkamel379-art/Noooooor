@@ -121,8 +121,9 @@ const STATIONS = [
     name: 'إذاعة مكة المكرمة',
     subtitle: 'بث مباشر من الحرم المكي',
     urls: [
+      'https://n04.radiojar.com/makkah.mp3',
+      'https://n01.radiojar.com/makkah.mp3',
       'https://Qurango.net/radio/makkah',
-      'https://stream.radiojar.com/makkah-radio',
     ],
     svgLogo: (
       <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">

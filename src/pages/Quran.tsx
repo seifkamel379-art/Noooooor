@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuranSurahs, useSurah, useTafsir } from '@/hooks/use-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { SURAH_NAMES } from '@/lib/constants';
-import { Search, Headphones, FileText, Bookmark, X, ChevronRight } from 'lucide-react';
+import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown } from 'lucide-react';
 import { padZero, cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
 
@@ -306,14 +306,11 @@ export function Quran() {
               background: C.btnBg,
               border: `1px solid ${C.btnBorder}`,
               color: fontSize <= FONT_MIN ? 'rgba(193,154,107,0.3)' : '#C19A6B',
-              fontFamily: '"Amiri", serif',
-              fontSize: '1rem',
-              fontWeight: 'bold',
               flexShrink: 0,
             }}
             title="تصغير الخط"
           >
-            أ-
+            <AArrowDown className="w-4 h-4" />
           </button>
           <button
             onClick={increaseFontSize}
@@ -324,14 +321,11 @@ export function Quran() {
               background: C.btnBg,
               border: `1px solid ${C.btnBorder}`,
               color: fontSize >= FONT_MAX ? 'rgba(193,154,107,0.3)' : '#C19A6B',
-              fontFamily: '"Amiri", serif',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
               flexShrink: 0,
             }}
             title="تكبير الخط"
           >
-            أ+
+            <AArrowUp className="w-4 h-4" />
           </button>
           {bookmark && (
             <button
