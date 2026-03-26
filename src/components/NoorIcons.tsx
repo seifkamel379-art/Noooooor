@@ -265,6 +265,77 @@ export function MosqueMapIcon({ className = '', size = 24 }: P) {
   );
 }
 
+/* ── House / Home ─────────────────────────────────────────── */
+export function HomeEnterIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3 12L12 4l9 8" />
+      <path d="M9 20V14h6v6" />
+      <rect x="3" y="12" width="18" height="9" rx="0.5" />
+      <line x1="3" y1="12" x2="3" y2="21" />
+      <line x1="21" y1="12" x2="21" y2="21" />
+    </svg>
+  );
+}
+
+/* ── Food/Bowl ────────────────────────────────────────────── */
+export function FoodIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3 14 Q3 20 12 20 Q21 20 21 14 Z" />
+      <path d="M3 14 Q3 8 12 8 Q21 8 21 14" />
+      <line x1="12" y1="4" x2="12" y2="8" />
+      <path d="M9 5 Q12 3 15 5" />
+    </svg>
+  );
+}
+
+/* ── Travel / Compass ─────────────────────────────────────── */
+export function TravelIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <polygon points="12,7 14.5,12 12,10.5 9.5,12" fill="currentColor" stroke="none" />
+      <polygon points="12,17 9.5,12 12,13.5 14.5,12" fill="none" stroke="currentColor" strokeWidth="1" />
+      <line x1="12" y1="3" x2="12" y2="5" />
+      <line x1="12" y1="19" x2="12" y2="21" />
+      <line x1="3" y1="12" x2="5" y2="12" />
+      <line x1="19" y1="12" x2="21" y2="12" />
+    </svg>
+  );
+}
+
+/* ── Rain / Weather ───────────────────────────────────────── */
+export function RainIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M20 16.2A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
+      <line x1="8"  y1="19" x2="8"  y2="21" />
+      <line x1="12" y1="17" x2="12" y2="19" />
+      <line x1="16" y1="19" x2="16" y2="21" />
+    </svg>
+  );
+}
+
+/* ── Shield / Protection from distress ───────────────────── */
+export function ShieldHeartIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="M9.5 11.5 Q9.5 9.5 11 9.5 Q12 9.5 12 10.5 Q12 9.5 13 9.5 Q14.5 9.5 14.5 11.5 Q14.5 13 12 14.5 Q9.5 13 9.5 11.5Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/* ── Prophet star ─────────────────────────────────────────── */
+export function ProphetIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 2 L14.5 9 L22 9 L16 13.5 L18.5 21 L12 16.5 L5.5 21 L8 13.5 L2 9 L9.5 9 Z" />
+    </svg>
+  );
+}
+
 /* ── Supplication hands with light rays ───────────────────── */
 export function SupplicationIcon({ className = '', size = 24 }: P) {
   return (

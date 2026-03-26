@@ -6,6 +6,10 @@ import { Search, Headphones, FileText, Bookmark, X, ChevronRight } from 'lucide-
 import { padZero, cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
 
+const FONT_MIN = 1.2;
+const FONT_MAX = 2.8;
+const FONT_STEP = 0.15;
+
 type Mode = 'normal' | 'listen' | 'tafsir';
 
 function getWordAudioUrl(surah: number, ayah: number, wordIdx: number): string {
@@ -49,6 +53,11 @@ export function Quran() {
   const { data: tafsirData } = useTafsir(selectedSurah ?? 0, activeAyah ?? 0);
 
   const [bookmark, setBookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
+  const [fontSize, setFontSize] = useLocalStorage<number>('quran_font_size', 1.75);
+
+  const increaseFontSize = () => setFontSize(prev => Math.min(prev + FONT_STEP, FONT_MAX));
+  const decreaseFontSize = () => setFontSize(prev => Math.max(prev - FONT_STEP, FONT_MIN));
+  const lineHeight = (fontSize * 2.0).toFixed(2) + 'rem';
 
   // Theme-dependent color palette
   const C = {
@@ -287,6 +296,43 @@ export function Quran() {
         </div>
 
         <div className="flex gap-1.5 items-center">
+          {/* Font size controls */}
+          <button
+            onClick={decreaseFontSize}
+            disabled={fontSize <= FONT_MIN}
+            className="flex items-center justify-center rounded-full transition-all"
+            style={{
+              width: 32, height: 32,
+              background: C.btnBg,
+              border: `1px solid ${C.btnBorder}`,
+              color: fontSize <= FONT_MIN ? 'rgba(193,154,107,0.3)' : '#C19A6B',
+              fontFamily: '"Amiri", serif',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              flexShrink: 0,
+            }}
+            title="تصغير الخط"
+          >
+            أ-
+          </button>
+          <button
+            onClick={increaseFontSize}
+            disabled={fontSize >= FONT_MAX}
+            className="flex items-center justify-center rounded-full transition-all"
+            style={{
+              width: 32, height: 32,
+              background: C.btnBg,
+              border: `1px solid ${C.btnBorder}`,
+              color: fontSize >= FONT_MAX ? 'rgba(193,154,107,0.3)' : '#C19A6B',
+              fontFamily: '"Amiri", serif',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              flexShrink: 0,
+            }}
+            title="تكبير الخط"
+          >
+            أ+
+          </button>
           {bookmark && (
             <button
               onClick={goToBookmark}
@@ -380,8 +426,14 @@ export function Quran() {
 
             {/* Ayah text body */}
             <div
-              className="p-5 text-justify leading-[3.5rem] text-[1.75rem] relative"
-              style={{ fontFamily: '"Amiri Quran", "Amiri", serif', color: C.ayahText, direction: 'rtl' }}
+              className="p-5 text-justify relative"
+              style={{
+                fontFamily: '"Amiri Quran", "Amiri", serif',
+                color: C.ayahText,
+                direction: 'rtl',
+                fontSize: `${fontSize}rem`,
+                lineHeight,
+              }}
             >
               {surahData?.ayahs?.map((ayah: any) => {
                 let text: string = ayah.text;

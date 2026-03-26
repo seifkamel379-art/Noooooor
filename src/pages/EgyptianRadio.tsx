@@ -3,8 +3,8 @@ import { ArrowLeft, Volume2, WifiOff, Loader2, RefreshCw, Radio } from 'lucide-r
 import { Link } from 'wouter';
 
 /* ─── Islamic Radio Stations ──────────────────────────────────
-   Streams verified working – all return audio/mpeg over HTTPS.
-   Each entry has a primary URL and ordered fallback list.
+   Each station has a primary URL and ordered fallback list.
+   Prefer fast CDN streams (Zeno, Radiojar) over direct icecast.
 ────────────────────────────────────────────────────────────── */
 const STATIONS = [
   {
@@ -13,6 +13,7 @@ const STATIONS = [
     subtitle: 'الإذاعة المصرية · بث مباشر',
     urls: [
       'https://stream.radiojar.com/8s5u5tpdtwzuv',
+      'https://Qurango.net/radio/quranegypt',
       'https://radio.mp3islam.com/listen/quran_radio/radio.mp3',
     ],
     svgLogo: (
@@ -33,6 +34,8 @@ const STATIONS = [
     name: 'ماهر المعيقلي',
     subtitle: 'تلاوات خاشعة · بث مستمر',
     urls: [
+      'https://stream.zeno.fm/xqcd0h4fp9zuv',
+      'https://Qurango.net/radio/maher',
       'https://radio.mp3islam.com/listen/maher/radio.mp3',
     ],
     svgLogo: (
@@ -52,6 +55,8 @@ const STATIONS = [
     name: 'مشاري العفاسي',
     subtitle: 'تلاوات وأناشيد · بث مستمر',
     urls: [
+      'https://stream.zeno.fm/ud3z16g0hkquv',
+      'https://Qurango.net/radio/mishary',
       'https://radio.mp3islam.com/listen/mishary/radio.mp3',
     ],
     svgLogo: (
@@ -75,6 +80,7 @@ const STATIONS = [
     name: 'محمد صديق المنشاوي',
     subtitle: 'تلاوات كلاسيكية · بث مستمر',
     urls: [
+      'https://Qurango.net/radio/minshawi',
       'https://radio.mp3islam.com/listen/minshawi/radio.mp3',
     ],
     svgLogo: (
@@ -97,6 +103,7 @@ const STATIONS = [
     name: 'ياسر الدوسري',
     subtitle: 'تلاوات مؤثرة · بث مستمر',
     urls: [
+      'https://Qurango.net/radio/yasser',
       'https://radio.mp3islam.com/listen/yaser/radio.mp3',
     ],
     svgLogo: (
@@ -106,6 +113,25 @@ const STATIONS = [
           stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
         <polygon points="33,13 34.5,18 39.5,18 35.5,21 37,26 33,23 29,26 30.5,21 26.5,18 31.5,18"
           stroke="currentColor" strokeWidth="1.3" fill="none"/>
+      </svg>
+    ),
+  },
+  {
+    id: 6,
+    name: 'إذاعة مكة المكرمة',
+    subtitle: 'بث مباشر من الحرم المكي',
+    urls: [
+      'https://Qurango.net/radio/makkah',
+      'https://stream.radiojar.com/makkah-radio',
+    ],
+    svgLogo: (
+      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
+        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
+        <path d="M24 6 Q12 6 8 16 L8 38 Q12 28 24 28 Q36 28 40 38 L40 16 Q36 6 24 6Z" stroke="currentColor" strokeWidth="1.6" fill="none"/>
+        <path d="M22 6 Q22 14 18 18" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <path d="M26 6 Q26 14 30 18" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <circle cx="24" cy="20" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M12 42 Q12 36 24 34 Q36 36 36 42" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -131,29 +157,27 @@ export function EgyptianRadio() {
   const [activeId, setActiveId]     = useState<number | null>(null);
   const [status, setStatus]         = useState<Status>('idle');
   const audioRef                    = useRef<HTMLAudioElement | null>(null);
+  const retryTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const a = new Audio();
     a.preload = 'none';
     audioRef.current = a;
 
-    const onPlaying  = () => setStatus('playing');
-    const onWaiting  = () => setStatus(prev => prev !== 'error' ? 'loading' : prev);
-    const onStalled  = () => setStatus(prev => prev !== 'error' ? 'loading' : prev);
-    const onError    = () => setStatus('error');
-    const onCanPlay  = () => { a.play().catch(() => {}); };
+    const onPlaying = () => setStatus('playing');
+    const onError   = () => setStatus('error');
+    const onCanPlay = () => {
+      a.play().catch(() => setStatus('error'));
+    };
 
     a.addEventListener('playing',  onPlaying);
-    a.addEventListener('waiting',  onWaiting);
-    a.addEventListener('stalled',  onStalled);
     a.addEventListener('error',    onError);
     a.addEventListener('canplay',  onCanPlay);
 
     return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       a.pause(); a.src = '';
       a.removeEventListener('playing',  onPlaying);
-      a.removeEventListener('waiting',  onWaiting);
-      a.removeEventListener('stalled',  onStalled);
       a.removeEventListener('error',    onError);
       a.removeEventListener('canplay',  onCanPlay);
     };
@@ -166,20 +190,19 @@ export function EgyptianRadio() {
       setStatus('error');
       return;
     }
+
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+
     setStatus('loading');
     a.pause();
     a.src = station.urls[idx];
     a.load();
+
     const onErr = () => {
       a.removeEventListener('error', onErr);
-      setTimeout(() => playStation(station, idx + 1), 800);
+      retryTimerRef.current = setTimeout(() => playStation(station, idx + 1), 600);
     };
     a.addEventListener('error', onErr, { once: true });
-    setTimeout(() => {
-      if (a.src === station.urls[idx]) {
-        a.play().catch(() => {});
-      }
-    }, 300);
   }, []);
 
   const toggle = useCallback((station: typeof STATIONS[0]) => {
@@ -188,6 +211,7 @@ export function EgyptianRadio() {
 
     if (activeId === station.id) {
       if (status === 'playing' || status === 'loading') {
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
         a.pause(); a.src = '';
         setStatus('idle'); setActiveId(null);
       } else {
@@ -242,7 +266,7 @@ export function EgyptianRadio() {
             </p>
             <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
               {status === 'loading' ? 'جاري الاتصال...'
-              : status === 'error'   ? '⚠️ تعذّر الاتصال — اضغط للمحاولة مجدداً'
+              : status === 'error'   ? 'تعذّر الاتصال — اضغط للمحاولة مجدداً'
               : `${activeStation.subtitle} • يبث الآن`}
             </p>
           </div>
@@ -273,7 +297,7 @@ export function EgyptianRadio() {
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-primary transition-all"
                   style={{
-                    background: isActive ? 'rgba(var(--primary-rgb,193,154,107),0.12)' : 'var(--secondary)',
+                    background: isActive ? 'rgba(193,154,107,0.12)' : 'var(--secondary)',
                     border: isActive ? '2px solid rgba(193,154,107,0.4)' : '2px solid transparent',
                   }}>
                   {s.svgLogo}

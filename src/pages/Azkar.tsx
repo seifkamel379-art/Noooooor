@@ -1,27 +1,50 @@
 import { useState } from 'react';
-import { MORNING_AZKAR, EVENING_AZKAR, AZKAR_AFTER_PRAYER, AZKAR_SLEEP, AZKAR_VARIOUS } from '@/lib/constants';
+import {
+  MORNING_AZKAR, EVENING_AZKAR, AZKAR_AFTER_PRAYER, AZKAR_SLEEP, AZKAR_VARIOUS,
+  PROPHETIC_DUAS, AZKAR_WAKEUP, AZKAR_HOME, AZKAR_MASJID, AZKAR_FOOD, AZKAR_TRAVEL, AZKAR_DISTRESS, AZKAR_WEATHER,
+} from '@/lib/constants';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { getTodayKey, cn } from '@/lib/utils';
 import { Check, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MorningIcon, EveningIcon, SleepIcon, DuaHandsIcon, SupplicationIcon } from '@/components/NoorIcons';
+import {
+  MorningIcon, EveningIcon, SleepIcon, DuaHandsIcon, SupplicationIcon,
+  MosqueIcon, HomeEnterIcon, FoodIcon, TravelIcon, RainIcon, ShieldHeartIcon, ProphetIcon,
+} from '@/components/NoorIcons';
 
-type TabId = 'morning' | 'evening' | 'sleep' | 'after' | 'various';
+type TabId = 'morning' | 'evening' | 'sleep' | 'after' | 'various'
+           | 'wakeup' | 'home' | 'masjid' | 'food' | 'travel' | 'distress' | 'weather' | 'prophetic';
 
 const TAB_ICONS: Record<TabId, React.ComponentType<{ className?: string; size?: number }>> = {
-  morning: MorningIcon,
-  evening: EveningIcon,
-  sleep:   SleepIcon,
-  after:   DuaHandsIcon,
-  various: SupplicationIcon,
+  morning:   MorningIcon,
+  evening:   EveningIcon,
+  sleep:     SleepIcon,
+  after:     DuaHandsIcon,
+  various:   SupplicationIcon,
+  wakeup:    MorningIcon,
+  home:      HomeEnterIcon,
+  masjid:    MosqueIcon,
+  food:      FoodIcon,
+  travel:    TravelIcon,
+  distress:  ShieldHeartIcon,
+  weather:   RainIcon,
+  prophetic: ProphetIcon,
 };
 
 const TABS = [
-  { id: 'morning' as TabId,  label: 'الصباح',    data: MORNING_AZKAR },
-  { id: 'evening' as TabId,  label: 'المساء',    data: EVENING_AZKAR },
-  { id: 'sleep' as TabId,    label: 'النوم',      data: AZKAR_SLEEP },
-  { id: 'after' as TabId,    label: 'بعد الصلاة', data: AZKAR_AFTER_PRAYER },
-  { id: 'various' as TabId,  label: 'أدعية',      data: AZKAR_VARIOUS },
+  { id: 'morning'   as TabId, label: 'الصباح',     data: MORNING_AZKAR },
+  { id: 'evening'   as TabId, label: 'المساء',     data: EVENING_AZKAR },
+  { id: 'sleep'     as TabId, label: 'النوم',       data: AZKAR_SLEEP },
+  { id: 'wakeup'    as TabId, label: 'الاستيقاظ',  data: AZKAR_WAKEUP },
+  { id: 'after'     as TabId, label: 'بعد الصلاة', data: AZKAR_AFTER_PRAYER },
+  { id: 'masjid'    as TabId, label: 'المسجد',     data: AZKAR_MASJID },
+  { id: 'home'      as TabId, label: 'البيت',       data: AZKAR_HOME },
+  { id: 'food'      as TabId, label: 'الطعام',      data: AZKAR_FOOD },
+  { id: 'travel'    as TabId, label: 'السفر',       data: AZKAR_TRAVEL },
+  { id: 'distress'  as TabId, label: 'الكرب',       data: AZKAR_DISTRESS },
+  { id: 'weather'   as TabId, label: 'المطر',       data: AZKAR_WEATHER },
+  { id: 'prophetic' as TabId, label: 'أدعية النبي ﷺ', data: PROPHETIC_DUAS },
+  { id: 'various'   as TabId, label: 'أدعية قرآنية', data: AZKAR_VARIOUS },
 ];
 
 function IslamicOrnament({ className = '' }: { className?: string }) {
@@ -168,7 +191,7 @@ export function Azkar() {
         </button>
       </div>
 
-      {/* Tabs with Arabic icons */}
+      {/* Tabs — scrollable row */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
         {TABS.map(t => {
           const done = t.data.filter(z => (progress[z.id] ?? 0) >= z.count).length;
