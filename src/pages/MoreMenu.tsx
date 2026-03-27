@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ChevronLeft, Sun, Moon, LogOut } from 'lucide-react';
+import { ChevronLeft, Sun, Moon, LogOut, Library } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut } from '@/lib/firebase';
@@ -157,6 +157,14 @@ export function MoreMenu() {
       color: 'text-amber-500',
       bg: 'bg-amber-500/10',
       desc: 'تدبر القرآن كلمةً بكلمة',
+    },
+    {
+      Icon: Library,
+      label: 'المكتبة الإسلامية',
+      path: '/library',
+      color: 'text-indigo-500',
+      bg: 'bg-indigo-500/10',
+      desc: 'كتب، أبحاث، وموسوعة الحديث الشريف',
     },
   ];
 
