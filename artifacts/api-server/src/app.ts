@@ -12,7 +12,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", router);
 
 // Serve the built frontend static files
-const staticDir = path.join(process.cwd(), "dist/public");
+// __dirname resolves to artifacts/api-server/src at build time (esbuild),
+// so ../dist/public always points to artifacts/api-server/dist/public
+const staticDir = path.join(__dirname, "../dist/public");
 app.use(express.static(staticDir));
 
 // SPA fallback — serve index.html for all unmatched routes
