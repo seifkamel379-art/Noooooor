@@ -23,7 +23,6 @@ import { Adhan } from "@/pages/Adhan";
 import { EgyptianRadio } from "@/pages/EgyptianRadio";
 import { Qibla } from "@/pages/Qibla";
 import { MosquesFinder } from "@/pages/MosquesFinder";
-import { IslamicLibrary } from "@/pages/IslamicLibrary";
 
 const queryClient = new QueryClient();
 

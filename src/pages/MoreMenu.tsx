@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ChevronLeft, Sun, Moon, LogOut, Library } from 'lucide-react';
+import { ChevronLeft, Sun, Moon, LogOut } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut } from '@/lib/firebase';
