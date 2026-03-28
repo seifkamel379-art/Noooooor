@@ -15,6 +15,7 @@ import { Home } from "@/pages/Home";
 import { Quran } from "@/pages/Quran";
 import { Azkar } from "@/pages/Azkar";
 import { Tasbih } from "@/pages/Tasbih";
+import { Sohba } from "@/pages/Sohba";
 import { MoreMenu } from "@/pages/MoreMenu";
 import { Asma } from "@/pages/Asma";
 import { Reciters } from "@/pages/Reciters";
@@ -58,6 +59,9 @@ function Router() {
       </Route>
       <Route path="/tasbih">
         <AppShell><Tasbih /></AppShell>
+      </Route>
+      <Route path="/sohba">
+        <AppShell><Sohba /></AppShell>
       </Route>
       <Route path="/more">
         <AppShell><MoreMenu /></AppShell>

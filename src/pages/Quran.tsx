@@ -55,6 +55,26 @@ export function Quran() {
   const [bookmark, setBookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
   const [fontSize, setFontSize] = useLocalStorage<number>('quran_font_size', 1.75);
 
+  const [, setQuranCurrentSurahIdx] = useLocalStorage<number>('quran_current_surah_idx', 1);
+  const [, setQuranCompletions] = useLocalStorage<number>('quran_completions', 0);
+  const [, setTadabburStreak] = useLocalStorage<number>('tadabbur_streak', 0);
+
+  const trackSurahSelection = useCallback((surahNum: number) => {
+    const prev = Number(localStorage.getItem('quran_current_surah_idx') || '1');
+    if (surahNum === 1 && prev >= 110) {
+      setQuranCompletions(c => c + 1);
+    }
+    setQuranCurrentSurahIdx(surahNum);
+    const todayKey = `tadabbur_${new Date().toISOString().slice(0, 10)}`;
+    const alreadyToday = localStorage.getItem(todayKey);
+    if (!alreadyToday) {
+      localStorage.setItem(todayKey, '1');
+      const yesterdayKey = `tadabbur_${new Date(Date.now() - 86400000).toISOString().slice(0, 10)}`;
+      const hadYesterday = localStorage.getItem(yesterdayKey);
+      setTadabburStreak(s => hadYesterday ? s + 1 : 1);
+    }
+  }, [setQuranCompletions, setQuranCurrentSurahIdx, setTadabburStreak]);
+
   const increaseFontSize = () => setFontSize(prev => Math.min(prev + FONT_STEP, FONT_MAX));
   const decreaseFontSize = () => setFontSize(prev => Math.max(prev - FONT_STEP, FONT_MIN));
   const lineHeight = (fontSize * 2.0).toFixed(2) + 'rem';
@@ -241,7 +261,7 @@ export function Quran() {
             filteredSurahs?.map(s => (
               <button
                 key={s.number}
-                onClick={() => { setSelectedSurah(s.number); setMode('normal'); setSelectedAyah(null); setActiveAyah(null); }}
+                onClick={() => { trackSurahSelection(s.number); setSelectedSurah(s.number); setMode('normal'); setSelectedAyah(null); setActiveAyah(null); }}
                 className="w-full p-4 rounded-2xl flex items-center justify-between transition-all"
                 style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
               >
