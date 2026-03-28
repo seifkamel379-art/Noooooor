@@ -5,12 +5,12 @@ version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
-localPort = 8080
+localPort = 5000
 name = "API Server"
 paths = ["/"]
 
 [services.development]
-run = "pnpm --filter @workspace/api-server run dev"
+run = "pnpm -w run dev"
 
 [services.production]
 build = "npm run build && pnpm --filter @workspace/api-server run build"
@@ -22,4 +22,4 @@ args = ["node", "artifacts/api-server/dist/index.cjs"]
 PORT = "8080"
 
 [services.production.health.startup]
-path = "/api/healthz"
+path = "/"
