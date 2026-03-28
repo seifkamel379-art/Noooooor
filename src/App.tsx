@@ -83,10 +83,6 @@ function Router() {
       <Route path="/mosques">
         <FullScreenShell><MosquesFinder /></FullScreenShell>
       </Route>
-      <Route path="/library">
-        <FullScreenShell><IslamicLibrary /></FullScreenShell>
-      </Route>
-
       <Route component={NotFound} />
     </Switch>
   );
