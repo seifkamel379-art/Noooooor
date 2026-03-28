@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Crown, Wind, Heart, Waves, BookOpen, ScrollText,
   Timer, BookMarked, Eye, Trophy, Users, Lock,
-  Sparkles, Star, ChevronLeft, Globe, UserCheck
+  Sparkles, Star, Globe, UserCheck, RefreshCw, Info, X, CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -423,6 +423,268 @@ function LeaderboardRow({ entry, rank, isMe }: { entry: LeaderboardEntry; rank: 
   );
 }
 
+/* ─── Confirm Sync Dialog ─────────────────────────────── */
+function ConfirmSyncDialog({
+  onConfirm,
+  onCancel,
+  dark,
+  tasbeehTotal,
+  quranCompletions,
+  azkarStreak,
+  tadabburStreak,
+  noorScore,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+  dark: boolean;
+  tasbeehTotal: number;
+  quranCompletions: number;
+  azkarStreak: number;
+  tadabburStreak: number;
+  noorScore: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end justify-center p-4 pb-8"
+      dir="rtl"
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <motion.div
+        initial={{ y: 60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden"
+        style={{
+          background: dark
+            ? 'linear-gradient(160deg, #1e1508 0%, #2a1f0e 100%)'
+            : 'linear-gradient(160deg, #FDF8EE 0%, #F0E6C8 100%)',
+          border: '1px solid rgba(193,154,107,0.3)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        }}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #C19A6B22, #C19A6B44)', border: '1.5px solid #C19A6B55' }}
+              >
+                <RefreshCw size={18} style={{ color: '#C19A6B' }} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#5D4037] dark:text-[#d4b483]" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  تحديث الإحصائيات
+                </p>
+                <p className="text-[10px] text-[#8B6B3D]/60" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  هل أنت متأكد من التحديث؟
+                </p>
+              </div>
+            </div>
+            <button onClick={onCancel} className="text-[#8B6B3D]/40 hover:text-[#8B6B3D] transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div
+            className="rounded-2xl p-4 mb-4 space-y-2.5"
+            style={{
+              background: dark ? 'rgba(193,154,107,0.06)' : 'rgba(193,154,107,0.1)',
+              border: '1px solid rgba(193,154,107,0.2)',
+            }}
+          >
+            <p className="text-[11px] text-[#8B6B3D]/70 mb-3" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              سيتم إرسال هذه البيانات للترتيب العالمي:
+            </p>
+            {[
+              { label: 'عدد التسبيح', value: tasbeehTotal.toLocaleString('ar-EG'), icon: '🌿' },
+              { label: 'ختمات القرآن', value: `${quranCompletions} ختمة`, icon: '📖' },
+              { label: 'سلسلة الأذكار', value: `${azkarStreak} يوم`, icon: '🌙' },
+              { label: 'سلسلة التدبر', value: `${tadabburStreak} يوم`, icon: '⭐' },
+              { label: 'نقاط النور', value: noorScore.toLocaleString('ar-EG'), icon: '✨', highlight: true },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between">
+                <span className="text-xs text-[#8B6B3D]/70" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  {item.icon} {item.label}
+                </span>
+                <span
+                  className={cn(
+                    'text-xs font-bold',
+                    item.highlight ? 'text-[#C19A6B]' : 'text-[#5D4037] dark:text-[#d4b483]'
+                  )}
+                  style={{ fontFamily: '"Tajawal", sans-serif' }}
+                >
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 rounded-2xl text-sm font-bold text-[#8B6B3D] transition-colors"
+              style={{
+                fontFamily: '"Tajawal", sans-serif',
+                background: dark ? 'rgba(193,154,107,0.08)' : 'rgba(193,154,107,0.1)',
+                border: '1px solid rgba(193,154,107,0.2)',
+              }}
+            >
+              إلغاء
+            </button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onConfirm}
+              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2"
+              style={{
+                fontFamily: '"Tajawal", sans-serif',
+                background: 'linear-gradient(135deg, #8B6B3D, #C19A6B)',
+                boxShadow: '0 4px 15px rgba(193,154,107,0.4)',
+              }}
+            >
+              <CheckCircle2 size={15} />
+              تأكيد التحديث
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── Scoring Info Modal ──────────────────────────────── */
+function ScoringInfoModal({ onClose, dark }: { onClose: () => void; dark: boolean }) {
+  const rules = [
+    {
+      icon: '🌿',
+      title: 'التسبيح',
+      formula: 'كل ١٠٠ تسبيحة = ٥٠ نقطة',
+      detail: 'يُحتسب نصف نقطة لكل تسبيحة من مجموع جميع أنواع الذكر',
+      color: '#8B6B3D',
+    },
+    {
+      icon: '📖',
+      title: 'ختمة القرآن',
+      formula: 'كل ختمة = ١٠٠٠ نقطة',
+      detail: 'عند إتمام تلاوة القرآن الكريم من الفاتحة للناس',
+      color: '#C19A6B',
+    },
+    {
+      icon: '🌙',
+      title: 'سلسلة الأذكار',
+      formula: 'كل يوم متواصل = ٥٠ نقطة',
+      detail: 'يُحتسب كل يوم تُتِم فيه أذكار الصباح أو المساء',
+      color: '#7a9e7e',
+    },
+    {
+      icon: '⭐',
+      title: 'التدبر اليومي',
+      formula: 'كل يوم تلاوة = ٢٠ نقطة',
+      detail: 'يُحتسب كل يوم تفتح فيه المصحف وتقرأ سورة',
+      color: '#7a6bb5',
+    },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end justify-center p-4 pb-8"
+      dir="rtl"
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ y: 60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden"
+        style={{
+          background: dark
+            ? 'linear-gradient(160deg, #1e1508 0%, #2a1f0e 100%)'
+            : 'linear-gradient(160deg, #FDF8EE 0%, #F0E6C8 100%)',
+          border: '1px solid rgba(193,154,107,0.3)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        }}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} style={{ color: '#C19A6B' }} />
+              <h3 className="text-base font-bold text-[#5D4037] dark:text-[#d4b483]" style={{ fontFamily: '"Amiri", serif' }}>
+                كيف تُحتسب نقاط النور؟
+              </h3>
+            </div>
+            <button onClick={onClose} className="text-[#8B6B3D]/40 hover:text-[#8B6B3D] transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-[#8B6B3D]/60 mb-4" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            نقاط النور تعكس مجموع عملك الإيماني من ذكر وتلاوة ومداومة
+          </p>
+
+          <IslamicDivider />
+
+          <div className="space-y-3 mt-4">
+            {rules.map(rule => (
+              <div
+                key={rule.title}
+                className="flex items-start gap-3 p-3 rounded-2xl"
+                style={{
+                  background: dark ? 'rgba(193,154,107,0.06)' : 'rgba(193,154,107,0.08)',
+                  border: '1px solid rgba(193,154,107,0.15)',
+                }}
+              >
+                <span className="text-xl mt-0.5 shrink-0">{rule.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-sm font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: rule.color }}>
+                      {rule.title}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: `${rule.color}22`,
+                        color: rule.color,
+                        fontFamily: '"Tajawal", sans-serif',
+                      }}
+                    >
+                      {rule.formula}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#8B6B3D]/60 leading-relaxed" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                    {rule.detail}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="mt-4 p-3 rounded-2xl text-center"
+            style={{
+              background: 'linear-gradient(135deg, rgba(193,154,107,0.15), rgba(193,154,107,0.08))',
+              border: '1px solid rgba(193,154,107,0.3)',
+            }}
+          >
+            <p className="text-[10px] text-[#8B6B3D]/70" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              المعادلة الإجمالية
+            </p>
+            <p className="text-xs font-bold text-[#5D4037] dark:text-[#d4b483] mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              نقاطك = (تسبيح × ٠.٥) + (ختمات × ١٠٠٠) + (أذكار × ٥٠) + (تدبر × ٢٠)
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── Main Page ───────────────────────────────────────── */
 export function Sohba() {
   const [profile] = useLocalStorage<{ name: string; governorateId: string; governorateName?: string } | null>('user_profile', null);
@@ -439,6 +701,8 @@ export function Sohba() {
   const [isPublic, setIsPublic] = useLocalStorage<boolean>('sohba_is_public', false);
 
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showConfirmSync, setShowConfirmSync] = useState(false);
+  const [showScoringInfo, setShowScoringInfo] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loadingLb, setLoadingLb] = useState(false);
   const [activeTab, setActiveTab] = useState<'badges' | 'leaderboard'>('badges');
@@ -536,6 +800,18 @@ export function Sohba() {
     if (next && activeTab === 'leaderboard') fetchLeaderboard();
   };
 
+  const noorScore =
+    Math.floor(tasbeehTotal * 0.5) +
+    quranCompletions * 1000 +
+    azkarStreak * 50 +
+    tadabburStreak * 20;
+
+  const handleConfirmSync = async () => {
+    setShowConfirmSync(false);
+    await syncToLeaderboard(isPublic);
+    if (activeTab === 'leaderboard') fetchLeaderboard();
+  };
+
   const pillars = [
     { key: 'remembrance' as const, label: 'نظام الضياء — الذكر والتسبيح' },
     { key: 'quran' as const, label: 'نظام الدرّ والياقوت — القرآن الكريم' },
@@ -555,6 +831,21 @@ export function Sohba() {
     >
       <AnimatePresence>
         {showWelcome && <WelcomeModal onJoin={handleJoin} onSkip={handleSkip} />}
+        {showConfirmSync && (
+          <ConfirmSyncDialog
+            onConfirm={handleConfirmSync}
+            onCancel={() => setShowConfirmSync(false)}
+            dark={dark}
+            tasbeehTotal={tasbeehTotal}
+            quranCompletions={quranCompletions}
+            azkarStreak={azkarStreak}
+            tadabburStreak={tadabburStreak}
+            noorScore={noorScore}
+          />
+        )}
+        {showScoringInfo && (
+          <ScoringInfoModal onClose={() => setShowScoringInfo(false)} dark={dark} />
+        )}
       </AnimatePresence>
 
       {/* Header */}
@@ -605,39 +896,70 @@ export function Sohba() {
 
         {/* Score bar */}
         <div
-          className="mb-3 px-4 py-3 rounded-2xl flex items-center justify-between"
+          className="mb-3 rounded-2xl overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, rgba(193,154,107,0.12), rgba(193,154,107,0.08))',
             border: '1px solid rgba(193,154,107,0.25)',
           }}
         >
-          <div className="flex flex-col">
-            <span className="text-[10px] text-[#8B6B3D]/60" style={{ fontFamily: '"Tajawal", sans-serif' }}>نقاط النور</span>
-            <span
-              className="text-lg font-bold text-[#5D4037] dark:text-[#d4b483]"
-              style={{ fontFamily: '"Tajawal", sans-serif' }}
-            >
-              {(
-                Math.floor(tasbeehTotal * 0.5) +
-                quranCompletions * 1000 +
-                azkarStreak * 50 +
-                tadabburStreak * 20
-              ).toLocaleString('ar-EG')}
-            </span>
+          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-[#8B6B3D]/60" style={{ fontFamily: '"Tajawal", sans-serif' }}>نقاط النور</span>
+                <button
+                  onClick={() => setShowScoringInfo(true)}
+                  className="text-[#C19A6B]/50 hover:text-[#C19A6B] transition-colors"
+                >
+                  <Info size={12} />
+                </button>
+              </div>
+              <span
+                className="text-lg font-bold text-[#5D4037] dark:text-[#d4b483]"
+                style={{ fontFamily: '"Tajawal", sans-serif' }}
+              >
+                {noorScore.toLocaleString('ar-EG')}
+              </span>
+            </div>
+            <div className="flex gap-4 text-center">
+              <div>
+                <p className="text-[9px] text-[#8B6B3D]/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>التسبيح</p>
+                <p className="text-xs font-bold text-[#8B6B3D]" style={{ fontFamily: '"Tajawal", sans-serif' }}>{tasbeehTotal.toLocaleString('ar-EG')}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-[#8B6B3D]/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>ختمات</p>
+                <p className="text-xs font-bold text-[#8B6B3D]" style={{ fontFamily: '"Tajawal", sans-serif' }}>{quranCompletions}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-[#8B6B3D]/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>أذكار</p>
+                <p className="text-xs font-bold text-[#8B6B3D]" style={{ fontFamily: '"Tajawal", sans-serif' }}>{azkarStreak} يوم</p>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-4 text-center">
-            <div>
-              <p className="text-[9px] text-[#8B6B3D]/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>التسبيح</p>
-              <p className="text-xs font-bold text-[#8B6B3D]" style={{ fontFamily: '"Tajawal", sans-serif' }}>{tasbeehTotal.toLocaleString('ar-EG')}</p>
-            </div>
-            <div>
-              <p className="text-[9px] text-[#8B6B3D]/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>ختمات</p>
-              <p className="text-xs font-bold text-[#8B6B3D]" style={{ fontFamily: '"Tajawal", sans-serif' }}>{quranCompletions}</p>
-            </div>
-            <div>
-              <p className="text-[9px] text-[#8B6B3D]/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>أذكار</p>
-              <p className="text-xs font-bold text-[#8B6B3D]" style={{ fontFamily: '"Tajawal", sans-serif' }}>{azkarStreak} يوم</p>
-            </div>
+
+          {/* Refresh button row */}
+          <div
+            className="flex items-center justify-end px-4 py-2 gap-1.5"
+            style={{ borderTop: '1px solid rgba(193,154,107,0.15)' }}
+          >
+            <span className="text-[10px] text-[#8B6B3D]/40 flex-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              {syncStatus === 'done' ? '✓ تم التحديث' : syncStatus === 'syncing' ? 'جارٍ المزامنة...' : 'اضغط لمزامنة إحصائياتك'}
+            </span>
+            <motion.button
+              whileTap={{ scale: 0.93 }}
+              onClick={() => setShowConfirmSync(true)}
+              disabled={syncStatus === 'syncing'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all"
+              style={{
+                fontFamily: '"Tajawal", sans-serif',
+                background: 'linear-gradient(135deg, #8B6B3D, #C19A6B)',
+                color: '#fff',
+                opacity: syncStatus === 'syncing' ? 0.6 : 1,
+                boxShadow: '0 2px 8px rgba(193,154,107,0.3)',
+              }}
+            >
+              <RefreshCw size={11} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
+              تحديث
+            </motion.button>
           </div>
         </div>
 
@@ -745,15 +1067,29 @@ export function Sohba() {
                   <Trophy size={18} className="text-[#C19A6B]" />
                   <div>
                     <p className="text-xs text-[#8B6B3D]/70" style={{ fontFamily: '"Tajawal", sans-serif' }}>ترتيبك العالمي</p>
-                    <p className="text-lg font-bold text-[#5D4037]" style={{ fontFamily: '"Tajawal", sans-serif' }}>#{myRank}</p>
+                    <p className="text-lg font-bold text-[#5D4037] dark:text-[#d4b483]" style={{ fontFamily: '"Tajawal", sans-serif' }}>#{myRank}</p>
                   </div>
-                  <div className="mr-auto">
+                  <div className="mr-auto flex items-center gap-2">
+                    <motion.button
+                      whileTap={{ scale: 0.93 }}
+                      onClick={() => setShowConfirmSync(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold"
+                      style={{
+                        fontFamily: '"Tajawal", sans-serif',
+                        background: 'linear-gradient(135deg, #8B6B3D, #C19A6B)',
+                        color: '#fff',
+                        boxShadow: '0 2px 6px rgba(193,154,107,0.3)',
+                      }}
+                    >
+                      <RefreshCw size={11} />
+                      تحديث
+                    </motion.button>
                     <button
                       onClick={fetchLeaderboard}
-                      className="text-[10px] text-[#8B6B3D]/50 underline"
+                      className="text-[10px] text-[#8B6B3D]/50"
                       style={{ fontFamily: '"Tajawal", sans-serif' }}
                     >
-                      تحديث
+                      <RefreshCw size={13} />
                     </button>
                   </div>
                 </div>
@@ -789,22 +1125,6 @@ export function Sohba() {
         </AnimatePresence>
       </div>
 
-      {syncStatus === 'syncing' && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-[#5D4037] text-white text-xs" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-          جارٍ المزامنة...
-        </div>
-      )}
-      {syncStatus === 'done' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-[#5D4037] text-white text-xs"
-          style={{ fontFamily: '"Tajawal", sans-serif' }}
-        >
-          ✓ تم التحديث
-        </motion.div>
-      )}
     </div>
   );
 }
