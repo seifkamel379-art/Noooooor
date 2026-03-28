@@ -4,6 +4,11 @@ import { BarChart2 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 
+function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const BEAD_COUNT = 33;
 
 function BeadsSVG({ count, limit }: { count: number; limit: number }) {
@@ -114,6 +119,9 @@ export function Tasbih() {
     controls.start({ scale: [1, 0.94, 1], transition: { duration: 0.18 } });
     setCounts(prev => ({ ...prev, [currentType.id]: (prev[currentType.id] ?? 0) + 1 }));
     setTotals(prev => ({ ...prev, [currentType.id]: (prev[currentType.id] ?? 0) + 1 }));
+    const dailyKey = `tasbih_daily_${getTodayKey()}`;
+    const currentDaily = parseInt(localStorage.getItem(dailyKey) ?? '0', 10);
+    localStorage.setItem(dailyKey, String(currentDaily + 1));
     fetch('/api/counter/increment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: 1 }) }).catch(() => {});
   };
 

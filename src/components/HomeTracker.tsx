@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Link } from 'wouter';
 
+const TASBIH_DAILY_GOAL = 500;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 type WardType = 'hizb' | 'juz';
@@ -186,6 +188,10 @@ function getDayScore(dateKey: string): number {
       if (m && e) score += 1;
     }
   } catch {}
+  try {
+    const daily = parseInt(localStorage.getItem(`tasbih_daily_${dateKey}`) ?? '0', 10);
+    if (daily >= TASBIH_DAILY_GOAL) score += 1;
+  } catch {}
   return score;
 }
 
@@ -195,6 +201,7 @@ function cellColor(score: number, isToday: boolean): string {
   if (score <= 2) return '#6b4a20';
   if (score <= 4) return '#a0702e';
   if (score <= 6) return '#c5922a';
+  if (score <= 7) return '#c5b060';
   return '#c5a059';
 }
 
@@ -229,9 +236,28 @@ export function HomeTracker() {
   const eveningDone = EVENING_AZKAR.every(z => (azkarProgress[z.id] ?? 0) >= z.count);
   const azkarDone = morningDone && eveningDone;
 
+  const [dailyTasbihCount, setDailyTasbihCount] = useState(() => {
+    return parseInt(localStorage.getItem(`tasbih_daily_${currentDateKey}`) ?? '0', 10);
+  });
+
+  useEffect(() => {
+    const refresh = () => {
+      setDailyTasbihCount(parseInt(localStorage.getItem(`tasbih_daily_${currentDateKey}`) ?? '0', 10));
+    };
+    window.addEventListener('focus', refresh);
+    const id = setInterval(refresh, 3000);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      clearInterval(id);
+    };
+  }, [currentDateKey]);
+
+  const tasbih500Done = dailyTasbihCount >= TASBIH_DAILY_GOAL;
+  const tasbihPct = Math.min(100, Math.round((dailyTasbihCount / TASBIH_DAILY_GOAL) * 100));
+
   const prayersDone = PRAYERS.filter(p => state.prayers[p.key]).length;
-  const doneTasks = prayersDone + (azkarDone ? 1 : 0) + (state.quranWird ? 1 : 0);
-  const progressPct = Math.round((doneTasks / 7) * 100);
+  const doneTasks = prayersDone + (azkarDone ? 1 : 0) + (state.quranWird ? 1 : 0) + (tasbih500Done ? 1 : 0);
+  const progressPct = Math.round((doneTasks / 8) * 100);
 
   const togglePrayer = (key: PrayerKey) => {
     setState(prev => ({ ...prev, prayers: { ...prev.prayers, [key]: !prev.prayers[key] } }));
@@ -347,7 +373,7 @@ export function HomeTracker() {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            {doneTasks} / 7 مهام
+            {doneTasks} / 8 مهام
           </span>
           <AnimatePresence>
             {progressPct === 100 && (
@@ -629,6 +655,75 @@ export function HomeTracker() {
             )}
           </div>
         </div>
+
+        {/* ── 500 Tasbeeh card ── */}
+        <div
+          className="rounded-2xl p-4 border transition-all duration-300"
+          style={
+            tasbih500Done
+              ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
+              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--card)' }
+          }
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: tasbih500Done ? 'rgba(34,197,94,0.12)' : 'rgba(197,160,89,0.1)' }}
+              >
+                <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                  <circle cx="16" cy="16" r="11" stroke={tasbih500Done ? '#22c55e' : '#c5a059'} strokeWidth="1.5" fill="none" opacity="0.5"/>
+                  {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32].map(i => {
+                    const angle = (i / 33) * 2 * Math.PI - Math.PI / 2;
+                    const x = 16 + 11 * Math.cos(angle);
+                    const y = 16 + 11 * Math.sin(angle);
+                    return <circle key={i} cx={x} cy={y} r={i % 10 === 0 ? 2 : 1.4} fill={tasbih500Done ? '#22c55e' : '#c5a059'} opacity={0.7} />;
+                  })}
+                  <rect x="15" y="2" width="2" height="4" rx="1" fill={tasbih500Done ? '#22c55e' : '#c5a059'} />
+                  <circle cx="16" cy="1.5" r="2.5" fill={tasbih500Done ? '#22c55e' : '#c5a059'} />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  ٥٠٠ تسبيحة يومياً
+                </p>
+                <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}>
+                  {tasbih500Done
+                    ? 'مكتمل ✓'
+                    : `${dailyTasbihCount.toLocaleString('ar-EG')} / ${TASBIH_DAILY_GOAL.toLocaleString('ar-EG')} تسبيحة`}
+                </p>
+              </div>
+            </div>
+            {tasbih500Done ? (
+              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shadow-sm shadow-green-500/30">
+                <Check className="w-5 h-5 text-white" />
+              </div>
+            ) : (
+              <Link href="/tasbih">
+                <div
+                  className="px-3 py-2 rounded-xl text-xs font-bold"
+                  style={{
+                    fontFamily: '"Tajawal", sans-serif',
+                    background: 'linear-gradient(135deg, #c5a059, #9a7430)',
+                    color: '#fff',
+                  }}
+                >
+                  سبّح
+                </div>
+              </Link>
+            )}
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(197,160,89,0.12)' }}>
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: tasbih500Done ? 'linear-gradient(90deg, #22c55e99, #22c55e)' : 'linear-gradient(90deg, #c5a05999, #c5a059)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${tasbihPct}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Heatmap ── */}
@@ -679,10 +774,10 @@ export function HomeTracker() {
                           borderRadius: 3,
                           background: cell.score < 0 ? 'transparent' : cellColor(cell.score, cell.isToday),
                           border: cell.isToday ? '1.5px solid #c5a059' : '1px solid rgba(197,160,89,0.08)',
-                          boxShadow: cell.score === 7 ? '0 0 5px rgba(197,160,89,0.7)' : 'none',
+                          boxShadow: cell.score === 8 ? '0 0 5px rgba(197,160,89,0.7)' : 'none',
                           transition: 'background 0.2s',
                         }}
-                        title={cell.score >= 0 ? `${cell.dateKey}: ${cell.score}/7` : ''}
+                        title={cell.score >= 0 ? `${cell.dateKey}: ${cell.score}/8` : ''}
                       />
                     ))}
                   </div>
@@ -713,9 +808,9 @@ export function HomeTracker() {
               {[
                 { score: 0,  label: 'لا شيء' },
                 { score: 2,  label: '١-٢' },
-                { score: 4,  label: '٣-٤' },
-                { score: 6,  label: '٥-٦' },
-                { score: 7,  label: 'مثالي' },
+                { score: 4,  label: '٣-٥' },
+                { score: 6,  label: '٦-٧' },
+                { score: 8,  label: 'مثالي' },
               ].map(({ score, label }) => (
                 <div key={score} className="flex flex-col items-center gap-1">
                   <div
