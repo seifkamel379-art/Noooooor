@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ChevronLeft, Sun, Moon, LogOut } from 'lucide-react';
+import { ChevronLeft, Sun, Moon, LogOut, Share2, Star } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut } from '@/lib/firebase';
@@ -158,15 +158,11 @@ export function MoreMenu() {
       bg: 'bg-amber-500/10',
       desc: 'تدبر القرآن كلمةً بكلمة',
     },
-    {
-      Icon: Library,
-      label: 'المكتبة الإسلامية',
-      path: '/library',
-      color: 'text-indigo-500',
-      bg: 'bg-indigo-500/10',
-      desc: 'كتب، أبحاث، وموسوعة الحديث الشريف',
-    },
   ];
+
+  const WHATSAPP_MESSAGE = encodeURIComponent(
+    'السلام عليكم ورحمة الله.. حبيت أهديك تطبيق (Noor App)، تطبيق إسلامي مميز وبدون إعلانات، بيساعدك تحافظ على أذكارك وصلاتك. 🌙\n\nقال ﷺ: «الدال على الخير كفاعله».. حمله من هنا وشاركنا الأجر:\nhttps://noor-web--noorweb1000.replit.app/\nنسألكم الدعاء ✨'
+  );
 
   return (
     <div className="pb-24 pt-6 px-4 max-w-lg mx-auto" dir="rtl">
@@ -231,6 +227,46 @@ export function MoreMenu() {
             </Link>
           );
         })}
+
+        {/* Share App Card */}
+        <a
+          href={`https://wa.me/?text=${WHATSAPP_MESSAGE}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-colors shadow-sm"
+          data-testid="link-share-whatsapp"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-green-500/10 text-green-600 dark:text-green-400">
+              <Share2 className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>الدال على الخير كفاعله</span>
+              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>أرسل التطبيق لأحبابك لكي نتشارك الأجر والثواب</span>
+            </div>
+          </div>
+          <ChevronLeft className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        </a>
+
+        {/* Rate App Card */}
+        <a
+          href="https://noor-web--noorweb1000.replit.app/#reviews"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-colors shadow-sm"
+          data-testid="link-rate-app"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-500">
+              <Star className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>قيّمنا وادعمنا</span>
+              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>رأيك يهمنا ويساعدنا على تطوير "Noor App" ليصل للجميع</span>
+            </div>
+          </div>
+          <ChevronLeft className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        </a>
 
         {/* Dark Mode Toggle */}
         <button
