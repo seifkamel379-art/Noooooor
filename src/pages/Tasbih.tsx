@@ -114,6 +114,7 @@ export function Tasbih() {
     controls.start({ scale: [1, 0.94, 1], transition: { duration: 0.18 } });
     setCounts(prev => ({ ...prev, [currentType.id]: (prev[currentType.id] ?? 0) + 1 }));
     setTotals(prev => ({ ...prev, [currentType.id]: (prev[currentType.id] ?? 0) + 1 }));
+    fetch('/api/counter/increment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: 1 }) }).catch(() => {});
   };
 
   const handleResetConfirm = () => {

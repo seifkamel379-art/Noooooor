@@ -181,7 +181,7 @@ export function Azkar() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-1">
         <h1 className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>الأذكار والأدعية</h1>
         <button
           onClick={() => setShowResetDialog(true)}
@@ -190,6 +190,9 @@ export function Azkar() {
           <RotateCcw className="w-5 h-5" />
         </button>
       </div>
+      <p className="text-[11px] text-muted-foreground mb-3" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+        تتجدد الأذكار تلقائياً كل يوم عند منتصف الليل
+      </p>
 
       {/* Tabs — scrollable row */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
