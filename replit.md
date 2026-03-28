@@ -1,69 +1,66 @@
-# نُور - Noor Islamic App
+# Noor App (نور)
 
-A comprehensive Arabic Islamic mobile-first web app built with React + Vite in a pnpm monorepo.
+A cross-platform Islamic companion app built with React, Vite, and Express, supporting web and Android (via Capacitor).
 
-## Architecture
+## Project Structure
 
-- **Frontend**: Root directory (`src/`) - React + Vite + TypeScript + Tailwind CSS
-- **Routing**: Wouter (path-based)
-- **State**: localStorage via `useLocalStorage` hook
-- **Data fetching**: TanStack React Query
-- **Animations**: Framer Motion
-- **UI**: Custom Radix UI components + Tailwind CSS
-- **Fonts**: Amiri (Quran text), Tajawal (UI), Scheherazade
-- **Direction**: RTL throughout
+This is a pnpm monorepo workspace.
+
+### Root (`/`)
+- **React + Vite frontend** — the main web application
+- Capacitor config for Android builds
+- Entry: `src/main.tsx`, `index.html`
+
+### `artifacts/api-server/`
+- **Express backend** — handles `/api/*` routes
+- Uses Drizzle ORM with PostgreSQL
+- Built to `dist/index.cjs` for production
+
+### `artifacts/mockup-sandbox/`
+- Isolated Vite dev environment for UI component prototyping
+
+### `lib/`
+- `lib/db` — Drizzle ORM schema and database client
+- `lib/api-spec` — OpenAPI spec (source of truth for API contracts)
+- `lib/api-client-react` — Generated React Query hooks from OpenAPI spec
+- `lib/api-zod` — Generated Zod schemas from OpenAPI spec
+
+### `scripts/`
+- `dev.sh` — starts both Vite (frontend) and api-server in dev mode
+
+## Development
+
+The "Start application" workflow runs:
+```
+PORT=19382 pnpm -w run dev
+```
+
+This executes `scripts/dev.sh` which:
+1. Starts the API server on port 3001 (in background)
+2. Starts Vite on `$PORT` (19382 in dev, forwarded to external 80)
+
+Vite proxies `/api` requests to `localhost:3001`.
+
+## Key Configuration
+
+- **Frontend port (dev)**: 19382 (mapped to external port 80)
+- **API server port (dev)**: 3001
+- **Vite proxy**: `/api` → `http://localhost:3001`
+- **Firebase**: Configured via `VITE_FIREBASE_*` environment variables
+
+## Production Build
+
+```bash
+npm run build
+```
+
+Builds frontend to `dist/public` and bundles api-server to `dist/index.cjs`. The server serves static frontend files in production.
 
 ## Features
 
-### Pages
-- **Home** (`/`): Prayer times grid, next prayer countdown, notification settings with adhan reciter selection
-- **Quran** (`/quran`): Full Quran with 114 surahs, sound mode (Ahmad Al-Ajami), tafsir mode (Al-Jalalayn), bookmarks, memorization tracking, Juz/Hizb display while scrolling
-- **Azkar** (`/azkar`): Morning/Evening azkar with progress counters, source citations, daily reset via `azkar_YYYY-MM-DD` localStorage key
-- **Tasbih** (`/tasbih`): Electronic tasbih counter with 6 dhikr types, neumorphic button, haptic feedback
-- **More Menu** (`/more`): Navigation to Qibla, Asma, Reciters, MosquesFinder, Radio, SpeedReader; dark mode toggle
-- **Qibla** (`/qibla`): Compass with Kaaba SVG icon using DeviceOrientationEvent, alignment detection
-- **Asma Al-Husna** (`/asma`): All 99 names with Arabic meanings (static local data), search, modal detail view
-- **Reciters** (`/reciters`): 50+ reciters from mp3quran.net API with search, play Al-Fatiha sample
-- **MosquesFinder** (`/mosques`): Map-based mosque finder using OpenStreetMap/Leaflet with distance calculation
-- **Egyptian Radio** (`/radio`): Live Islamic radio stations with fallback stream URLs
-- **Speed Reader** (`/speed-reader`): Word-by-word Quran reading mode
-- **Adhan** (`/adhan`): Adhan settings and reciter selection
-
-### Key Systems
-- **NotificationsManager**: Checks prayer times every 15s, plays adhan audio or shows browser notification
-- **Prayer Time API**: `api.aladhan.com` with geolocation
-- **Quran API**: `api.alquran.cloud` (text), `everyayah.com` (Ahmad Al-Ajami audio)
-- **Tafsir API**: `api.quran.com/api/v4/tafsirs/16` (Al-Jalalayn, Arabic)
-- **Adhan Audio**: `islamicfinder.org/prayer/` with 12 reciters
-
-## Design System
-- **Primary**: `#C19A6B` (Islamic gold)
-- **Background**: `#FDFBF0` (warm cream)
-- **Dark mode**: supported via `document.documentElement.classList`
-- **Islamic pattern**: background texture from `public/images/islamic-pattern.png`
-
-## localStorage Keys
-- `azkar_YYYY-MM-DD`: Daily azkar progress (auto-reset each day)
-- `tasbih_count`: Current tasbih count
-- `tasbih_total`: Total tasbih across all sessions
-- `tasbih_type_idx`: Selected dhikr type
-- `quran_bookmark`: `{surah, ayah}` object
-- `quran_memorized`: Array of `surah:ayah` keys
-- `notification_pref`: `'off' | 'text' | 'adhan'`
-- `adhan_reciter`: Adhan reciter ID
-- `theme`: `'light' | 'dark'`
-
-## External APIs
-- Prayer times: `https://api.aladhan.com/v1/timings/`
-- Quran text: `https://api.alquran.cloud/v1/surah/{n}/quran-uthmani`
-- Tafsir: `https://api.quran.com/api/v4/tafsirs/16/by_ayah/{s}:{a}`
-- Reciters: `https://mp3quran.net/api/v3/reciters?language=ar`
-- Quran audio: `https://everyayah.com/data/Ahmed_ibn_Ali_al_Ajamy_128kbps/`
-- Adhan audio: `https://www.islamicfinder.org/prayer/adhan/`
-
-## Deployment
-
-- **Build**: `npm run build` (chains Vite frontend + API server build + copies to `dist/index.cjs`)
-- **Run**: `node ./dist/index.cjs` (API server serves static frontend from `dist/public`)
-- **API Server**: `artifacts/api-server` — built with `tsx ./build.ts`, output: `artifacts/api-server/dist/index.cjs`
-- **Static files**: Served by API server from `process.cwd()/dist/public`
+- Quran reader
+- Azkar (Islamic remembrances)
+- Prayer times (Adhan)
+- Qibla direction
+- Community feature ("Sohba")
+- Firebase authentication
