@@ -426,7 +426,8 @@ function LeaderboardRow({ entry, rank, isMe }: { entry: LeaderboardEntry; rank: 
 /* ─── Main Page ───────────────────────────────────────── */
 export function Sohba() {
   const [profile] = useLocalStorage<{ name: string; governorateId: string; governorateName?: string } | null>('user_profile', null);
-  const [tasbeehTotal] = useLocalStorage<number>('tasbih_total', 0);
+  const [tasbeehTotals] = useLocalStorage<Record<string, number>>('tasbih_totals', {});
+  const tasbeehTotal = Object.values(tasbeehTotals).reduce((a, b) => a + b, 0);
   const [quranCompletions] = useLocalStorage<number>('quran_completions', 0);
   const [currentSurah] = useLocalStorage<number>('quran_current_surah_idx', 1);
   const [tadabburStreak] = useLocalStorage<number>('tadabbur_streak', 0);
