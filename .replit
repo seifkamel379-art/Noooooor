@@ -37,7 +37,8 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo 'App is handled by api-server artifact workflow'"
+args = "npm run dev"
+waitForPort = 5000
 
 [agent]
 stack = "PNPM_WORKSPACE"
