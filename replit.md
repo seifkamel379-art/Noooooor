@@ -32,7 +32,7 @@ This is a pnpm monorepo workspace.
 
 The "Start application" workflow runs:
 ```
-PORT=19382 pnpm -w run dev
+PORT=19382 npm run dev
 ```
 
 This executes `scripts/dev.sh` which:
@@ -46,7 +46,14 @@ Vite proxies `/api` requests to `localhost:3001`.
 - **Frontend port (dev)**: 19382 (mapped to external port 80)
 - **API server port (dev)**: 3001
 - **Vite proxy**: `/api` → `http://localhost:3001`
-- **Firebase**: Configured via `VITE_FIREBASE_*` environment variables
+- **Vite host**: `::` (binds to both IPv4 and IPv6)
+- **Firebase**: Configured via `VITE_FIREBASE_*` environment variables in `.replit`
+
+## Database
+
+- PostgreSQL via Replit's built-in database
+- Schema managed with Drizzle ORM in `lib/db/src/schema/`
+- Push schema changes: `cd lib/db && pnpm run push`
 
 ## Production Build
 
