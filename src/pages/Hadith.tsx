@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 /* ── Static book definitions ──────────────────────────────────── */
 const BOOKS = [
-  { slug: 'sahih-bukhari',     name: 'صحيح البخاري',       color: '#B45309', bg: '#FEF3C7', darkColor: '#FBBF24', total: 6638 },
-  { slug: 'sahih-muslim',      name: 'صحيح مسلم',          color: '#065F46', bg: '#D1FAE5', darkColor: '#34D399', total: 4930 },
-  { slug: 'al-tirmidhi',       name: 'جامع الترمذي',        color: '#6D28D9', bg: '#EDE9FE', darkColor: '#A78BFA', total: 3625 },
-  { slug: 'abu-dawood',        name: 'سنن أبي داود',        color: '#1D4ED8', bg: '#DBEAFE', darkColor: '#60A5FA', total: 4419 },
-  { slug: 'ibn-e-majah',       name: 'سنن ابن ماجه',        color: '#BE185D', bg: '#FCE7F3', darkColor: '#F472B6', total: 4285 },
-  { slug: 'sunan-nasai',       name: 'سنن النسائي',         color: '#0E7490', bg: '#CFFAFE', darkColor: '#22D3EE', total: 5364 },
-  { slug: 'mishkat-ul-masabih',name: 'مشكاة المصابيح',      color: '#92400E', bg: '#FDE68A', darkColor: '#FCD34D', total: 4005 },
-  { slug: 'musnad-ahmad',      name: 'مسند الإمام أحمد',    color: '#166534', bg: '#DCFCE7', darkColor: '#4ADE80', total: 4305 },
+  { slug: 'sahih-bukhari',  name: 'صحيح البخاري',  color: 'hsl(33,42%,45%)',  bg: 'hsl(33,42%,93%)',  total: 6638 },
+  { slug: 'sahih-muslim',   name: 'صحيح مسلم',     color: 'hsl(25,45%,42%)',  bg: 'hsl(25,45%,93%)',  total: 4930 },
+  { slug: 'al-tirmidhi',    name: 'جامع الترمذي',   color: 'hsl(40,50%,40%)',  bg: 'hsl(40,50%,92%)',  total: 3625 },
+  { slug: 'abu-dawood',     name: 'سنن أبي داود',   color: 'hsl(18,48%,42%)',  bg: 'hsl(18,48%,93%)',  total: 4419 },
+  { slug: 'ibn-e-majah',    name: 'سنن ابن ماجه',   color: 'hsl(45,55%,38%)',  bg: 'hsl(45,55%,92%)',  total: 4285 },
+  { slug: 'sunan-nasai',    name: 'سنن النسائي',    color: 'hsl(12,52%,40%)',  bg: 'hsl(12,52%,93%)',  total: 5364 },
 ];
 
 type Book = typeof BOOKS[0];
@@ -217,7 +215,7 @@ function BookList({ onSelect }: { onSelect: (b: Book) => void }) {
               <p className="font-bold text-base text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                 {book.name}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5 font-bold" style={{ color: book.color, fontFamily: '"Tajawal", sans-serif' }}>
+              <p className="text-xs font-bold mt-0.5" style={{ color: book.color, fontFamily: '"Tajawal", sans-serif' }}>
                 {book.total.toLocaleString('ar-EG')} حديث
               </p>
             </div>

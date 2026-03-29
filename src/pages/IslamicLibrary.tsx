@@ -16,15 +16,14 @@ const TAFSIR_BOOKS = [
 ];
 
 const HADITH_BOOKS = [
-  { id: 'bukhari',   name: 'صحيح البخاري',            count: 6638, color: '#B45309', bg: '#FEF3C7' },
-  { id: 'muslim',    name: 'صحيح مسلم',               count: 4930, color: '#065F46', bg: '#D1FAE5' },
-  { id: 'abu-daud',  name: 'سنن أبي داود',             count: 4419, color: '#1D4ED8', bg: '#DBEAFE' },
-  { id: 'tirmidzi',  name: 'جامع الترمذي',             count: 3625, color: '#6D28D9', bg: '#EDE9FE' },
-  { id: 'nasai',     name: 'سنن النسائي',              count: 5364, color: '#0E7490', bg: '#CFFAFE' },
-  { id: 'ibnu-majah',name: 'سنن ابن ماجه',             count: 4285, color: '#BE185D', bg: '#FCE7F3' },
-  { id: 'ahmad',     name: 'مسند الإمام أحمد',         count: 4305, color: '#92400E', bg: '#FDE68A' },
-  { id: 'malik',     name: 'موطأ الإمام مالك',          count: 1587, color: '#166534', bg: '#DCFCE7' },
-  { id: 'darimi',    name: 'سنن الدارمي',              count: 2949, color: '#7C3AED', bg: '#F5F3FF' },
+  { id: 'bukhari',    name: 'صحيح البخاري',   count: 6638, color: 'hsl(33,42%,45%)', bg: 'hsl(33,42%,93%)' },
+  { id: 'muslim',     name: 'صحيح مسلم',      count: 4930, color: 'hsl(25,45%,42%)', bg: 'hsl(25,45%,93%)' },
+  { id: 'abu-daud',   name: 'سنن أبي داود',   count: 4419, color: 'hsl(40,50%,40%)', bg: 'hsl(40,50%,92%)' },
+  { id: 'tirmidzi',   name: 'جامع الترمذي',   count: 3625, color: 'hsl(18,48%,42%)', bg: 'hsl(18,48%,93%)' },
+  { id: 'nasai',      name: 'سنن النسائي',    count: 5364, color: 'hsl(45,55%,38%)', bg: 'hsl(45,55%,92%)' },
+  { id: 'ibnu-majah', name: 'سنن ابن ماجه',   count: 4285, color: 'hsl(12,52%,40%)', bg: 'hsl(12,52%,93%)' },
+  { id: 'malik',      name: 'موطأ الإمام مالك', count: 1587, color: 'hsl(30,40%,38%)', bg: 'hsl(30,40%,93%)' },
+  { id: 'darimi',     name: 'سنن الدارمي',    count: 2949, color: 'hsl(22,44%,44%)', bg: 'hsl(22,44%,93%)' },
 ];
 
 const SURAH_NAMES: Record<number, string> = {
