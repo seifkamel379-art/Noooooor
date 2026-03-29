@@ -354,3 +354,24 @@ export function SupplicationIcon({ className = '', size = 24 }: P) {
     </svg>
   );
 }
+
+/* ── Hadith / Prophetic narration ─────────────────────────── */
+export function HadithIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Open book */}
+      <path d="M2 4h7a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H2V4z"/>
+      <path d="M22 4h-7a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h7V4z"/>
+      {/* Left page lines */}
+      <line x1="5"  y1="9"  x2="9"  y2="9"  />
+      <line x1="5"  y1="12" x2="9"  y2="12" />
+      <line x1="5"  y1="15" x2="8"  y2="15" />
+      {/* Right page lines */}
+      <line x1="15" y1="9"  x2="19" y2="9"  />
+      <line x1="15" y1="12" x2="19" y2="12" />
+      <line x1="15" y1="15" x2="18" y2="15" />
+      {/* Center spine */}
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </svg>
+  );
+}

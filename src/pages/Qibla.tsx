@@ -47,106 +47,46 @@ function KaabaIcon({ size = 56, glow = false }: { size?: number; glow?: boolean 
           </filter>
         )}
       </defs>
-
-      {/* === ROOF CROWN === */}
-      {/* Bottom shadow of roof */}
+      {/* Roof */}
       <rect x="2" y="10" width="76" height="2" fill="#5a3d00" opacity="0.5"/>
-      {/* Main roof */}
       <rect x="2" y="2" width="76" height="10" rx="2" fill="url(#roofGrad)"/>
-      {/* Roof highlight */}
       <rect x="2" y="2" width="76" height="3" rx="2" fill="#F0D070" opacity="0.6"/>
-      {/* Roof bottom edge */}
       <rect x="2" y="10" width="76" height="1.5" fill="#6a4500"/>
-
-      {/* === MAIN BLACK BODY === */}
+      {/* Body */}
       <rect x="2" y="12" width="76" height="86" rx="1" fill="url(#bodyGrad)"/>
-
-      {/* === LEFT CORNER EDGE HIGHLIGHT (subtle 3D) === */}
       <rect x="2" y="12" width="5" height="86" fill="#C8991A" opacity="0.18"/>
-      {/* === RIGHT CORNER EDGE === */}
       <rect x="73" y="12" width="5" height="86" fill="#000" opacity="0.35"/>
-
-      {/* === KISWAH GOLD BAND (HIZAM) === */}
-      {/* Band shadow top */}
+      {/* Band */}
       <rect x="2" y="27" width="76" height="1.5" fill="#000" opacity="0.4"/>
-      {/* Band body */}
       <rect x="2" y="28" width="76" height="20" fill="url(#bandGrad)"/>
-      {/* Band top highlight border */}
       <rect x="2" y="28" width="76" height="2.5" fill="#E8C060" opacity="0.85"/>
-      {/* Band bottom border */}
       <rect x="2" y="46" width="76" height="2" fill="#E8C060" opacity="0.7"/>
-      {/* Band bottom shadow */}
       <rect x="2" y="47.5" width="76" height="1" fill="#000" opacity="0.35"/>
-
-      {/* Calligraphy lines (Arabic script simulation) */}
-      <rect x="8"  y="32"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8"  y="35.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8"  y="39"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8"  y="42.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-
-      {/* Script highlight on calligraphy lines */}
-      <rect x="8"  y="32"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-      <rect x="8"  y="35.5" width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-      <rect x="8"  y="39"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-
-      {/* Diamond ornaments on band */}
+      {/* Calligraphy */}
+      <rect x="8" y="32"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
+      <rect x="8" y="35.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
+      <rect x="8" y="39"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
+      <rect x="8" y="42.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
+      <rect x="8" y="32"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
+      <rect x="8" y="35.5" width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
+      <rect x="8" y="39"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
+      {/* Diamond ornaments */}
       {[15, 27, 40, 53, 65].map((x, i) => (
         <g key={i}>
-          <polygon
-            points={`${x},33.5 ${x+4},37.5 ${x},41.5 ${x-4},37.5`}
-            fill="#E8C060" opacity="0.55"
-          />
-          <polygon
-            points={`${x},34.5 ${x+2.5},37.5 ${x},40.5 ${x-2.5},37.5`}
-            fill="#C8991A" opacity="0.5"
-          />
+          <polygon points={`${x},33.5 ${x+4},37.5 ${x},41.5 ${x-4},37.5`} fill="#E8C060" opacity="0.55"/>
+          <polygon points={`${x},34.5 ${x+2.5},37.5 ${x},40.5 ${x-2.5},37.5`} fill="#000" opacity="0.25"/>
         </g>
       ))}
-
-      {/* === GOLDEN DOOR (BAB AL-KAABA) === */}
-      {/* Door outer frame */}
-      <rect x="22" y="52" width="36" height="46" rx="1.5" fill="url(#doorGrad)"/>
-
-      {/* Door arch (pointed) */}
-      <path d="M22 67 L40 48 L58 67" fill="url(#doorGrad)"/>
-
-      {/* Door frame inner shadow */}
-      <rect x="25" y="55" width="30" height="40" rx="1" fill="#5a3500"/>
-      <path d="M25 67 L40 51 L55 67" fill="#5a3500"/>
-
-      {/* Door panels – left */}
-      <rect x="26" y="58" width="13" height="34" rx="0.5" fill="#4a2d00"/>
-      {/* Door panels – right */}
-      <rect x="41" y="58" width="13" height="34" rx="0.5" fill="#4a2d00"/>
-
-      {/* Inner arch decoration */}
-      <path d="M26 67 L40 53 L54 67" fill="none" stroke="#C8991A" strokeWidth="1" opacity="0.6"/>
-
-      {/* Door center vertical divider */}
-      <line x1="40" y1="58" x2="40" y2="92" stroke="#C8991A" strokeWidth="1.2" opacity="0.5"/>
-
-      {/* Door panel decorations */}
-      <rect x="27" y="61" width="11" height="14" rx="0.5" fill="none" stroke="#C8991A" strokeWidth="0.7" opacity="0.5"/>
-      <rect x="42" y="61" width="11" height="14" rx="0.5" fill="none" stroke="#C8991A" strokeWidth="0.7" opacity="0.5"/>
-      <rect x="27" y="77" width="11" height="12" rx="0.5" fill="none" stroke="#C8991A" strokeWidth="0.7" opacity="0.5"/>
-      <rect x="42" y="77" width="11" height="12" rx="0.5" fill="none" stroke="#C8991A" strokeWidth="0.7" opacity="0.5"/>
-
-      {/* Door handle – left */}
-      <circle cx="36" cy="82" r="2.5" fill="#E8C060"/>
-      <circle cx="36" cy="82" r="1.5" fill="#A07820"/>
-      {/* Door handle – right */}
-      <circle cx="44" cy="82" r="2.5" fill="#E8C060"/>
-      <circle cx="44" cy="82" r="1.5" fill="#A07820"/>
-
-      {/* Door top gold arch frame border */}
-      <path d="M22 67 L40 48 L58 67" fill="none" stroke="#E8C060" strokeWidth="1.5" opacity="0.7"/>
-
-      {/* === HAJAR AL-ASWAD CORNER (Bottom-left) === */}
-      <rect x="2" y="88" width="12" height="10" rx="0.5" fill="#1a1a1a"/>
-      <ellipse cx="8" cy="93" rx="4" ry="2.5" fill="#0d0d0d" stroke="#444" strokeWidth="0.6" opacity="0.8"/>
-      <ellipse cx="8" cy="93" rx="2" ry="1.2" fill="#222" stroke="#666" strokeWidth="0.4" opacity="0.6"/>
-
-      {/* === GLOW when aligned === */}
+      {/* Door */}
+      <rect x="31" y="62" width="18" height="26" rx="2" fill="url(#doorGrad)"/>
+      <rect x="33" y="64" width="14" height="22" rx="1.5" fill="#0a0a0a" opacity="0.6"/>
+      <rect x="34" y="65" width="12" height="20" rx="1" fill="#7a5200" opacity="0.3"/>
+      <rect x="35" y="66" width="4" height="18" rx="0.5" fill="#E8C060" opacity="0.15"/>
+      <rect x="41" y="66" width="4" height="18" rx="0.5" fill="#E8C060" opacity="0.15"/>
+      <rect x="35" y="74.5" width="10" height="1" fill="#E8C060" opacity="0.3"/>
+      {/* Frame border */}
+      <rect x="2" y="2" width="76" height="96" rx="2"
+        fill="none" stroke="#C8991A" strokeWidth="1" opacity="0.4"/>
       {glow && (
         <rect x="2" y="2" width="76" height="96" rx="2"
           fill="none" stroke="#4ade80" strokeWidth="2" opacity="0.7"
@@ -157,68 +97,126 @@ function KaabaIcon({ size = 56, glow = false }: { size?: number; glow?: boolean 
   );
 }
 
-/* ── Compass face (STATIC – never rotates) ─────────────────── */
+/* ── Compass face (static – never rotates) ─────────────────────── */
 function CompassFace({ isAligned }: { isAligned: boolean }) {
   const ticks = Array.from({ length: 72 }, (_, i) => {
-    const angle    = i * 5;
-    const isCard   = angle % 90 === 0;
-    const isMinor  = angle % 45 === 0 && !isCard;
-    const outerR   = 122;
-    const innerR   = isCard ? 104 : isMinor ? 110 : 116;
-    const rad      = (angle * Math.PI) / 180;
+    const angle  = i * 5;
+    const isCard = angle % 90 === 0;
+    const isMid  = angle % 45 === 0 && !isCard;
+    const outerR = 122;
+    const innerR = isCard ? 104 : isMid ? 110 : 116;
+    const rad    = (angle * Math.PI) / 180;
     return {
-      x1: 130 + outerR * Math.sin(rad),
-      y1: 130 - outerR * Math.cos(rad),
-      x2: 130 + innerR * Math.sin(rad),
-      y2: 130 - innerR * Math.cos(rad),
-      isCard, isMinor,
+      x1: 130 + outerR * Math.sin(rad), y1: 130 - outerR * Math.cos(rad),
+      x2: 130 + innerR * Math.sin(rad), y2: 130 - innerR * Math.cos(rad),
+      isCard, isMid,
     };
   });
-
-  const accentColor = isAligned ? '#4ade80' : 'var(--primary)';
-
+  const accent = isAligned ? '#4ade80' : 'var(--primary)';
   return (
     <svg viewBox="0 0 260 260" className="absolute inset-0 w-full h-full">
       <defs>
         <radialGradient id="cBg" cx="50%" cy="45%" r="60%">
-          <stop offset="0%"   stopColor="var(--card)"       stopOpacity="1"/>
-          <stop offset="100%" stopColor="var(--background)"  stopOpacity="1"/>
+          <stop offset="0%" stopColor="var(--card)" stopOpacity="1"/>
+          <stop offset="100%" stopColor="var(--background)" stopOpacity="1"/>
         </radialGradient>
         <filter id="glow">
           <feGaussianBlur stdDeviation="3" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
-
-      {/* Background */}
       <circle cx="130" cy="130" r="127" fill="url(#cBg)"/>
-
-      {/* Outer ring */}
       <circle cx="130" cy="130" r="125" fill="none"
-        stroke={accentColor} strokeWidth="2.5"
+        stroke={accent} strokeWidth="2.5"
         opacity={isAligned ? 0.85 : 0.4}
         style={{ transition: 'stroke 0.5s, opacity 0.5s' }}
       />
-
-      {/* Inner decorative ring */}
       <circle cx="130" cy="130" r="95" fill="none"
-        stroke={accentColor} strokeWidth="0.5" opacity="0.15"/>
-
-      {/* Tick marks */}
+        stroke={accent} strokeWidth="0.5" opacity="0.15"/>
       {ticks.map((t, i) => (
-        <line key={i}
-          x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
-          stroke={t.isCard ? 'var(--primary)' : t.isMinor ? 'var(--primary)' : 'var(--border)'}
-          strokeWidth={t.isCard ? 2.5 : t.isMinor ? 1.5 : 0.8}
-          opacity={t.isCard ? 1 : t.isMinor ? 0.55 : 0.35}
+        <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+          stroke={t.isCard ? 'var(--primary)' : t.isMid ? 'var(--primary)' : 'var(--border)'}
+          strokeWidth={t.isCard ? 2.5 : t.isMid ? 1.5 : 0.8}
+          opacity={t.isCard ? 1 : t.isMid ? 0.55 : 0.35}
         />
       ))}
-
-      {/* Cardinal labels */}
       <text x="130" y="14" textAnchor="middle" fill="#ef4444" fontSize="14" fontWeight="bold" fontFamily="Tajawal,sans-serif">ش</text>
       <text x="248" y="135" textAnchor="middle" fill="var(--primary)" fontSize="12" fontFamily="Tajawal,sans-serif" opacity="0.8">ق</text>
       <text x="130" y="251" textAnchor="middle" fill="var(--primary)" fontSize="12" fontFamily="Tajawal,sans-serif" opacity="0.8">ج</text>
       <text x="12"  y="135" textAnchor="middle" fill="var(--primary)" fontSize="12" fontFamily="Tajawal,sans-serif" opacity="0.8">غ</text>
+    </svg>
+  );
+}
+
+/* ── Single Qibla Arrow SVG ─────────────────────────────────────
+   Arrow points UP (toward 12 o'clock).
+   Arrowhead triangle is at the TOP of the SVG.
+   When isAligned=true the triangle tip glows green.
+   ─────────────────────────────────────────────────────────────── */
+function QiblaArrow({ isAligned, isSearching }: { isAligned: boolean; isSearching: boolean }) {
+  const tipColor    = isAligned ? '#4ade80' : 'var(--primary)';
+  const shaftColor  = isAligned ? 'rgba(74,222,128,0.45)' : 'rgba(193,154,107,0.45)';
+  const glowColor   = isAligned ? 'rgba(74,222,128,0.9)' : 'transparent';
+  const glowBlur    = isAligned ? '8px' : '0px';
+
+  return (
+    <svg
+      width="44"
+      height="180"
+      viewBox="0 0 44 180"
+      style={{
+        overflow: 'visible',
+        filter: isAligned
+          ? `drop-shadow(0 0 ${glowBlur} ${glowColor})`
+          : `drop-shadow(0 2px 6px rgba(0,0,0,0.35))`,
+        transition: 'filter 0.5s',
+      }}
+    >
+      <defs>
+        {isAligned && (
+          <filter id="arrowGlow">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        )}
+        <linearGradient id="arrowShaft" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={tipColor} stopOpacity="0.7"/>
+          <stop offset="100%" stopColor={tipColor} stopOpacity="0.15"/>
+        </linearGradient>
+      </defs>
+
+      {/* Shaft (body of the arrow) */}
+      <rect
+        x="18" y="40" width="8" height="120" rx="4"
+        fill="url(#arrowShaft)"
+        style={{ transition: 'fill 0.5s' }}
+      />
+
+      {/* Tail fin (bottom decorative notch) */}
+      <polygon
+        points="22,160 14,145 22,150 30,145"
+        fill={shaftColor}
+        style={{ transition: 'fill 0.5s' }}
+      />
+
+      {/* Arrowhead triangle (pointing UP) */}
+      <polygon
+        points="22,2 6,44 22,36 38,44"
+        fill={tipColor}
+        filter={isAligned ? 'url(#arrowGlow)' : undefined}
+        style={{ transition: 'fill 0.5s' }}
+      />
+
+      {/* Highlight on arrowhead */}
+      <polygon
+        points="22,4 14,30 22,25"
+        fill="white"
+        opacity={isAligned ? 0.35 : 0.15}
+        style={{ transition: 'opacity 0.5s' }}
+      />
     </svg>
   );
 }
@@ -231,6 +229,9 @@ export function Qibla() {
   const qiblaAngle = coords ? calculateQibla(coords.lat, coords.lng) : 0;
   const arrowAngle = ((qiblaAngle - (heading ?? 0)) % 360 + 360) % 360;
   const isAligned  = heading !== null && coords !== null && (arrowAngle < 8 || arrowAngle > 352);
+
+  /* Compass is still acquiring: spin the arrow */
+  const isSearching = heading === null || !coords;
 
   const wasAligned = useRef(false);
   useEffect(() => {
@@ -268,9 +269,11 @@ export function Qibla() {
             <p className="text-sm text-muted-foreground mb-4" style={{ fontFamily: '"Tajawal", sans-serif' }}>
               يحتاج التطبيق إلى موقعك لحساب اتجاه القبلة
             </p>
-            <button onClick={requestLocation}
+            <button
+              onClick={requestLocation}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm bg-primary text-primary-foreground"
-              style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              style={{ fontFamily: '"Tajawal", sans-serif' }}
+            >
               <MapPin className="w-4 h-4"/>
               تحديد موقعي
             </button>
@@ -306,16 +309,18 @@ export function Qibla() {
               اضغط للسماح بالوصول لحساس الاتجاه
             </p>
           </div>
-          <button onClick={requestPermission}
+          <button
+            onClick={requestPermission}
             className="w-full py-3.5 rounded-2xl font-bold text-sm bg-primary text-primary-foreground"
-            style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            style={{ fontFamily: '"Tajawal", sans-serif' }}
+          >
             تفعيل البوصلة
           </button>
         </div>
       );
     }
 
-    /* ── Full compass ────────────────────────────────────────── */
+    /* ── Full compass ─────────────────────────────────────────── */
     return (
       <div className="flex flex-col items-center gap-6 w-full">
 
@@ -329,6 +334,10 @@ export function Qibla() {
             <p className="font-bold text-base text-green-600 dark:text-green-400" style={{ fontFamily: '"Tajawal", sans-serif' }}>
               أنت في اتجاه القبلة ✓
             </p>
+          ) : isSearching ? (
+            <p className="font-bold text-sm text-primary" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              جاري البحث عن اتجاه القبلة...
+            </p>
           ) : (
             <div>
               <p className="font-bold text-sm text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
@@ -341,7 +350,7 @@ export function Qibla() {
           )}
         </div>
 
-        {/* Compass */}
+        {/* Compass ring */}
         <div className="relative" style={{ width: SIZE, height: SIZE }}>
 
           {/* Outer glow ring */}
@@ -353,10 +362,10 @@ export function Qibla() {
             }}
           />
 
-          {/* STATIC compass face */}
+          {/* Static compass face */}
           <CompassFace isAligned={isAligned} />
 
-          {/* Kaaba – FIXED at 12 o'clock, never rotates */}
+          {/* Kaaba fixed at 12 o'clock */}
           <div
             className="absolute pointer-events-none"
             style={{
@@ -372,37 +381,28 @@ export function Qibla() {
             <KaabaIcon size={40} glow={isAligned} />
           </div>
 
-          {/* ROTATING arrow – points toward Qibla */}
+          {/* ── SINGLE ROTATING ARROW ──────────────────────────── */}
+          {/* While searching: spin animation. When found: point to Qibla */}
           <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
-            style={{
+            className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${isSearching ? 'animate-spin' : ''}`}
+            style={isSearching ? { animationDuration: '1.8s' } : {
               transform: `rotate(${arrowAngle}deg)`,
-              transition: heading !== null ? 'transform 0.12s ease-out' : 'none',
+              transition: heading !== null ? 'transform 0.15s ease-out' : 'none',
             }}
           >
-            <svg width="52" height="190" viewBox="0 0 52 190">
-              {/* Up arrow – Qibla direction */}
-              <polygon
-                points="26,2 14,36 20,30 20,95 32,95 32,30 38,36"
-                fill={isAligned ? '#4ade80' : 'var(--primary)'}
-                style={{ transition: 'fill 0.5s', filter: isAligned ? 'drop-shadow(0 0 6px rgba(74,222,128,0.8))' : 'none' }}
-              />
-              {/* Down arrow – opposite, dimmed */}
-              <polygon
-                points="26,188 14,154 20,160 20,95 32,95 32,160 38,154"
-                fill={isAligned ? 'rgba(74,222,128,0.25)' : 'rgba(193,154,107,0.25)'}
-                style={{ transition: 'fill 0.5s' }}
-              />
-            </svg>
+            <QiblaArrow isAligned={isAligned} isSearching={isSearching} />
           </div>
 
-          {/* Center dot */}
+          {/* Center pivot dot */}
           <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-            <div className="w-4 h-4 rounded-full transition-all duration-500"
+            <div
+              className="w-4 h-4 rounded-full transition-all duration-500"
               style={{
                 background: isAligned ? '#4ade80' : 'var(--primary)',
                 border: '3px solid var(--background)',
-                boxShadow: isAligned ? '0 0 10px rgba(74,222,128,0.8)' : '0 0 7px rgba(193,154,107,0.5)',
+                boxShadow: isAligned
+                  ? '0 0 12px rgba(74,222,128,0.9)'
+                  : '0 0 7px rgba(193,154,107,0.5)',
               }}
             />
           </div>
@@ -431,9 +431,11 @@ export function Qibla() {
           تحديد القبلة
         </h1>
         {(geoError || (!geoLoading && !coords)) && (
-          <button onClick={requestLocation}
+          <button
+            onClick={requestLocation}
             className="mr-auto p-2 rounded-full bg-secondary"
-            title="إعادة المحاولة">
+            title="إعادة المحاولة"
+          >
             <RotateCcw className="w-4 h-4 text-primary"/>
           </button>
         )}

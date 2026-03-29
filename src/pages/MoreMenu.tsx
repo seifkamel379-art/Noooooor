@@ -15,6 +15,7 @@ import {
   ScrollIcon,
   DuaHandsIcon,
   RadioIcon,
+  HadithIcon,
 } from '@/components/NoorIcons';
 
 function IslamicPattern() {
@@ -118,6 +119,14 @@ export function MoreMenu() {
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
 
   const MENU_ITEMS = [
+    {
+      Icon: HadithIcon,
+      label: 'الأحاديث الشريفة',
+      path: '/hadith',
+      color: 'text-amber-700',
+      bg: 'bg-amber-500/10',
+      desc: 'أحاديث النبي ﷺ من كبار المصادر',
+    },
     {
       Icon: QiblaCompassIcon,
       label: 'تحديد القبلة',
@@ -320,6 +329,7 @@ export function MoreMenu() {
               <FeatureChip Icon={IslamicStarIcon}      color="text-emerald-500"   text="أسماء الله الحسنى" />
               <FeatureChip Icon={RadioIcon}            color="text-primary"       text="الإذاعات الإسلامية" />
               <FeatureChip Icon={QiblaCompassIcon}     color="text-primary"       text="تحديد القبلة" />
+              <FeatureChip Icon={HadithIcon}           color="text-amber-700"     text="الأحاديث الشريفة" />
               <FeatureChip Icon={MoonIcon}             color="text-slate-500"     text="الوضع الليلي" />
             </div>
           </div>
