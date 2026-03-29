@@ -1,11 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, Volume2, WifiOff, Loader2, RefreshCw, Radio } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'wouter';
 
-/* ─── Islamic Radio Stations ──────────────────────────────────
-   Each station has a primary URL and ordered fallback list.
-   Prefer fast CDN streams (Zeno, Radiojar) over direct icecast.
-────────────────────────────────────────────────────────────── */
+/* ─── Islamic Radio Stations ─────────────────────────────────── */
 const STATIONS = [
   {
     id: 1,
@@ -16,16 +13,20 @@ const STATIONS = [
       'https://Qurango.net/radio/quranegypt',
       'https://radio.mp3islam.com/listen/quran_radio/radio.mp3',
     ],
-    svgLogo: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
-        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
-        <path d="M24 9 C18 9 8 11 7 16 L7 39 C8 35 18 33 24 33" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M24 9 C30 9 40 11 41 16 L41 39 C40 35 30 33 24 33" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <line x1="24" y1="9" x2="24" y2="33" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M3 30 Q3 21 7 17" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.45"/>
-        <path d="M1 35 Q1 18 7 12" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.25"/>
-        <path d="M45 30 Q45 21 41 17" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.45"/>
-        <path d="M47 35 Q47 18 41 12" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.25"/>
+    OrnateIcon: () => (
+      <svg viewBox="0 0 64 64" fill="none" className="w-10 h-10">
+        <path d="M32 4 L36.5 14 L48 10 L44 21.5 L56 26 L44 30.5 L48 42 L36.5 38 L32 48 L27.5 38 L16 42 L20 30.5 L8 26 L20 21.5 L16 10 L27.5 14 Z"
+          stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08"/>
+        <rect x="20" y="18" width="10" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+        <rect x="34" y="18" width="10" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+        <line x1="30" y1="18" x2="30" y2="34" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="34" y1="18" x2="34" y2="34" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="22.5" y1="22" x2="27.5" y2="22" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+        <line x1="22.5" y1="25" x2="27.5" y2="25" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+        <line x1="22.5" y1="28" x2="27.5" y2="28" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+        <line x1="36.5" y1="22" x2="41.5" y2="22" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+        <line x1="36.5" y1="25" x2="41.5" y2="25" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+        <line x1="36.5" y1="28" x2="41.5" y2="28" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -38,15 +39,15 @@ const STATIONS = [
       'https://Qurango.net/radio/maher',
       'https://radio.mp3islam.com/listen/maher/radio.mp3',
     ],
-    svgLogo: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
-        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
-        <rect x="17" y="7" width="13" height="20" rx="6.5" stroke="currentColor" strokeWidth="2"/>
-        <path d="M11 26 Q11 39 24 39 Q37 39 37 26" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <line x1="24" y1="39" x2="24" y2="43" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="17" y1="43" x2="31" y2="43" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="19" y1="19" x2="29" y2="19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-        <line x1="19" y1="22" x2="29" y2="22" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+    OrnateIcon: () => (
+      <svg viewBox="0 0 64 64" fill="none" className="w-10 h-10">
+        <path d="M32 4 L36.5 14 L48 10 L44 21.5 L56 26 L44 30.5 L48 42 L36.5 38 L32 48 L27.5 38 L16 42 L20 30.5 L8 26 L20 21.5 L16 10 L27.5 14 Z"
+          stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08"/>
+        <rect x="26" y="14" width="12" height="20" rx="6" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+        <path d="M20 30 Q20 40 32 40 Q44 40 44 30" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        <line x1="32" y1="40" x2="32" y2="44" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="26" y1="44" x2="38" y2="44" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="28" y1="26" x2="36" y2="26" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
       </svg>
     ),
   },
@@ -59,19 +60,16 @@ const STATIONS = [
       'https://Qurango.net/radio/mishary',
       'https://radio.mp3islam.com/listen/mishary/radio.mp3',
     ],
-    svgLogo: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
-        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
-        <circle cx="24" cy="24" r="9" stroke="currentColor" strokeWidth="1.8"/>
-        <line x1="24" y1="7"  x2="24" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="24" y1="37" x2="24" y2="41" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="7"  y1="24" x2="11" y2="24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="37" y1="24" x2="41" y2="24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="12.1" y1="12.1" x2="15" y2="15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.6"/>
-        <line x1="33"   y1="33"   x2="35.9" y2="35.9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.6"/>
-        <line x1="35.9" y1="12.1" x2="33"   y2="15"   stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.6"/>
-        <line x1="15"   y1="33"   x2="12.1" y2="35.9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.6"/>
-        <circle cx="24" cy="24" r="3.5" fill="currentColor"/>
+    OrnateIcon: () => (
+      <svg viewBox="0 0 64 64" fill="none" className="w-10 h-10">
+        <path d="M32 4 L36.5 14 L48 10 L44 21.5 L56 26 L44 30.5 L48 42 L36.5 38 L32 48 L27.5 38 L16 42 L20 30.5 L8 26 L20 21.5 L16 10 L27.5 14 Z"
+          stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08"/>
+        <circle cx="32" cy="26" r="9" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+        <line x1="32" y1="12" x2="32" y2="16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="32" y1="36" x2="32" y2="40" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="18" y1="26" x2="22" y2="26" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="42" y1="26" x2="46" y2="26" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        <circle cx="32" cy="26" r="3.5" fill="currentColor"/>
       </svg>
     ),
   },
@@ -83,18 +81,18 @@ const STATIONS = [
       'https://Qurango.net/radio/minshawi',
       'https://radio.mp3islam.com/listen/minshawi/radio.mp3',
     ],
-    svgLogo: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
-        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
-        <path d="M14 30 Q14 18 24 16 Q34 18 34 30" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <rect x="11" y="30" width="26" height="12" rx="1" stroke="currentColor" strokeWidth="1.8"/>
-        <path d="M20 42 L20 36 Q24 33 28 36 L28 42" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-        <rect x="7" y="22" width="4" height="20" rx="0.8" stroke="currentColor" strokeWidth="1.4"/>
-        <path d="M7 22 Q9 18 11 22" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-        <circle cx="9" cy="17.5" r="0.8" fill="currentColor"/>
-        <rect x="37" y="22" width="4" height="20" rx="0.8" stroke="currentColor" strokeWidth="1.4"/>
-        <path d="M37 22 Q39 18 41 22" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-        <circle cx="39" cy="17.5" r="0.8" fill="currentColor"/>
+    OrnateIcon: () => (
+      <svg viewBox="0 0 64 64" fill="none" className="w-10 h-10">
+        <path d="M32 4 L36.5 14 L48 10 L44 21.5 L56 26 L44 30.5 L48 42 L36.5 38 L32 48 L27.5 38 L16 42 L20 30.5 L8 26 L20 21.5 L16 10 L27.5 14 Z"
+          stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08"/>
+        <path d="M32 13 L32 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M27 16 Q27 13 32 13 Q37 13 37 16 L37 20 Q37 23 32 23 Q27 23 27 20 Z" stroke="currentColor" strokeWidth="1.3" fill="none"/>
+        <rect x="22" y="29" width="20" height="10" rx="1" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+        <path d="M27 39 L27 42 Q32 44 37 42 L37 39" stroke="currentColor" strokeWidth="1.3" fill="none"/>
+        <rect x="18" y="24" width="3" height="15" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M18 24 Q19.5 21 21 24" stroke="currentColor" strokeWidth="1" fill="none"/>
+        <rect x="43" y="24" width="3" height="15" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M43 24 Q44.5 21 46 24" stroke="currentColor" strokeWidth="1" fill="none"/>
       </svg>
     ),
   },
@@ -106,13 +104,14 @@ const STATIONS = [
       'https://Qurango.net/radio/yasser',
       'https://radio.mp3islam.com/listen/yaser/radio.mp3',
     ],
-    svgLogo: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
-        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
-        <path d="M24 9 C14 9 8 16.5 8 24 C8 31.5 14 39 24 39 C32 39 38.5 33.5 39.5 26 C36.5 29.5 31 31 27 28.5 C20 25 17.5 17 22 12 C22.5 11 23.2 10 24 9Z"
-          stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-        <polygon points="33,13 34.5,18 39.5,18 35.5,21 37,26 33,23 29,26 30.5,21 26.5,18 31.5,18"
-          stroke="currentColor" strokeWidth="1.3" fill="none"/>
+    OrnateIcon: () => (
+      <svg viewBox="0 0 64 64" fill="none" className="w-10 h-10">
+        <path d="M32 4 L36.5 14 L48 10 L44 21.5 L56 26 L44 30.5 L48 42 L36.5 38 L32 48 L27.5 38 L16 42 L20 30.5 L8 26 L20 21.5 L16 10 L27.5 14 Z"
+          stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08"/>
+        <path d="M38 15 Q30 14 25 19 Q19 25 20 32 Q21 39 27 43 Q33 47 40 44 Q46 41 47 35 Q43 39 38 37 Q31 34 29 27 Q27 20 33 16 Q35 15 38 15Z"
+          stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+        <polygon points="40,15 41.5,19 45.5,19 42.5,21.5 43.5,26 40,23.5 36.5,26 37.5,21.5 34.5,19 38.5,19"
+          stroke="currentColor" strokeWidth="1" fill="none"/>
       </svg>
     ),
   },
@@ -125,14 +124,13 @@ const STATIONS = [
       'https://stream.radiojar.com/0tpy1h0kxtzuv',
       'https://qurango.net/radio/mix',
     ],
-    svgLogo: (
-      <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9">
-        <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.12"/>
-        <path d="M24 6 Q12 6 8 16 L8 38 Q12 28 24 28 Q36 28 40 38 L40 16 Q36 6 24 6Z" stroke="currentColor" strokeWidth="1.6" fill="none"/>
-        <path d="M22 6 Q22 14 18 18" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <path d="M26 6 Q26 14 30 18" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-        <circle cx="24" cy="20" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M12 42 Q12 36 24 34 Q36 36 36 42" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+    OrnateIcon: () => (
+      <svg viewBox="0 0 64 64" fill="none" className="w-10 h-10">
+        <path d="M32 4 L36.5 14 L48 10 L44 21.5 L56 26 L44 30.5 L48 42 L36.5 38 L32 48 L27.5 38 L16 42 L20 30.5 L8 26 L20 21.5 L16 10 L27.5 14 Z"
+          stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.08"/>
+        <path d="M32 13 Q24 13 21 20 L21 36 Q24 30 32 30 Q40 30 43 36 L43 20 Q40 13 32 13Z" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+        <circle cx="32" cy="22" r="3" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M25 40 Q25 36 32 35 Q39 36 39 40" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -140,25 +138,56 @@ const STATIONS = [
 
 type Status = 'idle' | 'loading' | 'playing' | 'error';
 
-function EqBars({ playing }: { playing: boolean }) {
+/* ── Animated EQ bars (playing indicator) ─────────────────────── */
+function EqBars() {
   return (
-    <div className="flex gap-0.5 items-end h-5">
+    <div className="flex gap-0.5 items-end h-4">
       {[1, 2, 3, 4].map(i => (
-        <div key={i} className="w-1 rounded-full bg-primary transition-all duration-300"
+        <div key={i}
+          className="w-1 rounded-full"
           style={{
-            height: playing ? `${8 + (i % 3) * 6}px` : '4px',
-            animation: playing ? `eqbar ${0.4 + i * 0.1}s ease-in-out infinite alternate` : 'none',
-          }} />
+            height: `${8 + (i % 3) * 5}px`,
+            background: '#8B6010',
+            animation: `eqbar ${0.4 + i * 0.1}s ease-in-out infinite alternate`,
+          }}
+        />
       ))}
     </div>
   );
 }
 
+/* ── Play / Pause / Loading circle button ─────────────────────── */
+function PlayCircle({ status }: { status: Status | 'inactive' }) {
+  return (
+    <div
+      className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-300"
+      style={{
+        borderColor: status !== 'inactive' ? '#8B6010' : '#C4A96A',
+        background: status !== 'inactive' ? 'rgba(139,96,16,0.12)' : 'transparent',
+      }}
+    >
+      {status === 'loading' ? (
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#8B6010' }} />
+      ) : status === 'error' ? (
+        <RefreshCw className="w-5 h-5" style={{ color: '#8B6010' }} />
+      ) : status === 'playing' ? (
+        <svg viewBox="0 0 24 24" fill="#8B6010" className="w-5 h-5">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" className="w-5 h-5" style={{ marginRight: '-2px' }}>
+          <path d="M8 5v14l11-7z" fill="#8B6010"/>
+        </svg>
+      )}
+    </div>
+  );
+}
+
 export function EgyptianRadio() {
-  const [activeId, setActiveId]     = useState<number | null>(null);
-  const [status, setStatus]         = useState<Status>('idle');
-  const audioRef                    = useRef<HTMLAudioElement | null>(null);
-  const retryTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeId, setActiveId]   = useState<number | null>(null);
+  const [status, setStatus]       = useState<Status>('idle');
+  const audioRef                  = useRef<HTMLAudioElement | null>(null);
+  const retryTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const a = new Audio();
@@ -167,9 +196,7 @@ export function EgyptianRadio() {
 
     const onPlaying = () => setStatus('playing');
     const onError   = () => setStatus('error');
-    const onCanPlay = () => {
-      a.play().catch(() => setStatus('error'));
-    };
+    const onCanPlay = () => { a.play().catch(() => setStatus('error')); };
 
     a.addEventListener('playing',  onPlaying);
     a.addEventListener('error',    onError);
@@ -187,18 +214,12 @@ export function EgyptianRadio() {
   const playStation = useCallback((station: typeof STATIONS[0], idx = 0) => {
     const a = audioRef.current;
     if (!a) return;
-    if (idx >= station.urls.length) {
-      setStatus('error');
-      return;
-    }
-
+    if (idx >= station.urls.length) { setStatus('error'); return; }
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-
     setStatus('loading');
     a.pause();
     a.src = station.urls[idx];
     a.load();
-
     const onErr = () => {
       a.removeEventListener('error', onErr);
       retryTimerRef.current = setTimeout(() => playStation(station, idx + 1), 600);
@@ -209,7 +230,6 @@ export function EgyptianRadio() {
   const toggle = useCallback((station: typeof STATIONS[0]) => {
     const a = audioRef.current;
     if (!a) return;
-
     if (activeId === station.id) {
       if (status === 'playing' || status === 'loading') {
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -220,18 +240,15 @@ export function EgyptianRadio() {
       }
       return;
     }
-
     setActiveId(station.id);
     playStation(station, 0);
   }, [activeId, status, playStation]);
-
-  const activeStation = STATIONS.find(s => s.id === activeId);
 
   return (
     <div className="h-screen flex flex-col max-w-lg mx-auto bg-background" dir="rtl">
       <style>{`
         @keyframes eqbar {
-          from { transform: scaleY(0.3); }
+          from { transform: scaleY(0.4); }
           to   { transform: scaleY(1); }
         }
       `}</style>
@@ -244,116 +261,84 @@ export function EgyptianRadio() {
           </button>
         </Link>
         <div className="flex-1">
-          <h1 className="font-bold text-xl" style={{ fontFamily: '"Tajawal", sans-serif' }}>الإذاعات الإسلامية</h1>
+          <h1 className="font-bold text-xl" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            الإذاعات الإسلامية
+          </h1>
           <p className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            {activeStation ? activeStation.name : 'اختر إذاعة للاستماع'}
+            اختر إذاعة للاستماع
           </p>
         </div>
-        {activeStation && status === 'playing' && <EqBars playing={true} />}
       </div>
 
-      {/* Now Playing Bar */}
-      {activeStation && (
-        <div className="mx-4 mt-4 p-4 rounded-2xl flex items-center gap-4 flex-shrink-0 bg-primary/8 border border-primary/25"
-          style={{
-            boxShadow: status === 'playing' ? '0 0 28px var(--primary-glow, rgba(193,154,107,0.2))' : undefined,
-          }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/30 text-primary">
-            {activeStation.svgLogo}
-          </div>
-          <div className="flex-1">
-            <p className="font-bold text-sm text-primary" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              {activeStation.name}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              {status === 'loading' ? 'جاري الاتصال...'
-              : status === 'error'   ? 'تعذّر الاتصال — اضغط للمحاولة مجدداً'
-              : `${activeStation.subtitle} • يبث الآن`}
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            {status === 'loading' && <Loader2 className="w-5 h-5 animate-spin text-primary"/>}
-            {status === 'playing' && <Volume2 className="w-5 h-5 text-primary"/>}
-            {status === 'error'   && <WifiOff className="w-5 h-5 text-destructive"/>}
-          </div>
-        </div>
-      )}
+      {/* Station list */}
+      <div className="flex-1 overflow-y-auto p-4 pb-8">
+        <div className="flex flex-col gap-3">
+          {STATIONS.map(s => {
+            const isActive  = activeId === s.id;
+            const stStatus: Status | 'inactive' = isActive ? status : 'inactive';
+            const isPlaying = isActive && status === 'playing';
 
-      {/* Station List */}
-      <div className="flex-1 overflow-y-auto p-4 pb-8 space-y-3">
-        {STATIONS.map(s => {
-          const isActive  = activeId === s.id;
-          const isLoading = isActive && status === 'loading';
-          const isError   = isActive && status === 'error';
-          const isPlaying = isActive && status === 'playing';
+            return (
+              <button
+                key={s.id}
+                onClick={() => toggle(s)}
+                data-testid={`button-station-${s.id}`}
+                className="w-full rounded-2xl text-right transition-all duration-300 active:scale-[0.98]"
+                style={{
+                  background: isActive
+                    ? 'linear-gradient(135deg, #F5E8CC 0%, #EDD8A8 100%)'
+                    : 'linear-gradient(135deg, #F8F0DC 0%, #F0E4C0 100%)',
+                  border: `1.5px solid ${isActive ? '#B89040' : '#D4B880'}`,
+                  boxShadow: isPlaying
+                    ? '0 4px 20px rgba(184,144,64,0.25)'
+                    : '0 2px 8px rgba(0,0,0,0.06)',
+                }}
+              >
+                <div className="flex items-center gap-4 p-4">
+                  {/* Play button — left */}
+                  <PlayCircle status={stStatus} />
 
-          return (
-            <button key={s.id} onClick={() => toggle(s)}
-              className="w-full p-4 rounded-2xl border text-right transition-all duration-300 active:scale-[0.98]"
-              style={{
-                background: isActive ? 'var(--primary-fade, rgba(193,154,107,0.08))' : 'var(--card)',
-                borderColor: isActive ? 'var(--primary-border, rgba(193,154,107,0.4))' : 'var(--border)',
-                boxShadow: isPlaying ? '0 0 20px rgba(193,154,107,0.15), 0 2px 12px rgba(0,0,0,0.04)' : undefined,
-              }}>
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-primary transition-all"
-                  style={{
-                    background: isActive ? 'rgba(193,154,107,0.12)' : 'var(--secondary)',
-                    border: isActive ? '2px solid rgba(193,154,107,0.4)' : '2px solid transparent',
-                  }}>
-                  {s.svgLogo}
-                </div>
-
-                <div className="flex-1 text-right">
-                  <p className="font-bold text-base leading-tight"
-                    style={{ fontFamily: '"Tajawal", sans-serif', color: isActive ? 'var(--primary)' : 'var(--foreground)' }}>
-                    {s.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    {s.subtitle}
-                  </p>
-                </div>
-
-                <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-                  style={{
-                    background: isActive ? 'var(--primary)' : 'rgba(193,154,107,0.12)',
-                  }}>
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: isActive ? '#fff' : 'var(--primary)' }} />
-                  ) : isError ? (
-                    <RefreshCw className="w-5 h-5" style={{ color: isActive ? '#fff' : 'var(--primary)' }} />
-                  ) : isPlaying ? (
-                    <svg viewBox="0 0 24 24" fill={isActive ? '#fff' : 'var(--primary)'} className="w-5 h-5">
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill={isActive ? '#fff' : 'var(--primary)'} className="w-5 h-5">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  )}
-                </div>
-              </div>
-
-              {isPlaying && (
-                <div className="flex gap-0.5 items-end mt-3 px-1" style={{ height: 14 }}>
-                  {Array.from({ length: 22 }, (_, i) => (
-                    <div key={i} className="flex-1 rounded-sm bg-primary"
+                  {/* Name + subtitle — center */}
+                  <div className="flex-1 min-w-0 text-right">
+                    <p
+                      className="font-bold text-base leading-tight"
                       style={{
-                        height: `${25 + Math.abs(Math.sin(i * 0.9)) * 65}%`,
-                        opacity: 0.3 + (i % 4) * 0.15,
-                        animation: `eqbar ${0.25 + (i % 5) * 0.08}s ease-in-out infinite alternate`,
-                      }} />
-                  ))}
-                </div>
-              )}
-            </button>
-          );
-        })}
+                        fontFamily: '"Tajawal", sans-serif',
+                        color: isActive ? '#6B4A00' : '#3D2B00',
+                      }}
+                    >
+                      {s.name}
+                    </p>
+                    <div className="flex items-center justify-end gap-2 mt-1">
+                      {isPlaying && <EqBars />}
+                      <p
+                        className="text-xs"
+                        style={{
+                          fontFamily: '"Tajawal", sans-serif',
+                          color: isActive ? '#8B6010' : '#7A5A20',
+                        }}
+                      >
+                        {s.subtitle}
+                      </p>
+                    </div>
+                  </div>
 
-        <div className="text-center pt-1 pb-2 flex items-center justify-center gap-2">
-          <Radio className="w-3.5 h-3.5 text-muted-foreground/40"/>
-          <p className="text-xs text-muted-foreground/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            إذاعات قرآنية متخصصة · بث مستمر 24/7
+                  {/* Ornate Islamic icon — right */}
+                  <div
+                    className="flex-shrink-0 flex items-center justify-center"
+                    style={{ color: isActive ? '#8B6010' : '#A07828' }}
+                  >
+                    <s.OrnateIcon />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 text-center">
+          <p className="text-xs" style={{ color: '#A09070', fontFamily: '"Tajawal", sans-serif' }}>
+            إذاعات قرآنية متخصصة · بث مستمر ٢٤/٧
           </p>
         </div>
       </div>

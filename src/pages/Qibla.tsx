@@ -47,22 +47,18 @@ function KaabaIcon({ size = 56, glow = false }: { size?: number; glow?: boolean 
           </filter>
         )}
       </defs>
-      {/* Roof */}
       <rect x="2" y="10" width="76" height="2" fill="#5a3d00" opacity="0.5"/>
       <rect x="2" y="2" width="76" height="10" rx="2" fill="url(#roofGrad)"/>
       <rect x="2" y="2" width="76" height="3" rx="2" fill="#F0D070" opacity="0.6"/>
       <rect x="2" y="10" width="76" height="1.5" fill="#6a4500"/>
-      {/* Body */}
       <rect x="2" y="12" width="76" height="86" rx="1" fill="url(#bodyGrad)"/>
       <rect x="2" y="12" width="5" height="86" fill="#C8991A" opacity="0.18"/>
       <rect x="73" y="12" width="5" height="86" fill="#000" opacity="0.35"/>
-      {/* Band */}
       <rect x="2" y="27" width="76" height="1.5" fill="#000" opacity="0.4"/>
       <rect x="2" y="28" width="76" height="20" fill="url(#bandGrad)"/>
       <rect x="2" y="28" width="76" height="2.5" fill="#E8C060" opacity="0.85"/>
       <rect x="2" y="46" width="76" height="2" fill="#E8C060" opacity="0.7"/>
       <rect x="2" y="47.5" width="76" height="1" fill="#000" opacity="0.35"/>
-      {/* Calligraphy */}
       <rect x="8" y="32"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
       <rect x="8" y="35.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
       <rect x="8" y="39"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
@@ -70,21 +66,18 @@ function KaabaIcon({ size = 56, glow = false }: { size?: number; glow?: boolean 
       <rect x="8" y="32"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
       <rect x="8" y="35.5" width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
       <rect x="8" y="39"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-      {/* Diamond ornaments */}
       {[15, 27, 40, 53, 65].map((x, i) => (
         <g key={i}>
           <polygon points={`${x},33.5 ${x+4},37.5 ${x},41.5 ${x-4},37.5`} fill="#E8C060" opacity="0.55"/>
           <polygon points={`${x},34.5 ${x+2.5},37.5 ${x},40.5 ${x-2.5},37.5`} fill="#000" opacity="0.25"/>
         </g>
       ))}
-      {/* Door */}
       <rect x="31" y="62" width="18" height="26" rx="2" fill="url(#doorGrad)"/>
       <rect x="33" y="64" width="14" height="22" rx="1.5" fill="#0a0a0a" opacity="0.6"/>
       <rect x="34" y="65" width="12" height="20" rx="1" fill="#7a5200" opacity="0.3"/>
       <rect x="35" y="66" width="4" height="18" rx="0.5" fill="#E8C060" opacity="0.15"/>
       <rect x="41" y="66" width="4" height="18" rx="0.5" fill="#E8C060" opacity="0.15"/>
       <rect x="35" y="74.5" width="10" height="1" fill="#E8C060" opacity="0.3"/>
-      {/* Frame border */}
       <rect x="2" y="2" width="76" height="96" rx="2"
         fill="none" stroke="#C8991A" strokeWidth="1" opacity="0.4"/>
       {glow && (
@@ -97,14 +90,14 @@ function KaabaIcon({ size = 56, glow = false }: { size?: number; glow?: boolean 
   );
 }
 
-/* ── Compass face (static – never rotates) ─────────────────────── */
+/* ── Compass face with degree numbers ──────────────────────── */
 function CompassFace({ isAligned }: { isAligned: boolean }) {
   const ticks = Array.from({ length: 72 }, (_, i) => {
     const angle  = i * 5;
     const isCard = angle % 90 === 0;
     const isMid  = angle % 45 === 0 && !isCard;
-    const outerR = 122;
-    const innerR = isCard ? 104 : isMid ? 110 : 116;
+    const outerR = 120;
+    const innerR = isCard ? 102 : isMid ? 108 : 114;
     const rad    = (angle * Math.PI) / 180;
     return {
       x1: 130 + outerR * Math.sin(rad), y1: 130 - outerR * Math.cos(rad),
@@ -112,6 +105,11 @@ function CompassFace({ isAligned }: { isAligned: boolean }) {
       isCard, isMid,
     };
   });
+
+  /* Degree labels every 30°, but skip 0° (Kaaba is there) */
+  const degLabels = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+  const labelR = 105;
+
   const accent = isAligned ? '#4ade80' : 'var(--primary)';
   return (
     <svg viewBox="0 0 260 260" className="absolute inset-0 w-full h-full">
@@ -131,8 +129,10 @@ function CompassFace({ isAligned }: { isAligned: boolean }) {
         opacity={isAligned ? 0.85 : 0.4}
         style={{ transition: 'stroke 0.5s, opacity 0.5s' }}
       />
-      <circle cx="130" cy="130" r="95" fill="none"
-        stroke={accent} strokeWidth="0.5" opacity="0.15"/>
+      <circle cx="130" cy="130" r="90" fill="none"
+        stroke={accent} strokeWidth="0.5" opacity="0.12"/>
+
+      {/* Tick marks */}
       {ticks.map((t, i) => (
         <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
           stroke={t.isCard ? 'var(--primary)' : t.isMid ? 'var(--primary)' : 'var(--border)'}
@@ -140,24 +140,46 @@ function CompassFace({ isAligned }: { isAligned: boolean }) {
           opacity={t.isCard ? 1 : t.isMid ? 0.55 : 0.35}
         />
       ))}
-      <text x="130" y="14" textAnchor="middle" fill="#ef4444" fontSize="14" fontWeight="bold" fontFamily="Tajawal,sans-serif">ش</text>
-      <text x="248" y="135" textAnchor="middle" fill="var(--primary)" fontSize="12" fontFamily="Tajawal,sans-serif" opacity="0.8">ق</text>
-      <text x="130" y="251" textAnchor="middle" fill="var(--primary)" fontSize="12" fontFamily="Tajawal,sans-serif" opacity="0.8">ج</text>
-      <text x="12"  y="135" textAnchor="middle" fill="var(--primary)" fontSize="12" fontFamily="Tajawal,sans-serif" opacity="0.8">غ</text>
+
+      {/* Degree numbers every 30° */}
+      {degLabels.map((deg) => {
+        const rad = (deg * Math.PI) / 180;
+        const x = 130 + labelR * Math.sin(rad);
+        const y = 130 - labelR * Math.cos(rad);
+        return (
+          <text
+            key={deg}
+            x={x} y={y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="var(--muted-foreground)"
+            fontSize="8"
+            fontFamily="Tajawal,sans-serif"
+            opacity="0.65"
+            transform={`rotate(${deg}, ${x}, ${y})`}
+          >
+            {deg}
+          </text>
+        );
+      })}
+
+      {/* Cardinal labels — ش (N) at top, ق (E) right, ج (S) bottom, غ (W) left */}
+      <text x="130" y="14" textAnchor="middle" fill="#ef4444" fontSize="13" fontWeight="bold" fontFamily="Tajawal,sans-serif">ش</text>
+      <text x="247" y="135" textAnchor="middle" fill="var(--primary)" fontSize="11" fontFamily="Tajawal,sans-serif" opacity="0.8">ق</text>
+      <text x="130" y="250" textAnchor="middle" fill="var(--primary)" fontSize="11" fontFamily="Tajawal,sans-serif" opacity="0.8">ج</text>
+      <text x="13"  y="135" textAnchor="middle" fill="var(--primary)" fontSize="11" fontFamily="Tajawal,sans-serif" opacity="0.8">غ</text>
     </svg>
   );
 }
 
-/* ── Single Qibla Arrow SVG ─────────────────────────────────────
-   Arrow points UP (toward 12 o'clock).
-   Arrowhead triangle is at the TOP of the SVG.
-   When isAligned=true the triangle tip glows green.
-   ─────────────────────────────────────────────────────────────── */
+/* ── Qibla Arrow — tip always at TOP of SVG ─────────────────
+   Fix: we add 180° externally so tip actually faces Qibla.
+───────────────────────────────────────────────────────────── */
 function QiblaArrow({ isAligned, isSearching }: { isAligned: boolean; isSearching: boolean }) {
-  const tipColor    = isAligned ? '#4ade80' : 'var(--primary)';
-  const shaftColor  = isAligned ? 'rgba(74,222,128,0.45)' : 'rgba(193,154,107,0.45)';
-  const glowColor   = isAligned ? 'rgba(74,222,128,0.9)' : 'transparent';
-  const glowBlur    = isAligned ? '8px' : '0px';
+  const tipColor   = isAligned ? '#4ade80' : 'var(--primary)';
+  const shaftColor = isAligned ? 'rgba(74,222,128,0.45)' : 'rgba(193,154,107,0.45)';
+  const glowColor  = isAligned ? 'rgba(74,222,128,0.9)' : 'transparent';
+  const glowBlur   = isAligned ? '8px' : '0px';
 
   return (
     <svg
@@ -188,21 +210,21 @@ function QiblaArrow({ isAligned, isSearching }: { isAligned: boolean; isSearchin
         </linearGradient>
       </defs>
 
-      {/* Shaft (body of the arrow) */}
+      {/* Shaft */}
       <rect
         x="18" y="40" width="8" height="120" rx="4"
         fill="url(#arrowShaft)"
         style={{ transition: 'fill 0.5s' }}
       />
 
-      {/* Tail fin (bottom decorative notch) */}
+      {/* Tail fin */}
       <polygon
         points="22,160 14,145 22,150 30,145"
         fill={shaftColor}
         style={{ transition: 'fill 0.5s' }}
       />
 
-      {/* Arrowhead triangle (pointing UP) */}
+      {/* Arrowhead — pointing UP (tip at y=2) */}
       <polygon
         points="22,2 6,44 22,36 38,44"
         fill={tipColor}
@@ -210,7 +232,7 @@ function QiblaArrow({ isAligned, isSearching }: { isAligned: boolean; isSearchin
         style={{ transition: 'fill 0.5s' }}
       />
 
-      {/* Highlight on arrowhead */}
+      {/* Highlight */}
       <polygon
         points="22,4 14,30 22,25"
         fill="white"
@@ -221,16 +243,21 @@ function QiblaArrow({ isAligned, isSearching }: { isAligned: boolean; isSearchin
   );
 }
 
-/* ── Main Qibla Page ─────────────────────────────────────────── */
+/* ── Main Qibla Page ─────────────────────────────────────── */
 export function Qibla() {
   const { heading, isSupported, requestPermission } = useCompass();
   const { coords, error: geoError, isLoading: geoLoading, requestLocation } = useGeolocation(true);
 
   const qiblaAngle = coords ? calculateQibla(coords.lat, coords.lng) : 0;
-  const arrowAngle = ((qiblaAngle - (heading ?? 0)) % 360 + 360) % 360;
+
+  /*
+   * +180 corrects the heading reference so the TIP (not tail) of the arrow
+   * points toward Qibla. Without this correction the device heading is
+   * measured from the back of the phone, so the arrow ends up inverted.
+   */
+  const arrowAngle = ((qiblaAngle - (heading ?? 0) + 180) % 360 + 360) % 360;
   const isAligned  = heading !== null && coords !== null && (arrowAngle < 8 || arrowAngle > 352);
 
-  /* Compass is still acquiring: spin the arrow */
   const isSearching = heading === null || !coords;
 
   const wasAligned = useRef(false);
@@ -320,7 +347,7 @@ export function Qibla() {
       );
     }
 
-    /* ── Full compass ─────────────────────────────────────────── */
+    /* ── Full compass ────────────────────────────────────────── */
     return (
       <div className="flex flex-col items-center gap-6 w-full">
 
@@ -362,7 +389,7 @@ export function Qibla() {
             }}
           />
 
-          {/* Static compass face */}
+          {/* Static compass face with degree numbers */}
           <CompassFace isAligned={isAligned} />
 
           {/* Kaaba fixed at 12 o'clock */}
@@ -381,8 +408,7 @@ export function Qibla() {
             <KaabaIcon size={40} glow={isAligned} />
           </div>
 
-          {/* ── SINGLE ROTATING ARROW ──────────────────────────── */}
-          {/* While searching: spin animation. When found: point to Qibla */}
+          {/* Rotating arrow — points toward Qibla */}
           <div
             className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${isSearching ? 'animate-spin' : ''}`}
             style={isSearching ? { animationDuration: '1.8s' } : {
