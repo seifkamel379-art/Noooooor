@@ -3,7 +3,7 @@ import { useGeolocation, calculateQibla } from '@/hooks/use-geolocation';
 import { ArrowLeft, MapPin, RotateCcw } from 'lucide-react';
 import { Link } from 'wouter';
 import { useEffect, useRef } from 'react';
-import kaabaImg from '@assets/1486906_1774860408848.png';
+import kaabaImg from '@assets/Picsart_26-03-30_10-52-34-641_1774860779806.png';
 
 /* ── Islamic Geometric Background ───────────────────────────── */
 function IslamicBg() {
@@ -330,8 +330,8 @@ export function Qibla() {
       alt="الكعبة المشرفة"
       className={cls}
       style={{
-        width: 78,
-        height: 78,
+        width: 96,
+        height: 96,
         objectFit: 'contain',
         filter: isAligned
           ? 'drop-shadow(0 0 14px rgba(74,222,128,0.9))'
@@ -473,7 +473,7 @@ export function Qibla() {
           <div
             className="absolute pointer-events-none z-10"
             style={{
-              top: -30,
+              top: -38,
               left: '50%',
               transform: 'translateX(-50%)',
             }}
