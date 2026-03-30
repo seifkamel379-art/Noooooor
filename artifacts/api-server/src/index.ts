@@ -1,4 +1,5 @@
 import app from "./app";
+import { initDatabase } from "./db-init";
 
 const rawPort = process.env["PORT"];
 
@@ -14,6 +15,15 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+/* Auto-initialize the database schema, then start serving */
+initDatabase().then(() => {
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}).catch((err) => {
+  /* If DB init fails, still start the server so the frontend loads */
+  console.error("[Startup] DB init error:", err);
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port} (DB may not be fully initialized)`);
+  });
 });

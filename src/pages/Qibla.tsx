@@ -4,158 +4,259 @@ import { ArrowLeft, MapPin, RotateCcw } from 'lucide-react';
 import { Link } from 'wouter';
 import { useEffect, useRef } from 'react';
 
-/* ── Realistic Kaaba SVG ────────────────────────────────────── */
-function KaabaIcon({ size = 56, glow = false }: { size?: number; glow?: boolean }) {
-  const w = size;
-  const h = Math.round(size * 1.25);
+/* ── Islamic Geometric Background ───────────────────────────── */
+function IslamicBg() {
   return (
-    <svg
-      width={w}
-      height={h}
-      viewBox="0 0 80 100"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'block' }}
-    >
+    <svg className="absolute inset-0 w-full h-full pointer-events-none select-none"
+      xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.06, zIndex: 0 }}>
       <defs>
-        <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#1c1c1c"/>
-          <stop offset="40%"  stopColor="#111"/>
-          <stop offset="100%" stopColor="#0a0a0a"/>
+        <pattern id="islamicTile" x="0" y="0" width="90" height="90" patternUnits="userSpaceOnUse">
+          <path d="M45 6 L50 22 L66 18 L61 34 L77 39 L61 44 L66 60 L50 56 L45 72 L40 56 L24 60 L29 44 L13 39 L29 34 L24 18 L40 22 Z"
+            fill="none" stroke="#C8991A" strokeWidth="0.8"/>
+          <circle cx="45" cy="45" r="10" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+          <rect x="38" y="38" width="14" height="14" transform="rotate(45 45 45)" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+          <circle cx="45" cy="45" r="2.5" fill="#C8991A" opacity="0.4"/>
+          <line x1="45" y1="0" x2="45" y2="90" stroke="#C8991A" strokeWidth="0.3" opacity="0.3"/>
+          <line x1="0" y1="45" x2="90" y2="45" stroke="#C8991A" strokeWidth="0.3" opacity="0.3"/>
+          <circle cx="0" cy="0" r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+          <circle cx="90" cy="0" r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+          <circle cx="0" cy="90" r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+          <circle cx="90" cy="90" r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#islamicTile)"/>
+    </svg>
+  );
+}
+
+/* ── 3D Isometric Kaaba ─────────────────────────────────────── */
+function KaabaIcon3D({ size = 80, glow = false }: { size?: number; glow?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none"
+      xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="kTopFace" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#E8C060"/>
+          <stop offset="50%" stopColor="#B8860B"/>
+          <stop offset="100%" stopColor="#7a5800"/>
         </linearGradient>
-        <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#E8C060"/>
-          <stop offset="50%"  stopColor="#B8860B"/>
-          <stop offset="100%" stopColor="#8a6200"/>
+        <linearGradient id="kLeftFace" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#222222"/>
+          <stop offset="100%" stopColor="#333333"/>
         </linearGradient>
-        <linearGradient id="bandGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#C8991A"/>
-          <stop offset="30%"  stopColor="#8B6510"/>
-          <stop offset="100%" stopColor="#6a4e00"/>
+        <linearGradient id="kRightFace" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#0d0d0d"/>
+          <stop offset="100%" stopColor="#1a1a1a"/>
         </linearGradient>
-        <linearGradient id="doorGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#E8C060"/>
-          <stop offset="100%" stopColor="#A07820"/>
+        <linearGradient id="kBandL" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#D4A820"/>
+          <stop offset="100%" stopColor="#9A6B00"/>
+        </linearGradient>
+        <linearGradient id="kBandR" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#8B6010"/>
+          <stop offset="100%" stopColor="#5a3d00"/>
+        </linearGradient>
+        <linearGradient id="kDoor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E8C060"/>
+          <stop offset="100%" stopColor="#9A7020"/>
         </linearGradient>
         {glow && (
-          <filter id="glowFilter">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
+          <filter id="kaGlow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
         )}
+        <filter id="kaShadow">
+          <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="rgba(0,0,0,0.7)"/>
+        </filter>
       </defs>
-      <rect x="2" y="10" width="76" height="2" fill="#5a3d00" opacity="0.5"/>
-      <rect x="2" y="2" width="76" height="10" rx="2" fill="url(#roofGrad)"/>
-      <rect x="2" y="2" width="76" height="3" rx="2" fill="#F0D070" opacity="0.6"/>
-      <rect x="2" y="10" width="76" height="1.5" fill="#6a4500"/>
-      <rect x="2" y="12" width="76" height="86" rx="1" fill="url(#bodyGrad)"/>
-      <rect x="2" y="12" width="5" height="86" fill="#C8991A" opacity="0.18"/>
-      <rect x="73" y="12" width="5" height="86" fill="#000" opacity="0.35"/>
-      <rect x="2" y="27" width="76" height="1.5" fill="#000" opacity="0.4"/>
-      <rect x="2" y="28" width="76" height="20" fill="url(#bandGrad)"/>
-      <rect x="2" y="28" width="76" height="2.5" fill="#E8C060" opacity="0.85"/>
-      <rect x="2" y="46" width="76" height="2" fill="#E8C060" opacity="0.7"/>
-      <rect x="2" y="47.5" width="76" height="1" fill="#000" opacity="0.35"/>
-      <rect x="8" y="32"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8" y="35.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8" y="39"  width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8" y="42.5" width="64" height="1.5" rx="0.75" fill="#4a3000" opacity="0.9"/>
-      <rect x="8" y="32"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-      <rect x="8" y="35.5" width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-      <rect x="8" y="39"  width="64" height="0.6" rx="0.3" fill="#E8C060" opacity="0.3"/>
-      {[15, 27, 40, 53, 65].map((x, i) => (
-        <g key={i}>
-          <polygon points={`${x},33.5 ${x+4},37.5 ${x},41.5 ${x-4},37.5`} fill="#E8C060" opacity="0.55"/>
-          <polygon points={`${x},34.5 ${x+2.5},37.5 ${x},40.5 ${x-2.5},37.5`} fill="#000" opacity="0.25"/>
-        </g>
+
+      {/* Ground shadow */}
+      <ellipse cx="50" cy="93" rx="28" ry="4.5" fill="rgba(0,0,0,0.4)"/>
+
+      {/* Left face (front-left) */}
+      <polygon points="20,32 50,18 50,88 20,80" fill="url(#kLeftFace)" filter="url(#kaShadow)"/>
+
+      {/* Right face (front-right) */}
+      <polygon points="50,18 80,32 80,80 50,88" fill="url(#kRightFace)"/>
+
+      {/* Top face (roof) */}
+      <polygon points="20,32 50,18 80,32 50,46" fill="url(#kTopFace)"/>
+
+      {/* Top face highlight */}
+      <polygon points="20,32 50,18 55,21 25,35" fill="#E8D070" opacity="0.25"/>
+
+      {/* Gold band left face */}
+      <polygon points="20,43 50,29 50,40 20,54" fill="url(#kBandL)" opacity="0.95"/>
+
+      {/* Gold band right face */}
+      <polygon points="50,29 80,43 80,54 50,40" fill="url(#kBandR)" opacity="0.95"/>
+
+      {/* Band top highlight */}
+      <line x1="20" y1="43" x2="50" y2="29" stroke="#F0D060" strokeWidth="0.7" opacity="0.8"/>
+      <line x1="50" y1="29" x2="80" y2="43" stroke="#C8A030" strokeWidth="0.7" opacity="0.5"/>
+
+      {/* Calligraphy lines on band - left */}
+      {[33, 36.5, 40].map((y, i) => (
+        <line key={i} x1={22 + i * 0.5} y1={y} x2={48 - i * 0.3} y2={y - 4.5}
+          stroke="#E8C060" strokeWidth="0.4" opacity="0.5"/>
       ))}
-      <rect x="31" y="62" width="18" height="26" rx="2" fill="url(#doorGrad)"/>
-      <rect x="33" y="64" width="14" height="22" rx="1.5" fill="#0a0a0a" opacity="0.6"/>
-      <rect x="34" y="65" width="12" height="20" rx="1" fill="#7a5200" opacity="0.3"/>
-      <rect x="35" y="66" width="4" height="18" rx="0.5" fill="#E8C060" opacity="0.15"/>
-      <rect x="41" y="66" width="4" height="18" rx="0.5" fill="#E8C060" opacity="0.15"/>
-      <rect x="35" y="74.5" width="10" height="1" fill="#E8C060" opacity="0.3"/>
-      <rect x="2" y="2" width="76" height="96" rx="2"
-        fill="none" stroke="#C8991A" strokeWidth="1" opacity="0.4"/>
+
+      {/* Calligraphy lines on band - right */}
+      {[33, 36.5, 40].map((y, i) => (
+        <line key={i} x1={52 + i * 0.3} y1={y - 4.5} x2={78 - i * 0.5} y2={y}
+          stroke="#9A6000" strokeWidth="0.4" opacity="0.4"/>
+      ))}
+
+      {/* Door - left face */}
+      <polygon points="30,60 40,55 40,82 30,82" fill="url(#kDoor)" opacity="0.9"/>
+      <polygon points="32,62 38,58 38,80 32,80" fill="#0d0d0d" opacity="0.6"/>
+      <line x1="35" y1="69" x2="35" y2="79" stroke="#E8C060" strokeWidth="0.5" opacity="0.5"/>
+      <line x1="32" y1="72" x2="38" y2="69" stroke="#E8C060" strokeWidth="0.4" opacity="0.4"/>
+
+      {/* Door handle */}
+      <circle cx="37" cy="70" r="1.2" fill="#E8C060" opacity="0.7"/>
+
+      {/* Edge highlights */}
+      <line x1="20" y1="32" x2="50" y2="18" stroke="#E8C060" strokeWidth="0.8" opacity="0.7"/>
+      <line x1="50" y1="18" x2="80" y2="32" stroke="#C8A030" strokeWidth="0.7" opacity="0.5"/>
+      <line x1="50" y1="18" x2="50" y2="88" stroke="#C8991A" strokeWidth="0.5" opacity="0.3"/>
+      <line x1="20" y1="32" x2="20" y2="80" stroke="#555" strokeWidth="0.4" opacity="0.4"/>
+      <line x1="80" y1="32" x2="80" y2="80" stroke="#222" strokeWidth="0.4" opacity="0.4"/>
+
+      {/* Glow when aligned */}
       {glow && (
-        <rect x="2" y="2" width="76" height="96" rx="2"
-          fill="none" stroke="#4ade80" strokeWidth="2" opacity="0.7"
-          filter="url(#glowFilter)"
-        />
+        <polygon points="20,32 50,18 80,32 80,80 50,88 20,80"
+          fill="none" stroke="#4ade80" strokeWidth="1.5" opacity="0.8"
+          filter="url(#kaGlow)"/>
       )}
     </svg>
   );
 }
 
-/* ── Compass face with degree numbers ──────────────────────── */
-function CompassFace({ isAligned }: { isAligned: boolean }) {
+/* ── Premium Compass Face ───────────────────────────────────── */
+function PremiumCompassFace({ isAligned }: { isAligned: boolean }) {
+  const cx = 150, cy = 150;
+  const outerR = 144;
+  const outerDecorR = 132;
+  const tickOuterR = 128;
+  const labelR = 114;
+
   const ticks = Array.from({ length: 72 }, (_, i) => {
-    const angle  = i * 5;
-    const isCard = angle % 90 === 0;
-    const isMid  = angle % 45 === 0 && !isCard;
-    const outerR = 120;
-    const innerR = isCard ? 102 : isMid ? 108 : 114;
-    const rad    = (angle * Math.PI) / 180;
+    const angle = i * 5;
+    const isMajor = angle % 30 === 0;
+    const isMed   = angle % 10 === 0 && !isMajor;
+    const innerR  = isMajor ? 116 : isMed ? 120 : 124;
+    const rad = (angle * Math.PI) / 180;
     return {
-      x1: 130 + outerR * Math.sin(rad), y1: 130 - outerR * Math.cos(rad),
-      x2: 130 + innerR * Math.sin(rad), y2: 130 - innerR * Math.cos(rad),
-      isCard, isMid,
+      x1: cx + tickOuterR * Math.sin(rad), y1: cy - tickOuterR * Math.cos(rad),
+      x2: cx + innerR     * Math.sin(rad), y2: cy - innerR     * Math.cos(rad),
+      isMajor, isMed,
     };
   });
 
-  /* Degree labels every 30°, but skip 0° (Kaaba is there) */
-  const degLabels = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
-  const labelR = 105;
+  const degLabels = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
 
-  const accent = isAligned ? '#4ade80' : 'var(--primary)';
+  /* 8-point star helper */
+  const starPts = (rcx: number, rcy: number, r1: number, r2: number, n: number, offsetDeg = 0) => {
+    return Array.from({ length: n * 2 }, (_, i) => {
+      const r   = i % 2 === 0 ? r1 : r2;
+      const ang = (i * Math.PI) / n + (offsetDeg * Math.PI) / 180 - Math.PI / 2;
+      return `${rcx + r * Math.cos(ang)},${rcy + r * Math.sin(ang)}`;
+    }).join(' ');
+  };
+
   return (
-    <svg viewBox="0 0 260 260" className="absolute inset-0 w-full h-full">
+    <svg viewBox="0 0 300 300" className="absolute inset-0 w-full h-full">
       <defs>
-        <radialGradient id="cBg" cx="50%" cy="45%" r="60%">
-          <stop offset="0%" stopColor="var(--card)" stopOpacity="1"/>
-          <stop offset="100%" stopColor="var(--background)" stopOpacity="1"/>
+        <radialGradient id="cBgGrad" cx="50%" cy="42%" r="65%">
+          <stop offset="0%"   stopColor="#1d2e1a"/>
+          <stop offset="55%"  stopColor="#111c0f"/>
+          <stop offset="100%" stopColor="#080e07"/>
         </radialGradient>
-        <filter id="glow">
+        <radialGradient id="cRoseGrad" cx="50%" cy="50%" r="55%">
+          <stop offset="0%"   stopColor="#243020"/>
+          <stop offset="100%" stopColor="#111a0e"/>
+        </radialGradient>
+        <linearGradient id="cNorth" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#4ade80"/>
+          <stop offset="100%" stopColor="#16a34a"/>
+        </linearGradient>
+        <filter id="cGlow">
           <feGaussianBlur stdDeviation="3" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
+        <filter id="cAlignGlow">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
       </defs>
-      <circle cx="130" cy="130" r="127" fill="url(#cBg)"/>
-      <circle cx="130" cy="130" r="125" fill="none"
-        stroke={accent} strokeWidth="2.5"
-        opacity={isAligned ? 0.85 : 0.4}
-        style={{ transition: 'stroke 0.5s, opacity 0.5s' }}
-      />
-      <circle cx="130" cy="130" r="90" fill="none"
-        stroke={accent} strokeWidth="0.5" opacity="0.12"/>
+
+      {/* Main background */}
+      <circle cx={cx} cy={cy} r={outerR} fill="url(#cBgGrad)"/>
+
+      {/* Outer border ring */}
+      <circle cx={cx} cy={cy} r={outerR}       fill="none" stroke="#C8991A" strokeWidth="2" opacity="0.9"/>
+      <circle cx={cx} cy={cy} r={outerR - 1.5} fill="none" stroke="#E8C060" strokeWidth="0.5" opacity="0.4"/>
+
+      {/* Outer decorative band */}
+      <circle cx={cx} cy={cy} r={outerDecorR} fill="none" stroke="#8B6010" strokeWidth="14" opacity="0.25"/>
+
+      {/* Inner border of decorative band */}
+      <circle cx={cx} cy={cy} r={outerDecorR - 7} fill="none" stroke="#C8991A" strokeWidth="1" opacity="0.6"/>
+
+      {/* Ornamental diamonds on outer ring */}
+      {Array.from({ length: 24 }, (_, i) => {
+        const ang = (i * 15 * Math.PI) / 180;
+        const r   = outerDecorR;
+        const x   = cx + r * Math.sin(ang);
+        const y   = cy - r * Math.cos(ang);
+        const s   = i % 2 === 0 ? 4.5 : 3;
+        return (
+          <rect key={i}
+            x={x - s / 2} y={y - s / 2} width={s} height={s}
+            transform={`rotate(${i * 15 + 45}, ${x}, ${y})`}
+            fill={i % 6 === 0 ? '#E8C060' : '#C8991A'}
+            opacity={i % 6 === 0 ? 0.9 : 0.6}
+          />
+        );
+      })}
+
+      {/* Small circles between diamonds */}
+      {Array.from({ length: 24 }, (_, i) => {
+        const ang = ((i * 15 + 7.5) * Math.PI) / 180;
+        const r   = outerDecorR;
+        const x   = cx + r * Math.sin(ang);
+        const y   = cy - r * Math.cos(ang);
+        return <circle key={i} cx={x} cy={y} r="1.5" fill="#C8991A" opacity="0.5"/>;
+      })}
 
       {/* Tick marks */}
       {ticks.map((t, i) => (
         <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
-          stroke={t.isCard ? 'var(--primary)' : t.isMid ? 'var(--primary)' : 'var(--border)'}
-          strokeWidth={t.isCard ? 2.5 : t.isMid ? 1.5 : 0.8}
-          opacity={t.isCard ? 1 : t.isMid ? 0.55 : 0.35}
+          stroke={t.isMajor ? '#C8991A' : t.isMed ? '#9A7828' : '#5a4010'}
+          strokeWidth={t.isMajor ? 2.2 : t.isMed ? 1.2 : 0.7}
+          opacity={t.isMajor ? 1 : t.isMed ? 0.75 : 0.4}
         />
       ))}
 
       {/* Degree numbers every 30° */}
-      {degLabels.map((deg) => {
+      {degLabels.map(deg => {
         const rad = (deg * Math.PI) / 180;
-        const x = 130 + labelR * Math.sin(rad);
-        const y = 130 - labelR * Math.cos(rad);
+        const x = cx + labelR * Math.sin(rad);
+        const y = cy - labelR * Math.cos(rad);
+        const isNorth = deg === 0;
         return (
-          <text
-            key={deg}
-            x={x} y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="var(--muted-foreground)"
-            fontSize="8"
-            fontFamily="Tajawal,sans-serif"
-            opacity="0.65"
+          <text key={deg} x={x} y={y}
+            textAnchor="middle" dominantBaseline="middle"
+            fill={isNorth ? (isAligned ? '#4ade80' : '#E8C060') : '#C8991A'}
+            fontSize={isNorth ? 9.5 : 8.5}
+            fontWeight={isNorth ? 'bold' : 'normal'}
+            fontFamily="Tajawal,monospace"
+            opacity={isNorth ? 1 : 0.9}
             transform={`rotate(${deg}, ${x}, ${y})`}
           >
             {deg}
@@ -163,87 +264,103 @@ function CompassFace({ isAligned }: { isAligned: boolean }) {
         );
       })}
 
-      {/* Cardinal labels — ش (N) at top, ق (E) right, ج (S) bottom, غ (W) left */}
-      <text x="130" y="14" textAnchor="middle" fill="#ef4444" fontSize="13" fontWeight="bold" fontFamily="Tajawal,sans-serif">ش</text>
-      <text x="247" y="135" textAnchor="middle" fill="var(--primary)" fontSize="11" fontFamily="Tajawal,sans-serif" opacity="0.8">ق</text>
-      <text x="130" y="250" textAnchor="middle" fill="var(--primary)" fontSize="11" fontFamily="Tajawal,sans-serif" opacity="0.8">ج</text>
-      <text x="13"  y="135" textAnchor="middle" fill="var(--primary)" fontSize="11" fontFamily="Tajawal,sans-serif" opacity="0.8">غ</text>
+      {/* Inner compass area background */}
+      <circle cx={cx} cy={cy} r={100} fill="url(#cRoseGrad)"/>
+      <circle cx={cx} cy={cy} r={100} fill="none" stroke="#C8991A" strokeWidth="1.2" opacity="0.55"/>
+      <circle cx={cx} cy={cy} r={98} fill="none" stroke="#E8C060" strokeWidth="0.4" opacity="0.2"/>
+
+      {/* 16-point compass rose — main 4 cardinal points */}
+      <polygon points={starPts(cx, cy, 90, 22, 4)}
+        fill="#2d4a2a" stroke="#C8991A" strokeWidth="1" opacity="0.95"/>
+
+      {/* 16-point compass rose — 4 inter-cardinal points (45° rotated) */}
+      <polygon points={starPts(cx, cy, 65, 18, 4, 45)}
+        fill="#243a20" stroke="#8B6010" strokeWidth="0.8" opacity="0.85"/>
+
+      {/* 16-point compass rose — 8 smaller points */}
+      <polygon points={starPts(cx, cy, 48, 14, 8, 22.5)}
+        fill="#1d2e1a" stroke="#6B4A10" strokeWidth="0.6" opacity="0.7"/>
+
+      {/* Cardinal direction labels on rose */}
+      <text x={cx} y={cy - 72} textAnchor="middle" dominantBaseline="middle"
+        fill={isAligned ? '#4ade80' : '#E8C060'}
+        fontSize="11" fontWeight="bold" fontFamily="Tajawal,sans-serif"
+        style={{ transition: 'fill 0.5s' }}>ش</text>
+      <text x={cx + 72} y={cy} textAnchor="middle" dominantBaseline="middle"
+        fill="#C8991A" fontSize="9" fontFamily="Tajawal,sans-serif" opacity="0.9">ق</text>
+      <text x={cx} y={cy + 72} textAnchor="middle" dominantBaseline="middle"
+        fill="#C8991A" fontSize="9" fontFamily="Tajawal,sans-serif" opacity="0.9">ج</text>
+      <text x={cx - 72} y={cy} textAnchor="middle" dominantBaseline="middle"
+        fill="#C8991A" fontSize="9" fontFamily="Tajawal,sans-serif" opacity="0.9">غ</text>
+
+      {/* Inner decorative rings */}
+      <circle cx={cx} cy={cy} r={28} fill="#141e12" stroke="#C8991A" strokeWidth="0.8" opacity="0.8"/>
+      <circle cx={cx} cy={cy} r={22} fill="#0e160c" stroke="#8B6010" strokeWidth="0.6" opacity="0.7"/>
+
+      {/* Small star in center ring */}
+      <polygon points={starPts(cx, cy, 18, 9, 8)} fill="#1d2e1a" stroke="#C8991A" strokeWidth="0.5" opacity="0.6"/>
+
+      {/* Alignment glow */}
+      {isAligned && (
+        <>
+          <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#4ade80"
+            strokeWidth="3" opacity="0.35" filter="url(#cAlignGlow)"/>
+          <circle cx={cx} cy={cy} r={100} fill="none" stroke="#4ade80"
+            strokeWidth="1.5" opacity="0.2" filter="url(#cGlow)"/>
+        </>
+      )}
     </svg>
   );
 }
 
-/* ── Qibla Arrow — tip always at TOP of SVG ─────────────────
-   Fix: we add 180° externally so tip actually faces Qibla.
-───────────────────────────────────────────────────────────── */
+/* ── Glowing Qibla Arrow ────────────────────────────────────── */
 function QiblaArrow({ isAligned, isSearching }: { isAligned: boolean; isSearching: boolean }) {
-  const tipColor   = isAligned ? '#4ade80' : 'var(--primary)';
-  const shaftColor = isAligned ? 'rgba(74,222,128,0.45)' : 'rgba(193,154,107,0.45)';
-  const glowColor  = isAligned ? 'rgba(74,222,128,0.9)' : 'transparent';
-  const glowBlur   = isAligned ? '8px' : '0px';
-
   return (
-    <svg
-      width="44"
-      height="180"
-      viewBox="0 0 44 180"
-      style={{
-        overflow: 'visible',
-        filter: isAligned
-          ? `drop-shadow(0 0 ${glowBlur} ${glowColor})`
-          : `drop-shadow(0 2px 6px rgba(0,0,0,0.35))`,
-        transition: 'filter 0.5s',
-      }}
-    >
+    <svg width="54" height="210" viewBox="0 0 54 210" style={{
+      overflow: 'visible',
+      filter: isAligned
+        ? 'drop-shadow(0 0 10px rgba(74,222,128,1)) drop-shadow(0 0 22px rgba(74,222,128,0.6))'
+        : 'drop-shadow(0 0 7px rgba(74,222,128,0.7)) drop-shadow(0 0 14px rgba(74,222,128,0.3))',
+      transition: 'filter 0.5s',
+    }}>
       <defs>
-        {isAligned && (
-          <filter id="arrowGlow">
-            <feGaussianBlur stdDeviation="4" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        )}
-        <linearGradient id="arrowShaft" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={tipColor} stopOpacity="0.7"/>
-          <stop offset="100%" stopColor={tipColor} stopOpacity="0.15"/>
+        <linearGradient id="arShaft" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#4ade80" stopOpacity="0.9"/>
+          <stop offset="100%" stopColor="#4ade80" stopOpacity="0.15"/>
         </linearGradient>
+        <filter id="arGlowF">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
       </defs>
 
       {/* Shaft */}
-      <rect
-        x="18" y="40" width="8" height="120" rx="4"
-        fill="url(#arrowShaft)"
-        style={{ transition: 'fill 0.5s' }}
-      />
+      <rect x="22" y="50" width="10" height="125" rx="5" fill="url(#arShaft)"/>
 
-      {/* Tail fin */}
-      <polygon
-        points="22,160 14,145 22,150 30,145"
-        fill={shaftColor}
-        style={{ transition: 'fill 0.5s' }}
-      />
+      {/* Tail fins */}
+      <polygon points="27,175 17,155 27,162 37,155" fill="rgba(74,222,128,0.5)"/>
+      <polygon points="27,190 20,178 27,183 34,178" fill="rgba(74,222,128,0.3)"/>
 
-      {/* Arrowhead — pointing UP (tip at y=2) */}
-      <polygon
-        points="22,2 6,44 22,36 38,44"
-        fill={tipColor}
-        filter={isAligned ? 'url(#arrowGlow)' : undefined}
-        style={{ transition: 'fill 0.5s' }}
-      />
+      {/* Main arrowhead — tip at top */}
+      <polygon points="27,3 9,55 27,43 45,55"
+        fill="#4ade80" filter="url(#arGlowF)"/>
 
-      {/* Highlight */}
-      <polygon
-        points="22,4 14,30 22,25"
-        fill="white"
-        opacity={isAligned ? 0.35 : 0.15}
-        style={{ transition: 'opacity 0.5s' }}
-      />
+      {/* Secondary arrowhead wing accents */}
+      <polygon points="27,3 9,55 18,45" fill="rgba(74,222,128,0.5)"/>
+      <polygon points="27,3 45,55 36,45" fill="rgba(74,222,128,0.3)"/>
+
+      {/* Highlight on tip */}
+      <polygon points="27,5 17,35 27,28" fill="rgba(255,255,255,0.45)"/>
     </svg>
   );
 }
 
-/* ── Main Qibla Page ─────────────────────────────────────── */
+/* ── Kaaba simple fallback for error/loading states ─────────── */
+function KaabaSimple({ size = 56 }: { size?: number }) {
+  return <KaabaIcon3D size={size}/>;
+}
+
+/* ── Main Qibla Page ────────────────────────────────────────── */
 export function Qibla() {
   const { heading, isSupported, requestPermission } = useCompass();
   const { coords, error: geoError, isLoading: geoLoading, requestLocation } = useGeolocation(true);
@@ -251,13 +368,12 @@ export function Qibla() {
   const qiblaAngle = coords ? calculateQibla(coords.lat, coords.lng) : 0;
 
   /*
-   * +180 corrects the heading reference so the TIP (not tail) of the arrow
-   * points toward Qibla. Without this correction the device heading is
-   * measured from the back of the phone, so the arrow ends up inverted.
+   * FIXED: Removed the incorrect +180 offset that was reversing the direction.
+   * Correct formula: rotate arrow by (qiblaAngle - deviceHeading).
+   * If the phone faces North (heading=0) and Qibla is at 135°, arrow points to 135°.
    */
-  const arrowAngle = ((qiblaAngle - (heading ?? 0) + 180) % 360 + 360) % 360;
+  const arrowAngle = ((qiblaAngle - (heading ?? 0)) % 360 + 360) % 360;
   const isAligned  = heading !== null && coords !== null && (arrowAngle < 8 || arrowAngle > 352);
-
   const isSearching = heading === null || !coords;
 
   const wasAligned = useRef(false);
@@ -268,14 +384,15 @@ export function Qibla() {
     wasAligned.current = isAligned;
   }, [isAligned]);
 
-  const SIZE = 290;
+  const SIZE = 300;
 
   const renderContent = () => {
     if (geoLoading) {
       return (
-        <div className="flex flex-col items-center gap-5">
-          <div className="w-20 h-20 rounded-full border-4 border-primary/30 border-t-primary animate-spin"/>
-          <p className="text-primary font-bold text-lg" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-20 h-20 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(200,153,26,0.3)', borderTopColor: '#C8991A' }}/>
+          <p className="font-bold text-lg" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C8991A' }}>
             جاري تحديد موقعك...
           </p>
         </div>
@@ -285,22 +402,21 @@ export function Qibla() {
     if (geoError || !coords) {
       return (
         <div className="flex flex-col items-center gap-6 text-center max-w-xs w-full">
-          <div className="opacity-70"><KaabaIcon size={72}/></div>
-          <div className="bg-card border border-border rounded-3xl p-5 w-full shadow-sm">
-            <p className="font-bold text-base mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+          <div className="opacity-80"><KaabaSimple size={70}/></div>
+          <div className="rounded-3xl p-5 w-full border"
+            style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(200,153,26,0.3)' }}>
+            <p className="font-bold text-base mb-2" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
               تحديد اتجاه القبلة
             </p>
             {geoError && (
-              <p className="text-sm text-destructive mb-3" style={{ fontFamily: '"Tajawal", sans-serif' }}>{geoError}</p>
+              <p className="text-sm mb-3" style={{ fontFamily: '"Tajawal", sans-serif', color: '#f87171' }}>{geoError}</p>
             )}
-            <p className="text-sm text-muted-foreground mb-4" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            <p className="text-sm mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#8B9070' }}>
               يحتاج التطبيق إلى موقعك لحساب اتجاه القبلة
             </p>
-            <button
-              onClick={requestLocation}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm bg-primary text-primary-foreground"
-              style={{ fontFamily: '"Tajawal", sans-serif' }}
-            >
+            <button onClick={requestLocation}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm"
+              style={{ fontFamily: '"Tajawal", sans-serif', background: '#C8991A', color: '#0d0d0d' }}>
               <MapPin className="w-4 h-4"/>
               تحديد موقعي
             </button>
@@ -312,12 +428,17 @@ export function Qibla() {
     if (!isSupported) {
       return (
         <div className="flex flex-col items-center gap-5 text-center max-w-xs">
-          <KaabaIcon size={72}/>
-          <div className="bg-card border border-border rounded-3xl p-5 w-full shadow-sm">
-            <p className="font-bold text-base mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>البوصلة غير مدعومة</p>
-            <p className="text-sm text-muted-foreground mb-3" style={{ fontFamily: '"Tajawal", sans-serif' }}>اتجاه القبلة من موقعك</p>
-            <p className="text-5xl font-black text-primary">{Math.round(qiblaAngle)}°</p>
-            <p className="text-sm text-muted-foreground mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>شمالاً</p>
+          <KaabaSimple size={70}/>
+          <div className="rounded-3xl p-5 w-full border"
+            style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(200,153,26,0.3)' }}>
+            <p className="font-bold text-base mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
+              البوصلة غير مدعومة
+            </p>
+            <p className="text-sm mb-3" style={{ fontFamily: '"Tajawal", sans-serif', color: '#8B9070' }}>
+              اتجاه القبلة من موقعك
+            </p>
+            <p className="text-5xl font-black" style={{ color: '#C8991A' }}>{Math.round(qiblaAngle)}°</p>
+            <p className="text-sm mt-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#8B9070' }}>شمالاً</p>
           </div>
         </div>
       );
@@ -329,145 +450,147 @@ export function Qibla() {
     if (needsIOSPermission) {
       return (
         <div className="flex flex-col items-center gap-5 w-full max-w-xs text-center">
-          <KaabaIcon size={72}/>
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5 w-full">
-            <p className="font-bold text-amber-600 mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>تفعيل البوصلة</p>
-            <p className="text-sm text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+          <KaabaSimple size={70}/>
+          <div className="rounded-3xl p-5 w-full border"
+            style={{ background: 'rgba(200,153,26,0.08)', borderColor: 'rgba(200,153,26,0.3)' }}>
+            <p className="font-bold mb-2" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
+              تفعيل البوصلة
+            </p>
+            <p className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#8B9070' }}>
               اضغط للسماح بالوصول لحساس الاتجاه
             </p>
           </div>
-          <button
-            onClick={requestPermission}
-            className="w-full py-3.5 rounded-2xl font-bold text-sm bg-primary text-primary-foreground"
-            style={{ fontFamily: '"Tajawal", sans-serif' }}
-          >
+          <button onClick={requestPermission}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm"
+            style={{ fontFamily: '"Tajawal", sans-serif', background: '#C8991A', color: '#0d0d0d' }}>
             تفعيل البوصلة
           </button>
         </div>
       );
     }
 
-    /* ── Full compass ────────────────────────────────────────── */
+    /* ── Full compass ─────────────────────────────────────────── */
     return (
-      <div className="flex flex-col items-center gap-6 w-full">
+      <div className="flex flex-col items-center gap-5 w-full">
 
-        {/* Status badge */}
-        <div className={`px-6 py-3 rounded-2xl text-center transition-all duration-500 ${
+        {/* Status badge / pill */}
+        <div className={`px-8 py-3 rounded-2xl text-center transition-all duration-500 ${
           isAligned
-            ? 'bg-green-500/15 border border-green-500/40'
-            : 'bg-card border border-border'
-        }`}>
+            ? 'border border-green-500/50'
+            : 'border'
+        }`} style={{
+          background: isAligned
+            ? 'rgba(34,197,94,0.18)'
+            : 'rgba(200,153,26,0.12)',
+          borderColor: isAligned
+            ? 'rgba(74,222,128,0.45)'
+            : 'rgba(200,153,26,0.3)',
+          boxShadow: isAligned
+            ? '0 0 20px rgba(74,222,128,0.2)'
+            : 'none',
+        }}>
           {isAligned ? (
-            <p className="font-bold text-base text-green-600 dark:text-green-400" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif', color: '#4ade80' }}>
               أنت في اتجاه القبلة ✓
             </p>
           ) : isSearching ? (
-            <p className="font-bold text-sm text-primary" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C8991A' }}>
               جاري البحث عن اتجاه القبلة...
             </p>
           ) : (
             <div>
-              <p className="font-bold text-sm text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8D090' }}>
                 وجّه هاتفك نحو الكعبة المشرفة
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#8B7040' }}>
                 القبلة على بُعد {Math.round(qiblaAngle)}° من الشمال
               </p>
             </div>
           )}
         </div>
 
-        {/* Compass ring */}
+        {/* Compass container */}
         <div className="relative" style={{ width: SIZE, height: SIZE }}>
 
-          {/* Outer glow ring */}
-          <div className="absolute inset-0 rounded-full transition-all duration-700"
-            style={{
-              boxShadow: isAligned
-                ? '0 0 0 3px rgba(74,222,128,0.6), 0 0 48px rgba(74,222,128,0.2)'
-                : '0 0 0 2px rgba(193,154,107,0.3), 0 0 28px rgba(193,154,107,0.07)',
-            }}
-          />
+          {/* Premium compass face */}
+          <PremiumCompassFace isAligned={isAligned}/>
 
-          {/* Static compass face with degree numbers */}
-          <CompassFace isAligned={isAligned} />
-
-          {/* Kaaba fixed at 12 o'clock */}
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              top: 2,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              filter: isAligned
-                ? 'drop-shadow(0 0 10px rgba(74,222,128,0.8))'
-                : 'drop-shadow(0 2px 5px rgba(0,0,0,0.5))',
-              transition: 'filter 0.5s',
-            }}
-          >
-            <KaabaIcon size={40} glow={isAligned} />
+          {/* 3D Kaaba fixed at 12 o'clock (north) */}
+          <div className="absolute pointer-events-none z-10" style={{
+            top: -22,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            filter: isAligned
+              ? 'drop-shadow(0 0 14px rgba(74,222,128,0.9))'
+              : 'drop-shadow(0 4px 10px rgba(0,0,0,0.8))',
+            transition: 'filter 0.5s',
+          }}>
+            <KaabaIcon3D size={72} glow={isAligned}/>
           </div>
 
-          {/* Rotating arrow — points toward Qibla */}
+          {/* Rotating arrow pointing to Qibla */}
           <div
-            className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 ${isSearching ? 'animate-spin' : ''}`}
+            className={`absolute inset-0 flex items-center justify-center pointer-events-none z-20 ${isSearching ? 'animate-spin' : ''}`}
             style={isSearching ? { animationDuration: '1.8s' } : {
               transform: `rotate(${arrowAngle}deg)`,
               transition: heading !== null ? 'transform 0.15s ease-out' : 'none',
             }}
           >
-            <QiblaArrow isAligned={isAligned} isSearching={isSearching} />
+            <QiblaArrow isAligned={isAligned} isSearching={isSearching}/>
           </div>
 
           {/* Center pivot dot */}
-          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-            <div
-              className="w-4 h-4 rounded-full transition-all duration-500"
-              style={{
-                background: isAligned ? '#4ade80' : 'var(--primary)',
-                border: '3px solid var(--background)',
-                boxShadow: isAligned
-                  ? '0 0 12px rgba(74,222,128,0.9)'
-                  : '0 0 7px rgba(193,154,107,0.5)',
-              }}
-            />
+          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+            <div className="w-5 h-5 rounded-full transition-all duration-500" style={{
+              background: '#4ade80',
+              border: '3px solid #0d150d',
+              boxShadow: '0 0 14px rgba(74,222,128,0.9), 0 0 28px rgba(74,222,128,0.4)',
+            }}/>
           </div>
         </div>
 
         {/* Coordinates */}
         {coords && (
-          <p className="text-xs text-muted-foreground/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            موقعك: {coords.lat.toFixed(4)}°، {coords.lng.toFixed(4)}°
-          </p>
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-3 h-3" style={{ color: '#6B5030' }}/>
+            <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B5030' }}>
+              موقعك: {coords.lat.toFixed(4)}°، {coords.lng.toFixed(4)}°
+            </p>
+          </div>
         )}
       </div>
     );
   };
 
   return (
-    <div className="h-screen flex flex-col max-w-lg mx-auto bg-background" dir="rtl">
+    <div className="h-screen flex flex-col max-w-lg mx-auto relative overflow-hidden" dir="rtl"
+      style={{ background: 'linear-gradient(180deg, #121b10 0%, #0c1309 50%, #080e06 100%)' }}>
+
+      {/* Islamic background watermark */}
+      <IslamicBg/>
+
       {/* Header */}
-      <div className="px-4 py-4 flex items-center gap-4 bg-card shadow-sm border-b border-border flex-shrink-0">
+      <div className="relative z-10 px-4 py-4 flex items-center gap-4 flex-shrink-0 border-b"
+        style={{ background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(200,153,26,0.2)' }}>
         <Link href="/more">
-          <button className="p-2 bg-secondary rounded-full">
-            <ArrowLeft className="w-5 h-5" />
+          <button className="p-2 rounded-full" style={{ background: 'rgba(200,153,26,0.15)' }}>
+            <ArrowLeft className="w-5 h-5" style={{ color: '#C8991A' }}/>
           </button>
         </Link>
-        <h1 className="font-bold text-xl" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+        <h1 className="font-bold text-xl" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
           تحديد القبلة
         </h1>
         {(geoError || (!geoLoading && !coords)) && (
-          <button
-            onClick={requestLocation}
-            className="mr-auto p-2 rounded-full bg-secondary"
-            title="إعادة المحاولة"
-          >
-            <RotateCcw className="w-4 h-4 text-primary"/>
+          <button onClick={requestLocation}
+            className="mr-auto p-2 rounded-full"
+            style={{ background: 'rgba(200,153,26,0.15)' }}
+            title="إعادة المحاولة">
+            <RotateCcw className="w-4 h-4" style={{ color: '#C8991A' }}/>
           </button>
         )}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4">
         {renderContent()}
       </div>
     </div>
