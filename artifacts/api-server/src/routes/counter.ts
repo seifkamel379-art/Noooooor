@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { db, globalCounter } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, globalCounter, sohbaLeaderboard } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -10,7 +10,8 @@ const WRITE_BATCH = 20;
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 let dbInitialized = false;
 
-const sseClients = new Set<Response>();
+/* Track unique sessions (one per browser tab/session) */
+const sseClients = new Map<string, Response>();
 
 async function initCounter() {
   try {
@@ -33,11 +34,11 @@ initCounter();
 
 function broadcastToAll(data: { count: number; activeUsers: number }) {
   const msg = `data: ${JSON.stringify(data)}\n\n`;
-  for (const client of sseClients) {
+  for (const [, client] of sseClients) {
     try {
       client.write(msg);
     } catch {
-      sseClients.delete(client);
+      /* client disconnected – will be cleaned up on close event */
     }
   }
 }
@@ -73,6 +74,10 @@ router.get("/counter", (_req, res) => {
 });
 
 router.get("/counter/stream", (req: Request, res: Response) => {
+  /* Each browser session sends a unique sid so returning users aren't
+     double-counted when they leave and come back to the page. */
+  const sid = (req.query.sid as string | undefined) || `anon-${Date.now()}-${Math.random()}`;
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -80,12 +85,16 @@ router.get("/counter/stream", (req: Request, res: Response) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.flushHeaders();
 
-  sseClients.add(res);
+  /* Close any previous connection from the same session */
+  const existing = sseClients.get(sid);
+  if (existing) {
+    try { existing.end(); } catch { /* ignore */ }
+  }
+  sseClients.set(sid, res);
 
   res.write(
     `data: ${JSON.stringify({ count: cachedCount, activeUsers: sseClients.size })}\n\n`
   );
-
   broadcastToAll({ count: cachedCount, activeUsers: sseClients.size });
 
   const heartbeat = setInterval(() => {
@@ -93,13 +102,13 @@ router.get("/counter/stream", (req: Request, res: Response) => {
       res.write(": ping\n\n");
     } catch {
       clearInterval(heartbeat);
-      sseClients.delete(res);
+      sseClients.delete(sid);
     }
   }, 25000);
 
   req.on("close", () => {
     clearInterval(heartbeat);
-    sseClients.delete(res);
+    sseClients.delete(sid);
     broadcastToAll({ count: cachedCount, activeUsers: sseClients.size });
   });
 });
@@ -110,6 +119,23 @@ router.post("/counter/increment", (req: Request, res: Response) => {
   scheduleWrite();
   broadcastToAll({ count: cachedCount, activeUsers: sseClients.size });
   res.json({ count: cachedCount });
+});
+
+/* Leaderboard sorted by tasbeeh count (public users only) */
+router.get("/counter/leaderboard", async (_req, res) => {
+  try {
+    const rows = await db
+      .select()
+      .from(sohbaLeaderboard)
+      .where(eq(sohbaLeaderboard.isPublic, true))
+      .orderBy(desc(sohbaLeaderboard.tasbeehCount))
+      .limit(50);
+
+    return res.json({ leaderboard: rows });
+  } catch (err) {
+    console.error("[Counter] Leaderboard error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;

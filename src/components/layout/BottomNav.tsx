@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, BookOpen, Heart, Menu, Globe } from "lucide-react";
+import { House, BookOpen, Sparkles, Users, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TasbihIcon } from "@/components/NoorIcons";
 
@@ -9,12 +9,12 @@ const NAV_ITEMS: {
   Icon: React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
   label: string;
 }[] = [
-  { id: "home",    path: "/",         Icon: Home,       label: "الرئيسية"  },
-  { id: "quran",   path: "/quran",    Icon: BookOpen,   label: "القرآن"    },
-  { id: "azkar",   path: "/azkar",    Icon: Heart,      label: "الأذكار"   },
-  { id: "tasbih",  path: "/tasbih",   Icon: TasbihIcon, label: "التسبيح"   },
-  { id: "counter", path: "/counter",  Icon: Globe,      label: "العداد"    },
-  { id: "more",    path: "/more",     Icon: Menu,       label: "المزيد"    },
+  { id: "home",    path: "/",        Icon: House,      label: "الرئيسية" },
+  { id: "quran",   path: "/quran",   Icon: BookOpen,   label: "القرآن"   },
+  { id: "azkar",   path: "/azkar",   Icon: Sparkles,   label: "الأذكار"  },
+  { id: "tasbih",  path: "/tasbih",  Icon: TasbihIcon, label: "التسبيح"  },
+  { id: "counter", path: "/counter", Icon: Users,      label: "العداد"   },
+  { id: "more",    path: "/more",    Icon: LayoutGrid, label: "المزيد"   },
 ];
 
 export function BottomNav() {
@@ -31,7 +31,7 @@ export function BottomNav() {
               <div
                 className={cn(
                   "flex flex-col items-center justify-center h-full gap-1 transition-all duration-300",
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <div

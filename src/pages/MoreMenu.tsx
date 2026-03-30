@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ChevronLeft, Sun, Moon, LogOut, Share2, Star } from 'lucide-react';
+import {
+  ChevronLeft, Sun, Moon, LogOut, Share2,
+  Star, Copy, X, Send, Check,
+} from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut } from '@/lib/firebase';
@@ -24,10 +27,10 @@ function IslamicPattern() {
       <g fill="#C19A6B">
         {[20, 60, 100, 140, 180].map((cx, i) => (
           <g key={i}>
-            <polygon points={`${cx},5 ${cx+5},17 ${cx+18},17 ${cx+7},25 ${cx+11},38 ${cx},30 ${cx-11},38 ${cx-7},25 ${cx-18},17 ${cx-5},17`} opacity={0.7} />
+            <polygon points={`${cx},5 ${cx + 5},17 ${cx + 18},17 ${cx + 7},25 ${cx + 11},38 ${cx},30 ${cx - 11},38 ${cx - 7},25 ${cx - 18},17 ${cx - 5},17`} opacity={0.7} />
           </g>
         ))}
-        <line x1="0" y1="20" x2="200" y2="20" stroke="#C19A6B" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 8"/>
+        <line x1="0" y1="20" x2="200" y2="20" stroke="#C19A6B" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 8" />
       </g>
     </svg>
   );
@@ -36,17 +39,13 @@ function IslamicPattern() {
 function QiblaCompassIcon({ className = '', size = 24 }: { className?: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/>
-      <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="0.8" opacity="0.5"/>
-      {/* Needle up (gold) */}
-      <polygon points="12,4 10.5,10 12,9 13.5,10" fill="currentColor" opacity="0.9"/>
-      {/* Needle down */}
-      <polygon points="12,20 10.5,14 12,15 13.5,14" fill="currentColor" opacity="0.4"/>
-      {/* Kaaba small */}
-      <rect x="10.5" y="2.5" width="3" height="3.5" rx="0.3" fill="currentColor" opacity="0.8"/>
-      <line x1="10.5" y1="3.8" x2="13.5" y2="3.8" stroke="currentColor" strokeWidth="0.6" opacity="0.6"/>
-      {/* Center */}
-      <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+      <polygon points="12,4 10.5,10 12,9 13.5,10" fill="currentColor" opacity="0.9" />
+      <polygon points="12,20 10.5,14 12,15 13.5,14" fill="currentColor" opacity="0.4" />
+      <rect x="10.5" y="2.5" width="3" height="3.5" rx="0.3" fill="currentColor" opacity="0.8" />
+      <line x1="10.5" y1="3.8" x2="13.5" y2="3.8" stroke="currentColor" strokeWidth="0.6" opacity="0.6" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" />
     </svg>
   );
 }
@@ -72,28 +71,118 @@ function LogoutConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; o
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold text-sm hover:bg-secondary/80 transition-colors"
+            className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold text-sm transition-colors"
             style={{ fontFamily: '"Tajawal", sans-serif' }}
-          >
-            إلغاء
-          </button>
+          >إلغاء</button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-colors"
+            className="flex-1 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm transition-colors"
             style={{ fontFamily: '"Tajawal", sans-serif' }}
-          >
-            خروج
-          </button>
+          >خروج</button>
         </div>
       </motion.div>
     </div>
   );
 }
 
-function FeatureChip({ Icon, text, color }: { Icon: React.ComponentType<{ className?: string; size?: number }>; text: string; color: string }) {
+/* ── Share chooser bottom sheet ─────────────────────────── */
+function ShareChooserSheet({ onClose }: { onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const APP_URL = 'https://noor-web--noorweb1000.replit.app/';
+  const MESSAGE = 'السلام عليكم ورحمة الله.. حبيت أهديك تطبيق (Noor App)، تطبيق إسلامي مميز وبدون إعلانات، بيساعدك تحافظ على أذكارك وصلاتك.\n\nقال ﷺ: «الدال على الخير كفاعله».. حمله من هنا وشاركنا الأجر:\n' + APP_URL + '\nنسألكم الدعاء';
+
+  const encoded = encodeURIComponent(MESSAGE);
+
+  const shareOptions = [
+    {
+      label: 'واتساب',
+      color: '#25D366',
+      icon: (
+        <svg width={22} height={22} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+        </svg>
+      ),
+      action: () => { window.open(`https://wa.me/?text=${encoded}`, '_blank'); onClose(); },
+    },
+    {
+      label: 'تيليجرام',
+      color: '#0088cc',
+      icon: <Send size={22} />,
+      action: () => { window.open(`https://t.me/share/url?url=${encodeURIComponent(APP_URL)}&text=${encodeURIComponent(MESSAGE.split('\n')[0])}`, '_blank'); onClose(); },
+    },
+    {
+      label: 'مشاركة عامة',
+      color: 'hsl(var(--primary))',
+      icon: <Share2 size={22} />,
+      action: async () => {
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'تطبيق نُور', text: MESSAGE, url: APP_URL });
+          } catch { /* dismissed */ }
+        }
+        onClose();
+      },
+      hidden: typeof navigator === 'undefined' || !navigator.share,
+    },
+    {
+      label: copied ? 'تم النسخ!' : 'نسخ الرابط',
+      color: copied ? '#4ade80' : 'hsl(var(--foreground))',
+      icon: copied ? <Check size={22} /> : <Copy size={22} />,
+      action: async () => {
+        try {
+          await navigator.clipboard.writeText(APP_URL);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch { /* ignore */ }
+      },
+    },
+  ].filter(o => !o.hidden);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" dir="rtl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ y: 80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 80, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        className="relative w-full max-w-md bg-card border-t border-border rounded-t-3xl p-5 pb-10 shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            الدال على الخير كفاعله
+          </h3>
+          <button onClick={onClose} className="p-1.5 bg-secondary rounded-full">
+            <X size={16} className="text-muted-foreground" />
+          </button>
+        </div>
+
+        <p className="text-xs text-muted-foreground mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+          اختر التطبيق الذي تريد إرسال الدعوة من خلاله
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          {shareOptions.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={opt.action}
+              className="flex flex-col items-center gap-2.5 py-4 rounded-2xl border border-border/50 bg-secondary/30 transition-all active:scale-95"
+              style={{ fontFamily: '"Tajawal", sans-serif' }}
+            >
+              <span style={{ color: opt.color }}>{opt.icon}</span>
+              <span className="text-sm font-bold text-foreground">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function FeatureChip({ Icon, text }: { Icon: React.ComponentType<{ className?: string; size?: number }>; text: string }) {
   return (
     <div className="flex items-center gap-2 bg-secondary/40 rounded-xl px-3 py-2.5">
-      <Icon className={`w-4 h-4 flex-shrink-0 ${color}`} size={16} />
+      <Icon className="w-4 h-4 flex-shrink-0 text-primary" size={16} />
       <span className="text-xs text-foreground/80 leading-tight" style={{ fontFamily: '"Tajawal", sans-serif' }}>{text}</span>
     </div>
   );
@@ -102,6 +191,7 @@ function FeatureChip({ Icon, text, color }: { Icon: React.ComponentType<{ classN
 export function MoreMenu() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -119,68 +209,22 @@ export function MoreMenu() {
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
 
   const MENU_ITEMS = [
-    {
-      Icon: HadithIcon,
-      label: 'الأحاديث الشريفة',
-      path: '/hadith',
-      color: 'text-amber-700',
-      bg: 'bg-amber-500/10',
-      desc: 'أحاديث النبي ﷺ من كبار المصادر',
-    },
-    {
-      Icon: QiblaCompassIcon,
-      label: 'تحديد القبلة',
-      path: '/qibla',
-      color: 'text-primary',
-      bg: 'bg-primary/10',
-      desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة',
-    },
-    {
-      Icon: RadioIcon,
-      label: 'الإذاعات الإسلامية',
-      path: '/radio',
-      color: 'text-primary',
-      bg: 'bg-primary/10',
-      desc: 'إذاعة القرآن الكريم وكبار القراء',
-    },
-    {
-      Icon: IslamicStarIcon,
-      label: 'أسماء الله الحسنى',
-      path: '/asma',
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
-      desc: '99 اسماً مع معانيها',
-    },
-    {
-      Icon: HeadphonesIcon,
-      label: 'القراء والاستماع',
-      path: '/reciters',
-      color: 'text-purple-500',
-      bg: 'bg-purple-500/10',
-      desc: '50+ قارئ للقرآن الكريم',
-    },
-    {
-      Icon: SmartReaderIcon,
-      label: 'قارئ التدبر الذكي',
-      path: '/speed-reader',
-      color: 'text-amber-500',
-      bg: 'bg-amber-500/10',
-      desc: 'تدبر القرآن كلمةً بكلمة',
-    },
+    { Icon: HadithIcon,       label: 'الأحاديث الشريفة',    path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر' },
+    { Icon: QiblaCompassIcon, label: 'تحديد القبلة',         path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة' },
+    { Icon: RadioIcon,        label: 'الإذاعات الإسلامية',  path: '/radio',        desc: 'إذاعة القرآن الكريم وكبار القراء' },
+    { Icon: IslamicStarIcon,  label: 'أسماء الله الحسنى',   path: '/asma',         desc: '99 اسماً مع معانيها' },
+    { Icon: HeadphonesIcon,   label: 'القراء والاستماع',    path: '/reciters',     desc: '50+ قارئ للقرآن الكريم' },
+    { Icon: SmartReaderIcon,  label: 'قارئ التدبر الذكي',   path: '/speed-reader', desc: 'تدبر القرآن كلمةً بكلمة' },
   ];
-
-  const WHATSAPP_MESSAGE = encodeURIComponent(
-    'السلام عليكم ورحمة الله.. حبيت أهديك تطبيق (Noor App)، تطبيق إسلامي مميز وبدون إعلانات، بيساعدك تحافظ على أذكارك وصلاتك. 🌙\n\nقال ﷺ: «الدال على الخير كفاعله».. حمله من هنا وشاركنا الأجر:\nhttps://noor-web--noorweb1000.replit.app/\nنسألكم الدعاء ✨'
-  );
 
   return (
     <div className="pb-24 pt-6 px-4 max-w-lg mx-auto" dir="rtl">
       <AnimatePresence>
         {showLogoutDialog && (
-          <LogoutConfirmDialog
-            onConfirm={handleLogoutConfirm}
-            onCancel={() => setShowLogoutDialog(false)}
-          />
+          <LogoutConfirmDialog onConfirm={handleLogoutConfirm} onCancel={() => setShowLogoutDialog(false)} />
+        )}
+        {showShareSheet && (
+          <ShareChooserSheet onClose={() => setShowShareSheet(false)} />
         )}
       </AnimatePresence>
 
@@ -206,7 +250,7 @@ export function MoreMenu() {
           </div>
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className="p-2 bg-secondary rounded-full text-muted-foreground hover:text-destructive transition-colors"
+            className="p-2 bg-secondary rounded-full text-muted-foreground transition-colors"
             title="تغيير البيانات"
           >
             <LogOut className="w-4 h-4" />
@@ -221,10 +265,10 @@ export function MoreMenu() {
             <Link
               key={idx}
               href={item.path}
-              className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-colors shadow-sm"
+              className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
             >
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.bg} ${item.color}`}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
                   <Icon size={24} />
                 </div>
                 <div>
@@ -238,15 +282,13 @@ export function MoreMenu() {
         })}
 
         {/* Share App Card */}
-        <a
-          href={`https://wa.me/?text=${WHATSAPP_MESSAGE}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-colors shadow-sm"
-          data-testid="link-share-whatsapp"
+        <button
+          onClick={() => setShowShareSheet(true)}
+          className="w-full flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
+          data-testid="button-share-app"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-green-500/10 text-green-600 dark:text-green-400">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
               <Share2 className="w-6 h-6" />
             </div>
             <div>
@@ -255,18 +297,18 @@ export function MoreMenu() {
             </div>
           </div>
           <ChevronLeft className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-        </a>
+        </button>
 
         {/* Rate App Card */}
         <a
           href="https://noor-web--noorweb1000.replit.app/#reviews"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-colors shadow-sm"
+          className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
           data-testid="link-rate-app"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-500">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
               <Star className="w-6 h-6" />
             </div>
             <div>
@@ -280,10 +322,10 @@ export function MoreMenu() {
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-colors shadow-sm"
+          className="w-full flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-500/10 text-slate-500 dark:text-slate-300">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
               {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
             </div>
             <div>
@@ -319,18 +361,18 @@ export function MoreMenu() {
           <div>
             <h3 className="font-bold text-sm text-primary mb-3" style={{ fontFamily: '"Tajawal", sans-serif' }}>مميزات التطبيق</h3>
             <div className="grid grid-cols-2 gap-2">
-              <FeatureChip Icon={MosqueIcon}          color="text-primary"       text="مواقيت الصلاة" />
-              <FeatureChip Icon={QuranBookIcon}        color="text-emerald-600"   text="القرآن الكريم كاملاً" />
-              <FeatureChip Icon={HeadphonesIcon}       color="text-purple-500"    text="أكثر من 50 قارئاً" />
-              <FeatureChip Icon={TasbihIcon}           color="text-amber-600"     text="السبحة الإلكترونية" />
-              <FeatureChip Icon={SmartReaderIcon}      color="text-amber-500"     text="قارئ التدبر الذكي" />
-              <FeatureChip Icon={DuaHandsIcon}         color="text-teal-500"      text="الأذكار والأدعية" />
-              <FeatureChip Icon={ScrollIcon}           color="text-orange-500"    text="تفسير الجلالين" />
-              <FeatureChip Icon={IslamicStarIcon}      color="text-emerald-500"   text="أسماء الله الحسنى" />
-              <FeatureChip Icon={RadioIcon}            color="text-primary"       text="الإذاعات الإسلامية" />
-              <FeatureChip Icon={QiblaCompassIcon}     color="text-primary"       text="تحديد القبلة" />
-              <FeatureChip Icon={HadithIcon}           color="text-amber-700"     text="الأحاديث الشريفة" />
-              <FeatureChip Icon={MoonIcon}             color="text-slate-500"     text="الوضع الليلي" />
+              <FeatureChip Icon={MosqueIcon}        text="مواقيت الصلاة" />
+              <FeatureChip Icon={QuranBookIcon}      text="القرآن الكريم كاملاً" />
+              <FeatureChip Icon={HeadphonesIcon}     text="أكثر من 50 قارئاً" />
+              <FeatureChip Icon={TasbihIcon}         text="السبحة الإلكترونية" />
+              <FeatureChip Icon={SmartReaderIcon}    text="قارئ التدبر الذكي" />
+              <FeatureChip Icon={DuaHandsIcon}       text="الأذكار والأدعية" />
+              <FeatureChip Icon={ScrollIcon}         text="تفسير الجلالين" />
+              <FeatureChip Icon={IslamicStarIcon}    text="أسماء الله الحسنى" />
+              <FeatureChip Icon={RadioIcon}          text="الإذاعات الإسلامية" />
+              <FeatureChip Icon={QiblaCompassIcon}   text="تحديد القبلة" />
+              <FeatureChip Icon={HadithIcon}         text="الأحاديث الشريفة" />
+              <FeatureChip Icon={MoonIcon}           text="الوضع الليلي" />
             </div>
           </div>
 
@@ -352,7 +394,7 @@ export function MoreMenu() {
             <div className="mt-3 flex items-center justify-center gap-2 text-muted-foreground/40">
               <div className="h-px flex-1 max-w-8" style={{ background: 'rgba(193,154,107,0.3)' }} />
               <svg width="16" height="16" viewBox="0 0 40 40" fill="#C19A6B" opacity={0.4}>
-                <polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14"/>
+                <polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14" />
               </svg>
               <div className="h-px flex-1 max-w-8" style={{ background: 'rgba(193,154,107,0.3)' }} />
             </div>
