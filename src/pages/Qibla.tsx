@@ -330,8 +330,8 @@ export function Qibla() {
       alt="الكعبة المشرفة"
       className={cls}
       style={{
-        width: 96,
-        height: 96,
+        width: 82,
+        height: 82,
         objectFit: 'contain',
         filter: isAligned
           ? 'drop-shadow(0 0 14px rgba(74,222,128,0.9))'
