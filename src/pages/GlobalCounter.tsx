@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Eye, EyeOff, RefreshCw, Sparkles } from 'lucide-react';
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+const VISIBILITY_KEY = 'noor_leaderboard_visible';
 
 /* ── Helpers ────────────────────────────────────────────── */
 function formatBigNumber(n: number): string {
@@ -70,6 +71,15 @@ function getSessionId(): string {
   return sid;
 }
 
+/* Read tasbeeh count from localStorage */
+function getLocalTasbeehCount(): number {
+  try {
+    const raw = localStorage.getItem('tasbih_totals');
+    const totals: Record<string, number> = raw ? JSON.parse(raw) : {};
+    return Object.values(totals).reduce((a, b) => a + b, 0);
+  } catch { return 0; }
+}
+
 type RippleItem = { id: number; x: number; y: number };
 
 interface LeaderboardEntry {
@@ -78,6 +88,7 @@ interface LeaderboardEntry {
   governorate?: string | null;
   tasbeehCount: number;
   noorScore: number;
+  isPublic: boolean;
 }
 
 /* ── OrnamentDivider ─────────────────────────────────────── */
@@ -103,7 +114,6 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [userVisible, setUserVisible] = useState<boolean | null>(null);
   const [myRank, setMyRank] = useState<number | null>(null);
 
   const gold = isDark ? '#E8C98A' : '#7A4F1E';
@@ -112,6 +122,32 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   const userProfileRaw = localStorage.getItem('user_profile');
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
+
+  /* Persist visibility in localStorage */
+  const [userVisible, setUserVisibleState] = useState<boolean>(() => {
+    const saved = localStorage.getItem(VISIBILITY_KEY);
+    if (saved !== null) return saved === 'true';
+    return false;
+  });
+
+  const setUserVisible = (v: boolean) => {
+    localStorage.setItem(VISIBILITY_KEY, String(v));
+    setUserVisibleState(v);
+  };
+
+  /* Build sync payload from localStorage */
+  const buildSyncPayload = (isPublic: boolean) => ({
+    userId: userProfile.uid,
+    displayName: userProfile.name || 'ذاكر',
+    governorate: userProfile.governorateName || null,
+    isPublic,
+    tasbeehCount: getLocalTasbeehCount(),
+    quranCompletions: Number(localStorage.getItem('quran_completions') || 0),
+    currentSurah: Number(localStorage.getItem('last_surah') || 1),
+    azkarStreak: Number(localStorage.getItem('azkar_streak') || 0),
+    tadabburStreak: Number(localStorage.getItem('tadabbur_streak') || 0),
+    earnedBadges: [],
+  });
 
   const fetchLeaderboard = useCallback(() => {
     setLoading(true);
@@ -129,44 +165,32 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
       .finally(() => setLoading(false));
   }, [userProfile?.uid]);
 
+  /* On mount: auto-sync to keep tasbeeh count fresh, then fetch leaderboard */
   useEffect(() => {
-    fetchLeaderboard();
-    /* Check current visibility */
-    if (userProfile?.uid) {
-      fetch(`${API_BASE}/api/sohba/user/${userProfile.uid}`)
-        .then(r => r.json())
-        .then(d => {
-          if (d.entry) setUserVisible(d.entry.isPublic);
-          else setUserVisible(false);
-        })
-        .catch(() => setUserVisible(false));
-    }
-  }, []);
+    const autoSync = async () => {
+      if (userProfile?.uid) {
+        try {
+          await fetch(`${API_BASE}/api/sohba/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildSyncPayload(userVisible)),
+          });
+        } catch { /* ignore */ }
+      }
+      fetchLeaderboard();
+    };
+    autoSync();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleVisibility = async () => {
     if (!userProfile) return;
     setSyncing(true);
     const newVisible = !userVisible;
     try {
-      const tasbeehTotalsRaw = localStorage.getItem('tasbih_totals');
-      const tasbeehTotals: Record<string, number> = tasbeehTotalsRaw ? JSON.parse(tasbeehTotalsRaw) : {};
-      const tasbeehCount = Object.values(tasbeehTotals).reduce((a, b) => a + b, 0);
-
       await fetch(`${API_BASE}/api/sohba/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userProfile.uid,
-          displayName: userProfile.name || 'ذاكر',
-          governorate: userProfile.governorateName || null,
-          isPublic: newVisible,
-          tasbeehCount,
-          quranCompletions: Number(localStorage.getItem('quran_completions') || 0),
-          currentSurah: Number(localStorage.getItem('last_surah') || 1),
-          azkarStreak: Number(localStorage.getItem('azkar_streak') || 0),
-          tadabburStreak: Number(localStorage.getItem('tadabbur_streak') || 0),
-          earnedBadges: [],
-        }),
+        body: JSON.stringify(buildSyncPayload(newVisible)),
       });
       setUserVisible(newVisible);
       fetchLeaderboard();
@@ -197,7 +221,9 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
               )}
             </p>
             <p className="text-xs mt-0.5" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.65 }}>
-              {userVisible ? 'اسمك ظاهر في الترتيب' : 'اسمك مخفي عن الترتيب'}
+              {userVisible
+                ? 'اسمك ظاهر في الترتيب'
+                : 'اسمك مخفي — تسبيحاتك تُحسب دائماً'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -243,6 +269,17 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
         </div>
       )}
 
+      {/* Note about counting */}
+      <div
+        className="rounded-xl px-3 py-2 flex items-center gap-2"
+        style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}
+      >
+        <Sparkles size={12} style={{ color: '#4ade80', flexShrink: 0 }} />
+        <p className="text-[11px]" style={{ color: '#4ade80', fontFamily: '"Tajawal", sans-serif', opacity: 0.85 }}>
+          كل تسبيحة تُحسب في العداد العالمي سواء كنت ظاهراً أو مخفياً
+        </p>
+      </div>
+
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-10">
@@ -254,12 +291,15 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
           <p className="text-sm" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.5 }}>
             لا يوجد مستخدمون في الترتيب بعد
           </p>
+          <p className="text-xs mt-1" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.35 }}>
+            اضغط "مخفي" لتغيير إعدادك وتظهر في الترتيب
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
           {entries.map((entry, idx) => {
             const rank = idx + 1;
-            const isMe = userProfile && entry.userId === userProfile.uid;
+            const isMe = !!(userProfile && entry.userId === userProfile.uid);
             return (
               <motion.div
                 key={entry.userId}
@@ -575,27 +615,33 @@ export function GlobalCounter() {
                 </div>
 
                 <div className="flex items-center gap-1.5 mt-1">
-                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500/60'}`} />
+                  <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: connected ? '#4ade80' : '#ef4444' }}
+                  />
                   <span
                     className="text-[10px]"
-                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.4 : 0.55 }}
+                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.5 }}
                   >
-                    {connected ? 'متصل' : 'جارٍ الاتصال...'}
+                    {connected ? 'متصل بالشبكة العالمية' : 'إعادة الاتصال...'}
                   </span>
                 </div>
               </div>
 
-              {/* Bottom ornament */}
-              <div className="mt-6">
+              {/* Motivational text */}
+              <div className="mt-8 text-center px-8">
                 <OrnamentDivider flip isDark={isDark} />
-              </div>
-
-              <div className="mt-4 px-10 text-center pb-8">
                 <p
-                  className="text-xs leading-relaxed"
-                  style={{ color: '#C19A6B', fontFamily: '"Amiri", serif', opacity: isDark ? 0.3 : 0.45 }}
+                  className="mt-3 text-sm leading-relaxed"
+                  style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.55 : 0.7 }}
                 >
-                  وَالذَّاكِرِينَ اللَّهَ كَثِيرًا وَالذَّاكِرَاتِ أَعَدَّ اللَّهُ لَهُم مَّغْفِرَةً وَأَجْرًا عَظِيمًا
+                  سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ
+                </p>
+                <p
+                  className="text-[11px] mt-2"
+                  style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.35 : 0.45 }}
+                >
+                  كلمتانِ خفيفتانِ على اللسان، ثقيلتانِ في الميزان
                 </p>
               </div>
             </motion.div>
@@ -611,9 +657,6 @@ export function GlobalCounter() {
           )}
         </AnimatePresence>
       </div>
-
-      {/* Bottom padding for nav */}
-      <div className="h-20 flex-shrink-0" />
     </div>
   );
 }

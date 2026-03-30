@@ -1,276 +1,345 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 
-/* ─── Islamic Geometric Background ───────────────────────────── */
-function IslamicBg() {
+/* ─── Vintage woodgrain background pattern ───────────────── */
+function WoodBg() {
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none select-none"
-      xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.06, zIndex: 0 }}>
+      xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.04, zIndex: 0 }}>
       <defs>
-        <pattern id="radioTile" x="0" y="0" width="90" height="90" patternUnits="userSpaceOnUse">
-          <path d="M45 6 L50 22 L66 18 L61 34 L77 39 L61 44 L66 60 L50 56 L45 72 L40 56 L24 60 L29 44 L13 39 L29 34 L24 18 L40 22 Z"
-            fill="none" stroke="#C8991A" strokeWidth="0.8"/>
-          <circle cx="45" cy="45" r="10" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
-          <rect x="38" y="38" width="14" height="14" transform="rotate(45 45 45)" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
-          <circle cx="45" cy="45" r="2.5" fill="#C8991A" opacity="0.4"/>
-          <line x1="45" y1="0" x2="45" y2="90" stroke="#C8991A" strokeWidth="0.3" opacity="0.3"/>
-          <line x1="0" y1="45" x2="90" y2="45" stroke="#C8991A" strokeWidth="0.3" opacity="0.3"/>
-          <circle cx="0"  cy="0"  r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
-          <circle cx="90" cy="0"  r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
-          <circle cx="0"  cy="90" r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
-          <circle cx="90" cy="90" r="5" fill="none" stroke="#C8991A" strokeWidth="0.5"/>
+        <pattern id="woodGrain" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+          {/* Horizontal grain lines */}
+          {[5,10,15,20,25,30,35,40,45,50,55].map(y => (
+            <line key={y} x1="0" y1={y} x2="60" y2={y + (y % 3 === 0 ? 2 : -1)}
+              stroke="#8B5E2A" strokeWidth={y % 5 === 0 ? 0.8 : 0.4} opacity="0.7" />
+          ))}
+          {/* Knot circles */}
+          <ellipse cx="30" cy="30" rx="12" ry="8" fill="none" stroke="#7A4F1E" strokeWidth="0.5" opacity="0.4" />
+          <ellipse cx="30" cy="30" rx="6" ry="4" fill="none" stroke="#7A4F1E" strokeWidth="0.4" opacity="0.3" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#radioTile)"/>
+      <rect width="100%" height="100%" fill="url(#woodGrain)" />
     </svg>
   );
 }
 
-/* ─── Ornate Islamic Star Frame for Icons ─────────────────────
-   An intricate 12-pointed star mandala border that wraps any icon.
-─────────────────────────────────────────────────────────────── */
-function OrnateStarFrame({ children, active }: { children: React.ReactNode; active?: boolean }) {
-  const c  = 32; // center
-  const col = active ? '#7a5200' : '#8B6010';
-  const colLight = active ? '#C8991A' : '#A07828';
+/* ─── Islamic geometric overlay ──────────────────────────── */
+function IslamicOverlay() {
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none select-none"
+      xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.035, zIndex: 0 }}>
+      <defs>
+        <pattern id="islamicTile" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+          <path d="M40 4 L44 20 L60 16 L56 32 L72 36 L56 40 L60 56 L44 52 L40 68 L36 52 L20 56 L24 40 L8 36 L24 32 L20 16 L36 20 Z"
+            fill="none" stroke="#C8991A" strokeWidth="0.7"/>
+          <circle cx="40" cy="40" r="8" fill="none" stroke="#C8991A" strokeWidth="0.4"/>
+          <circle cx="40" cy="40" r="2" fill="#C8991A" opacity="0.3"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#islamicTile)" />
+    </svg>
+  );
+}
 
-  /* Points for a 12-pointed star */
-  const star12 = (cx: number, cy: number, r1: number, r2: number) => {
-    return Array.from({ length: 24 }, (_, i) => {
-      const r   = i % 2 === 0 ? r1 : r2;
-      const ang = (i * 15 - 90) * (Math.PI / 180);
-      return `${cx + r * Math.cos(ang)},${cy + r * Math.sin(ang)}`;
-    }).join(' ');
-  };
+/* ─── Vintage frequency display bar ─────────────────────── */
+function FrequencyDisplay({ activeId }: { activeId: number | null }) {
+  const stations = [88, 92, 96, 100, 104, 108];
+  const activePos = activeId !== null ? ((activeId - 1) / 5) * 100 : null;
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: 58, height: 58 }}>
-      <svg viewBox="0 0 64 64" className="absolute inset-0 w-full h-full" fill="none">
-        {/* Outer 12-pointed star */}
-        <polygon points={star12(c, c, 30, 20)} stroke={col} strokeWidth="1" fill={col} fillOpacity="0.06"/>
+    <div className="relative mx-4 mb-4 rounded-2xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(180deg, #0a1f0a 0%, #0d2a0d 100%)',
+        border: '2px solid #2a4a1a',
+        boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,200,0.08)',
+        padding: '10px 14px 8px',
+      }}
+    >
+      {/* Green phosphor glow */}
+      <div className="absolute inset-0 rounded-2xl"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(80,200,80,0.06) 0%, transparent 70%)' }} />
 
-        {/* Inner 8-pointed star */}
-        <polygon
-          points="32,10 35.5,21 46.5,18 43,29 54,32.5 43,36 46.5,47 35.5,43.5 32,54 28.5,43.5 17.5,47 21,36 10,32.5 21,29 17.5,18 28.5,21"
-          stroke={colLight} strokeWidth="0.9" fill="none" opacity="0.7"/>
+      {/* FM label */}
+      <div className="flex items-center justify-between mb-1.5 relative z-10">
+        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '9px', color: '#4ade80', opacity: 0.7, letterSpacing: '2px' }}>
+          FM RADIO · قرآن كريم
+        </span>
+        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '9px', color: '#4ade80', opacity: 0.5 }}>
+          MHz
+        </span>
+      </div>
 
-        {/* Outer ring */}
-        <circle cx={c} cy={c} r="30" stroke={col} strokeWidth="1.2" fill="none" opacity="0.9"/>
+      {/* Frequency band */}
+      <div className="relative h-4 mb-1.5" style={{ zIndex: 10 }}>
+        {/* Band line */}
+        <div className="absolute inset-y-1/2 inset-x-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, #2a5a2a 10%, #3a7a3a 50%, #2a5a2a 90%, transparent)' }} />
 
-        {/* Inner ring */}
-        <circle cx={c} cy={c} r="22" stroke={col} strokeWidth="0.7" fill="none" opacity="0.6"/>
+        {/* Tick marks */}
+        {stations.map((freq, i) => (
+          <div key={freq} className="absolute top-0 bottom-0 flex flex-col items-center justify-between"
+            style={{ left: `${(i / 5) * 100}%`, transform: 'translateX(-50%)' }}>
+            <div style={{ width: 1, height: 6, background: '#3a7a3a', opacity: 0.7 }} />
+            <span style={{ fontFamily: '"Courier New", monospace', fontSize: '7px', color: '#4ade80', opacity: 0.45 }}>
+              {freq}
+            </span>
+          </div>
+        ))}
 
-        {/* Small diamonds at cardinal points */}
-        {[0, 90, 180, 270].map(deg => {
-          const rad = (deg * Math.PI) / 180;
-          const x = c + 30 * Math.cos(rad - Math.PI / 2);
-          const y = c + 30 * Math.sin(rad - Math.PI / 2);
-          return (
-            <rect key={deg}
-              x={x - 3} y={y - 3} width="6" height="6"
-              transform={`rotate(45 ${x} ${y})`}
-              fill={colLight} opacity="0.85"/>
-          );
-        })}
+        {/* Needle */}
+        {activePos !== null && (
+          <div className="absolute top-0 bottom-0 transition-all duration-500"
+            style={{ left: `${activePos}%`, transform: 'translateX(-50%)' }}>
+            <div style={{ width: 2, height: '100%', background: '#f59e0b', boxShadow: '0 0 4px #f59e0b', borderRadius: 1 }} />
+          </div>
+        )}
+      </div>
 
-        {/* Small circles at 45° points */}
-        {[45, 135, 225, 315].map(deg => {
-          const rad = (deg * Math.PI) / 180;
-          const x = c + 30 * Math.cos(rad - Math.PI / 2);
-          const y = c + 30 * Math.sin(rad - Math.PI / 2);
-          return <circle key={deg} cx={x} cy={y} r="2.2" fill={col} opacity="0.7"/>;
-        })}
-
-        {/* Decorative arcs between points */}
-        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => {
-          const rad = (deg * Math.PI) / 180;
-          const x = c + 26 * Math.cos(rad - Math.PI / 2);
-          const y = c + 26 * Math.sin(rad - Math.PI / 2);
-          return <circle key={deg} cx={x} cy={y} r="1" fill={col} opacity="0.5"/>;
-        })}
-      </svg>
-
-      {/* Icon centered inside */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ color: col }}>
-        {children}
+      {/* Currently playing */}
+      <div className="flex items-center gap-2 relative z-10">
+        <div style={{ width: 5, height: 5, borderRadius: '50%',
+          background: activeId ? '#4ade80' : '#1a4a1a',
+          boxShadow: activeId ? '0 0 6px #4ade80' : 'none',
+          animation: activeId ? 'pulse 2s infinite' : 'none' }} />
+        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '8px',
+          color: activeId ? '#4ade80' : '#2a4a2a', letterSpacing: '1px' }}>
+          {activeId ? 'ON AIR · بث مباشر' : 'STANDBY · في الانتظار'}
+        </span>
       </div>
     </div>
   );
 }
 
-/* ─── Radio Station Icons ─────────────────────────────────────── */
-const QuranIcon = () => (
-  <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-    <rect x="4" y="4" width="9" height="14" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none"/>
-    <rect x="15" y="4" width="9" height="14" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none"/>
-    <line x1="4" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <line x1="4" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <line x1="4" y1="13" x2="13" y2="13" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <line x1="15" y1="7" x2="24" y2="7" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <line x1="15" y1="10" x2="24" y2="10" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <line x1="15" y1="13" x2="24" y2="13" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <path d="M13 4 Q14 6 15 4" stroke="currentColor" strokeWidth="1" fill="none"/>
+/* ─── Station Icons (vintage style) ──────────────────────── */
+const VintageQuranIcon = () => (
+  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
+    <path d="M8 6 L8 26 L24 26 L24 6 Z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.06"/>
+    <line x1="8" y1="16" x2="24" y2="16" stroke="currentColor" strokeWidth="1" opacity="0.4"/>
+    <path d="M8 6 L16 3 L24 6" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+    <line x1="11" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="0.8" opacity="0.5"/>
+    <line x1="11" y1="13" x2="21" y2="13" stroke="currentColor" strokeWidth="0.8" opacity="0.5"/>
+    <line x1="11" y1="20" x2="21" y2="20" stroke="currentColor" strokeWidth="0.8" opacity="0.5"/>
+    <line x1="11" y1="23" x2="19" y2="23" stroke="currentColor" strokeWidth="0.8" opacity="0.5"/>
+    <path d="M16 3 L16 6" stroke="currentColor" strokeWidth="1" opacity="0.6"/>
   </svg>
 );
 
-const MicIcon = () => (
-  <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-    <rect x="10" y="4" width="8" height="13" rx="4" stroke="currentColor" strokeWidth="1.3" fill="none"/>
-    <path d="M6 16 Q6 23 14 23 Q22 23 22 16" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
-    <line x1="14" y1="23" x2="14" y2="26" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <line x1="10" y1="26" x2="18" y2="26" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+const VintageMicIcon = () => (
+  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
+    <rect x="12" y="4" width="8" height="14" rx="4" stroke="currentColor" strokeWidth="1.3" fill="none"/>
+    <path d="M8 16 Q8 25 16 25 Q24 25 24 16" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+    <line x1="16" y1="25" x2="16" y2="29" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <line x1="12" y1="29" x2="20" y2="29" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <line x1="14" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="0.7" opacity="0.5"/>
+    <line x1="14" y1="12" x2="18" y2="12" stroke="currentColor" strokeWidth="0.7" opacity="0.5"/>
   </svg>
 );
 
-const SunIcon = () => (
-  <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-    <circle cx="14" cy="14" r="5" stroke="currentColor" strokeWidth="1.3" fill="none"/>
-    <circle cx="14" cy="14" r="2" fill="currentColor"/>
-    <line x1="14" y1="4" x2="14" y2="7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <line x1="14" y1="21" x2="14" y2="24" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <line x1="4" y1="14" x2="7" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <line x1="21" y1="14" x2="24" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <line x1="7.5" y1="7.5" x2="9.6" y2="9.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-    <line x1="18.4" y1="18.4" x2="20.5" y2="20.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-    <line x1="20.5" y1="7.5" x2="18.4" y2="9.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-    <line x1="9.6" y1="18.4" x2="7.5" y2="20.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+const VintageStarIcon = () => (
+  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
+    <polygon points="16,4 18.5,11.5 26.5,11.5 20,16.5 22.5,24 16,19 9.5,24 12,16.5 5.5,11.5 13.5,11.5"
+      stroke="currentColor" strokeWidth="1.2" fill="none"/>
+    <circle cx="16" cy="16" r="3" fill="currentColor" opacity="0.4"/>
   </svg>
 );
 
-const MosqueIcon = () => (
-  <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-    <path d="M14 4 Q10 4 8 8 L8 18 L20 18 L20 8 Q18 4 14 4Z" stroke="currentColor" strokeWidth="1.3" fill="none"/>
-    <circle cx="14" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.1" fill="none"/>
-    <rect x="10" y="18" width="8" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-    <line x1="4" y1="24" x2="24" y2="24" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    <line x1="4" y1="18" x2="8" y2="18" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-    <line x1="20" y1="18" x2="24" y2="18" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+const VintageMosqueIcon = () => (
+  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
+    <path d="M16 5 Q12 5 10 9 L10 20 L22 20 L22 9 Q20 5 16 5Z" stroke="currentColor" strokeWidth="1.3" fill="none"/>
+    <circle cx="16" cy="11" r="3" stroke="currentColor" strokeWidth="1" fill="none"/>
+    <rect x="12" y="20" width="8" height="7" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+    <line x1="5" y1="27" x2="27" y2="27" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <rect x="4" y="10" width="4" height="17" rx="0.5" stroke="currentColor" strokeWidth="1" fill="none"/>
+    <rect x="24" y="10" width="4" height="17" rx="0.5" stroke="currentColor" strokeWidth="1" fill="none"/>
+    <circle cx="6" cy="9" r="1.5" fill="currentColor" opacity="0.6"/>
+    <circle cx="26" cy="9" r="1.5" fill="currentColor" opacity="0.6"/>
   </svg>
 );
 
-const MoonStarIcon = () => (
-  <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-    <path d="M20 14 Q16 13 14 9 Q12 14 14 19 Q18 22 22 20 Q19 20 17 18 Q18 16 20 14Z"
-      stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
-    <polygon points="22,5 23,8 26,8 23.5,10 24.5,13 22,11 19.5,13 20.5,10 18,8 21,8"
-      stroke="currentColor" strokeWidth="0.8" fill="none"/>
+const VintageMoonIcon = () => (
+  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
+    <path d="M22 16 Q18 15 16 11 Q14 16 16 21 Q20 24 24 22 Q21 22 19 20 Q20 18 22 16Z"
+      stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+    <polygon points="25,5 26.5,9 31,9 27.5,11.5 29,16 25,13 21,16 22.5,11.5 19,9 23.5,9"
+      stroke="currentColor" strokeWidth="0.9" fill="none"/>
+    <circle cx="11" cy="8" r="1.2" fill="currentColor" opacity="0.4"/>
+    <circle cx="8" cy="16" r="0.8" fill="currentColor" opacity="0.3"/>
+    <circle cx="12" cy="22" r="0.9" fill="currentColor" opacity="0.35"/>
   </svg>
 );
 
-const KaabaRadioIcon = () => (
-  <svg viewBox="0 0 28 28" fill="none" className="w-5 h-5">
-    <polygon points="8,12 14,8 20,12 20,22 14,24 8,22" stroke="currentColor" strokeWidth="1.3" fill="none"/>
-    <polygon points="8,12 14,8 14,14 8,18" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.08"/>
-    <line x1="8" y1="15" x2="20" y2="15" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <line x1="8" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth="0.9" opacity="0.6"/>
-    <rect x="11" y="18" width="6" height="5" rx="0.5" stroke="currentColor" strokeWidth="1" fill="none"/>
+const VintageKaabaIcon = () => (
+  <svg viewBox="0 0 32 32" fill="none" className="w-7 h-7">
+    <polygon points="10,14 16,9 22,14 22,27 16,29 10,27" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+    <polygon points="10,14 16,9 16,16 10,21" fill="currentColor" fillOpacity="0.08" stroke="none"/>
+    <line x1="10" y1="18" x2="22" y2="18" stroke="currentColor" strokeWidth="0.9" opacity="0.5"/>
+    <line x1="10" y1="20" x2="22" y2="20" stroke="currentColor" strokeWidth="0.9" opacity="0.5"/>
+    <rect x="13" y="22" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.1" fill="none"/>
+    <line x1="16" y1="9" x2="16" y2="6" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+    <path d="M14 6 Q16 4.5 18 6" stroke="currentColor" strokeWidth="0.9" fill="none"/>
   </svg>
 );
 
-/* ─── Station Data ────────────────────────────────────────────── */
+/* ─── Station Data ────────────────────────────────────────── */
 const STATIONS = [
   {
-    id: 1, name: 'إذاعة القرآن الكريم', subtitle: 'الإذاعة المصرية · بث مباشر',
+    id: 1, name: 'إذاعة القرآن الكريم',
+    subtitle: 'الإذاعة المصرية',
+    freq: '98.8 FM',
     urls: [
       'https://stream.radiojar.com/8s5u5tpdtwzuv',
       'https://Qurango.net/radio/quranegypt',
       'https://radio.mp3islam.com/listen/quran_radio/radio.mp3',
     ],
-    Icon: QuranIcon,
+    Icon: VintageQuranIcon,
   },
   {
-    id: 2, name: 'ماهر المعيقلي', subtitle: 'تلاوات خاشعة · بث مستمر',
+    id: 2, name: 'ماهر المعيقلي',
+    subtitle: 'تلاوات خاشعة مؤثرة',
+    freq: '92.4 FM',
     urls: [
       'https://stream.zeno.fm/xqcd0h4fp9zuv',
       'https://Qurango.net/radio/maher',
-      'https://radio.mp3islam.com/listen/maher/radio.mp3',
     ],
-    Icon: MicIcon,
+    Icon: VintageMicIcon,
   },
   {
-    id: 3, name: 'مشاري العفاسي', subtitle: 'تلاوات وأناشيد · بث مستمر',
+    id: 3, name: 'مشاري العفاسي',
+    subtitle: 'تلاوات وأناشيد إسلامية',
+    freq: '95.1 FM',
     urls: [
       'https://stream.zeno.fm/ud3z16g0hkquv',
       'https://Qurango.net/radio/mishary',
-      'https://radio.mp3islam.com/listen/mishary/radio.mp3',
     ],
-    Icon: SunIcon,
+    Icon: VintageStarIcon,
   },
   {
-    id: 4, name: 'محمد صديق المنشاوي', subtitle: 'تلاوات كلاسيكية · بث مستمر',
+    id: 4, name: 'محمد صديق المنشاوي',
+    subtitle: 'التلاوة الكلاسيكية الأصيلة',
+    freq: '100.6 FM',
     urls: [
       'https://Qurango.net/radio/minshawi',
       'https://radio.mp3islam.com/listen/minshawi/radio.mp3',
     ],
-    Icon: MosqueIcon,
+    Icon: VintageMosqueIcon,
   },
   {
-    id: 5, name: 'ياسر الدوسري', subtitle: 'تلاوات مؤثرة · بث مستمر',
+    id: 5, name: 'ياسر الدوسري',
+    subtitle: 'صوت يخشع له القلب',
+    freq: '103.7 FM',
     urls: [
       'https://Qurango.net/radio/yasser',
       'https://radio.mp3islam.com/listen/yaser/radio.mp3',
     ],
-    Icon: MoonStarIcon,
+    Icon: VintageMoonIcon,
   },
   {
-    id: 6, name: 'إذاعة مكة المكرمة', subtitle: 'بث مباشر من الحرم المكي',
+    id: 6, name: 'إذاعة مكة المكرمة',
+    subtitle: 'بث مباشر من الحرم المكي الشريف',
+    freq: '107.9 FM',
     urls: [
       'https://edge.mixlr.com/channel/rwumx',
       'https://stream.radiojar.com/0tpy1h0kxtzuv',
       'https://qurango.net/radio/mix',
     ],
-    Icon: KaabaRadioIcon,
+    Icon: VintageKaabaIcon,
   },
 ];
 
 type Status = 'idle' | 'loading' | 'playing' | 'error';
 
-/* ── Animated EQ bars ─────────────────────────────────────────── */
-function EqBars() {
+/* ── Animated analog EQ bars ────────────────────────────── */
+function AnalogEq() {
   return (
-    <div className="flex gap-0.5 items-end h-4 flex-shrink-0">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="w-1 rounded-full" style={{
-          height: `${8 + (i % 3) * 5}px`,
-          background: '#7a5200',
-          animation: `eqbar ${0.4 + i * 0.1}s ease-in-out infinite alternate`,
-        }}/>
+    <div className="flex gap-[2px] items-end h-5 flex-shrink-0">
+      {[1, 2, 3, 4, 5].map(i => (
+        <div key={i}
+          style={{
+            width: 3,
+            background: `linear-gradient(to top, #f59e0b, #fcd34d)`,
+            borderRadius: 1,
+            animation: `eqbar ${0.35 + i * 0.09}s ease-in-out infinite alternate`,
+            height: `${10 + (i % 3) * 6}px`,
+            boxShadow: '0 0 3px rgba(245,158,11,0.6)',
+          }}
+        />
       ))}
     </div>
   );
 }
 
-/* ── Physical-style play/pause button ──────────────────────────── */
-function PhysicalPlayBtn({ status }: { status: Status | 'inactive' }) {
+/* ── Record/vinyl spin animation for playing state ─────── */
+function VinylDisc({ spinning }: { spinning: boolean }) {
+  return (
+    <div
+      className="relative flex-shrink-0"
+      style={{
+        width: 48, height: 48,
+        animation: spinning ? 'vinylSpin 3s linear infinite' : 'none',
+      }}
+    >
+      {/* Outer ring */}
+      <div className="absolute inset-0 rounded-full"
+        style={{ background: 'linear-gradient(135deg, #1a0a00, #2d1500)', border: '1px solid #4a2a00' }} />
+      {/* Grooves */}
+      {[14, 18, 22].map(r => (
+        <div key={r} className="absolute rounded-full border"
+          style={{
+            inset: `${24 - r}px`,
+            borderColor: 'rgba(255,200,100,0.12)',
+          }} />
+      ))}
+      {/* Label */}
+      <div className="absolute inset-0 m-auto rounded-full flex items-center justify-center"
+        style={{
+          width: 22, height: 22,
+          background: 'linear-gradient(135deg, #8B4513, #D2691E)',
+          border: '1px solid rgba(255,200,100,0.3)',
+        }}>
+        <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#1a0a00', border: '1px solid #4a2a00' }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Vintage play/stop button ──────────────────────────── */
+function VintageBtn({ status }: { status: Status | 'inactive' }) {
   const isActive = status !== 'inactive';
   return (
-    <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200"
+    <div
+      className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
       style={{
-        background: isActive ? '#d4c4a0' : '#e0d0b0',
+        background: isActive
+          ? 'radial-gradient(circle at 35% 35%, #8B4513, #5c2c00)'
+          : 'radial-gradient(circle at 35% 35%, #C8860A, #8B5E00)',
         boxShadow: isActive
-          ? 'inset 3px 3px 7px rgba(120,90,30,0.35), inset -2px -2px 5px rgba(255,245,220,0.6)'
-          : '3px 3px 8px rgba(120,90,30,0.3), -2px -2px 6px rgba(255,248,230,0.75)',
-      }}>
+          ? 'inset 2px 2px 6px rgba(0,0,0,0.5), inset -1px -1px 4px rgba(255,200,100,0.2)'
+          : '3px 3px 8px rgba(0,0,0,0.4), -1px -1px 5px rgba(255,220,120,0.3)',
+        border: `1px solid ${isActive ? '#3a1a00' : '#6B4500'}`,
+      }}
+    >
       {status === 'loading' ? (
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#5a3d00' }}/>
+        <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#FCD34D' }} />
       ) : status === 'error' ? (
-        <RefreshCw className="w-5 h-5" style={{ color: '#5a3d00' }}/>
+        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="#FCD34D" strokeWidth="2">
+          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
       ) : status === 'playing' ? (
-        <svg viewBox="0 0 24 24" fill="#4a2e00" className="w-5 h-5">
-          <rect x="6" y="5" width="4" height="14" rx="1"/>
-          <rect x="14" y="5" width="4" height="14" rx="1"/>
+        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#FCD34D">
+          <rect x="6" y="5" width="4" height="14" rx="1" />
+          <rect x="14" y="5" width="4" height="14" rx="1" />
         </svg>
       ) : (
-        <svg viewBox="0 0 24 24" className="w-5 h-5" style={{ marginRight: '-2px' }}>
-          <path d="M8 5v14l11-7z" fill="#4a2e00"/>
+        <svg viewBox="0 0 24 24" className="w-4 h-4" style={{ marginRight: '-1px' }}>
+          <path d="M8 5v14l11-7z" fill="#FCD34D" />
         </svg>
       )}
     </div>
   );
 }
 
-/* ── Main Component ─────────────────────────────────────────────── */
+/* ── Main Component ─────────────────────────────────────── */
 export function EgyptianRadio() {
   const [activeId, setActiveId]   = useState<number | null>(null);
   const [status,   setStatus]     = useState<Status>('idle');
@@ -333,39 +402,92 @@ export function EgyptianRadio() {
   }, [activeId, status, playStation]);
 
   return (
-    <div className="h-screen flex flex-col max-w-lg mx-auto relative overflow-hidden" dir="rtl"
-      style={{ background: 'linear-gradient(180deg, #121b10 0%, #0c1309 50%, #080e06 100%)' }}>
+    <div className="min-h-screen flex flex-col max-w-lg mx-auto relative" dir="rtl"
+      style={{ background: 'linear-gradient(170deg, #2C1A06 0%, #1A0D02 40%, #0F0800 100%)' }}>
 
       <style>{`
         @keyframes eqbar {
-          from { transform: scaleY(0.4); }
-          to   { transform: scaleY(1); }
+          from { transform: scaleY(0.3); transform-origin: bottom; }
+          to   { transform: scaleY(1);   transform-origin: bottom; }
+        }
+        @keyframes vinylSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; box-shadow: 0 0 6px #4ade80; }
+          50% { opacity: 0.4; box-shadow: none; }
         }
       `}</style>
 
-      {/* Islamic background watermark */}
-      <IslamicBg/>
+      {/* Woodgrain + islamic watermarks */}
+      <WoodBg />
+      <IslamicOverlay />
 
-      {/* Header */}
-      <div className="relative z-10 px-4 py-4 flex items-center gap-4 flex-shrink-0 border-b"
-        style={{ background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(200,153,26,0.2)' }}>
-        <Link href="/more">
-          <button className="p-2 rounded-full" style={{ background: 'rgba(200,153,26,0.15)' }}>
-            <ArrowLeft className="w-5 h-5" style={{ color: '#C8991A' }}/>
-          </button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="font-bold text-xl" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
-            الإذاعات الإسلامية
-          </h1>
-          <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: '#7a6030' }}>
-            اختر إذاعة للاستماع
-          </p>
+      {/* ── Vintage Radio Header ────────────────────────────── */}
+      <div className="relative z-10 flex-shrink-0">
+        {/* Top bar: back + brand */}
+        <div className="flex items-center gap-3 px-4 pt-5 pb-3">
+          <Link href="/more">
+            <button
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+              style={{
+                background: 'rgba(200,153,26,0.15)',
+                border: '1px solid rgba(200,153,26,0.3)',
+              }}
+            >
+              <ArrowLeft className="w-5 h-5" style={{ color: '#C8991A' }} />
+            </button>
+          </Link>
+
+          <div className="flex-1">
+            {/* Brand plate */}
+            <div className="rounded-xl px-4 py-2"
+              style={{
+                background: 'linear-gradient(135deg, #2a1500 0%, #1a0d00 100%)',
+                border: '1px solid rgba(200,153,26,0.25)',
+                boxShadow: 'inset 0 1px 0 rgba(255,220,100,0.08), 0 2px 8px rgba(0,0,0,0.4)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-black text-base leading-tight"
+                    style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060', textShadow: '0 0 8px rgba(232,192,96,0.5)' }}>
+                    الإذاعات الإسلامية
+                  </p>
+                  <p className="text-[10px] leading-tight mt-0.5"
+                    style={{ fontFamily: '"Courier New", monospace', color: '#7a6030', letterSpacing: '1px' }}>
+                    ISLAMIC RADIO · استمع واخشع
+                  </p>
+                </div>
+                {/* Vintage speaker icon */}
+                <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 flex-shrink-0" style={{ color: '#C8991A', opacity: 0.7 }}>
+                  <rect x="3" y="8" width="5" height="8" rx="0.5" fill="currentColor" fillOpacity="0.4" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M8 8L17 4V20L8 16" fill="currentColor" fillOpacity="0.25" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M19 9 Q22 12 19 15" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                  <path d="M20.5 6.5 Q25 12 20.5 17.5" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Frequency display */}
+        <FrequencyDisplay activeId={activeId} />
+
+        {/* Section label */}
+        <div className="flex items-center gap-3 px-5 mb-2">
+          <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, transparent, rgba(200,153,26,0.3))' }} />
+          <span className="text-[9px] font-bold tracking-widest"
+            style={{ color: '#7a6030', fontFamily: '"Courier New", monospace', letterSpacing: '3px' }}>
+            اختر المحطة
+          </span>
+          <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(200,153,26,0.3), transparent)' }} />
         </div>
       </div>
 
-      {/* Station list */}
-      <div className="relative z-10 flex-1 overflow-y-auto p-4 pb-8">
+      {/* ── Station cards ──────────────────────────────────── */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-28">
         <div className="flex flex-col gap-3">
           {STATIONS.map(s => {
             const isActive  = activeId === s.id;
@@ -377,55 +499,75 @@ export function EgyptianRadio() {
                 key={s.id}
                 onClick={() => toggle(s)}
                 data-testid={`button-station-${s.id}`}
-                className="w-full rounded-2xl text-right transition-all duration-200 active:scale-[0.985]"
+                className="w-full text-right transition-all duration-200 active:scale-[0.985]"
                 style={{
+                  borderRadius: 18,
                   background: isActive
-                    ? 'linear-gradient(135deg, #e8d8b0 0%, #d4c090 100%)'
-                    : 'linear-gradient(135deg, #ede0c0 0%, #ddd0a8 100%)',
+                    ? 'linear-gradient(135deg, #3a1f00 0%, #2a1500 50%, #1f0f00 100%)'
+                    : 'linear-gradient(135deg, #2a1500 0%, #1e0e00 100%)',
+                  border: isActive
+                    ? '1px solid rgba(200,153,26,0.5)'
+                    : '1px solid rgba(200,153,26,0.15)',
                   boxShadow: isActive
-                    ? '5px 5px 12px rgba(100,72,20,0.28), -3px -3px 9px rgba(255,248,224,0.65), inset 0 1px 0 rgba(255,252,240,0.4)'
-                    : '6px 6px 14px rgba(100,72,20,0.22), -4px -4px 10px rgba(255,248,224,0.7), inset 0 1px 0 rgba(255,252,240,0.5)',
-                  border: 'none',
-                  outline: isActive ? '1.5px solid rgba(200,153,26,0.5)' : 'none',
+                    ? '0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,100,0.1)'
+                    : '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,200,80,0.06)',
+                  outline: 'none',
                 }}
               >
                 <div className="flex items-center gap-3 p-3.5">
 
-                  {/* Physical play button — left */}
-                  <PhysicalPlayBtn status={stStatus}/>
+                  {/* Left: vintage play btn */}
+                  <VintageBtn status={stStatus} />
 
-                  {/* Name + subtitle — center */}
+                  {/* Center: name + subtitle + freq */}
                   <div className="flex-1 min-w-0 text-right">
-                    <p className="font-bold text-base leading-tight" style={{
-                      fontFamily: '"Tajawal", sans-serif',
-                      color: isActive ? '#3d2000' : '#2a1800',
-                    }}>
-                      {s.name}
-                    </p>
-                    <div className="flex items-center justify-end gap-2 mt-0.5">
-                      {isPlaying && <EqBars/>}
-                      <p className="text-xs" style={{
-                        fontFamily: '"Tajawal", sans-serif',
-                        color: isActive ? '#6B4A00' : '#7A5A20',
-                      }}>
-                        {s.subtitle}
+                    <div className="flex items-center justify-end gap-2">
+                      {isPlaying && <AnalogEq />}
+                      <p className="font-bold text-base leading-tight truncate"
+                        style={{ fontFamily: '"Tajawal", sans-serif', color: isActive ? '#E8C060' : '#C8991A' }}>
+                        {s.name}
                       </p>
                     </div>
+                    <p className="text-xs mt-0.5"
+                      style={{ fontFamily: '"Tajawal", sans-serif', color: isActive ? '#a08040' : '#5a4020', opacity: 0.85 }}>
+                      {s.subtitle}
+                    </p>
+                    <p className="text-[9px] mt-1"
+                      style={{ fontFamily: '"Courier New", monospace', color: '#6B4500', letterSpacing: '1px', opacity: isActive ? 0.8 : 0.4 }}>
+                      {s.freq}
+                    </p>
                   </div>
 
-                  {/* Ornate star frame icon — right */}
-                  <OrnateStarFrame active={isActive}>
-                    <s.Icon/>
-                  </OrnateStarFrame>
+                  {/* Right: vinyl disc */}
+                  <VinylDisc spinning={isPlaying} />
                 </div>
+
+                {/* Bottom glow bar when active */}
+                {isActive && (
+                  <div
+                    className="h-px mx-3 mb-1 rounded-full"
+                    style={{ background: 'linear-gradient(90deg, transparent, rgba(200,153,26,0.4), transparent)' }}
+                  />
+                )}
               </button>
             );
           })}
         </div>
 
-        <div className="mt-5 text-center">
-          <p className="text-xs" style={{ color: '#5a4820', fontFamily: '"Tajawal", sans-serif' }}>
-            إذاعات قرآنية متخصصة · بث مستمر ٢٤/٧
+        {/* Footer note */}
+        <div className="mt-6 text-center pb-2">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="h-px w-16" style={{ background: 'rgba(200,153,26,0.2)' }} />
+            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" style={{ color: '#7a6030' }}>
+              <path d="M12 2 Q8 2 6 6 L6 14 L18 14 L18 6 Q16 2 12 2Z" stroke="currentColor" strokeWidth="1" fill="none"/>
+              <rect x="9" y="14" width="6" height="6" stroke="currentColor" strokeWidth="1" fill="none"/>
+              <line x1="4" y1="20" x2="20" y2="20" stroke="currentColor" strokeWidth="1"/>
+            </svg>
+            <div className="h-px w-16" style={{ background: 'rgba(200,153,26,0.2)' }} />
+          </div>
+          <p className="text-[10px]"
+            style={{ color: '#5a4020', fontFamily: '"Courier New", monospace', letterSpacing: '1px', opacity: 0.6 }}>
+            QURAN RADIO · بث مستمر ٢٤/٧
           </p>
         </div>
       </div>
