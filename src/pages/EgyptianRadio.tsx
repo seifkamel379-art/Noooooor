@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 /* ─── Vintage woodgrain background pattern ───────────────── */
 function WoodBg() {
@@ -43,15 +44,22 @@ function IslamicOverlay() {
 }
 
 /* ─── Vintage frequency display bar ─────────────────────── */
-function FrequencyDisplay({ activeId }: { activeId: number | null }) {
+function FrequencyDisplay({ activeId, isDark }: { activeId: number | null; isDark: boolean }) {
   const stations = [88, 92, 96, 100, 104, 108];
   const activePos = activeId !== null ? ((activeId - 1) / 5) * 100 : null;
+
+  /* Phosphor display: always dark (VFD style) regardless of page theme */
+  const phosphorGreen = isDark ? '#4ade80' : '#22c55e';
+  const displayBg = isDark
+    ? 'linear-gradient(180deg, #0a1f0a 0%, #0d2a0d 100%)'
+    : 'linear-gradient(180deg, #0d2a0d 0%, #0a1f0a 100%)';
+  const displayBorder = isDark ? '#2a4a1a' : '#1a3a10';
 
   return (
     <div className="relative mx-4 mb-4 rounded-2xl overflow-hidden"
       style={{
-        background: 'linear-gradient(180deg, #0a1f0a 0%, #0d2a0d 100%)',
-        border: '2px solid #2a4a1a',
+        background: displayBg,
+        border: `2px solid ${displayBorder}`,
         boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,200,0.08)',
         padding: '10px 14px 8px',
       }}
@@ -62,10 +70,10 @@ function FrequencyDisplay({ activeId }: { activeId: number | null }) {
 
       {/* FM label */}
       <div className="flex items-center justify-between mb-1.5 relative z-10">
-        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '9px', color: '#4ade80', opacity: 0.7, letterSpacing: '2px' }}>
+        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '9px', color: phosphorGreen, opacity: 0.75, letterSpacing: '2px' }}>
           FM RADIO · قرآن كريم
         </span>
-        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '9px', color: '#4ade80', opacity: 0.5 }}>
+        <span style={{ fontFamily: '"Courier New", monospace', fontSize: '9px', color: phosphorGreen, opacity: 0.5 }}>
           MHz
         </span>
       </div>
@@ -74,14 +82,14 @@ function FrequencyDisplay({ activeId }: { activeId: number | null }) {
       <div className="relative h-4 mb-1.5" style={{ zIndex: 10 }}>
         {/* Band line */}
         <div className="absolute inset-y-1/2 inset-x-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, #2a5a2a 10%, #3a7a3a 50%, #2a5a2a 90%, transparent)' }} />
+          style={{ background: `linear-gradient(90deg, transparent, #2a5a2a 10%, ${phosphorGreen}55 50%, #2a5a2a 90%, transparent)` }} />
 
         {/* Tick marks */}
         {stations.map((freq, i) => (
           <div key={freq} className="absolute top-0 bottom-0 flex flex-col items-center justify-between"
             style={{ left: `${(i / 5) * 100}%`, transform: 'translateX(-50%)' }}>
             <div style={{ width: 1, height: 6, background: '#3a7a3a', opacity: 0.7 }} />
-            <span style={{ fontFamily: '"Courier New", monospace', fontSize: '7px', color: '#4ade80', opacity: 0.45 }}>
+            <span style={{ fontFamily: '"Courier New", monospace', fontSize: '7px', color: phosphorGreen, opacity: 0.45 }}>
               {freq}
             </span>
           </div>
@@ -345,6 +353,8 @@ export function EgyptianRadio() {
   const [status,   setStatus]     = useState<Status>('idle');
   const audioRef                  = useRef<HTMLAudioElement | null>(null);
   const retryTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [theme]                   = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const isDark                    = theme === 'dark';
 
   useEffect(() => {
     const a = new Audio();
@@ -401,9 +411,37 @@ export function EgyptianRadio() {
     playStation(station, 0);
   }, [activeId, status, playStation]);
 
+  /* Theme-aware colors */
+  const pageBg = isDark
+    ? 'linear-gradient(170deg, #2C1A06 0%, #1A0D02 40%, #0F0800 100%)'
+    : 'linear-gradient(170deg, #FAF4E4 0%, #F5EDD5 50%, #EDE2C4 100%)';
+  const cardBg = (active: boolean) => isDark
+    ? active ? 'linear-gradient(135deg, #3a1f00 0%, #2a1500 50%, #1f0f00 100%)' : 'linear-gradient(135deg, #2a1500 0%, #1e0e00 100%)'
+    : active ? 'linear-gradient(135deg, #FFF8E8 0%, #FDF2D4 100%)' : 'linear-gradient(135deg, #FDFBF0 0%, #F8F2DC 100%)';
+  const cardBorder = (active: boolean) => isDark
+    ? active ? 'rgba(200,153,26,0.5)' : 'rgba(200,153,26,0.15)'
+    : active ? 'rgba(193,154,107,0.7)' : 'rgba(193,154,107,0.3)';
+  const stationNameColor = (active: boolean) => isDark
+    ? active ? '#E8C060' : '#C8991A'
+    : active ? '#8B6340' : '#6B4A20';
+  const stationSubColor = (active: boolean) => isDark
+    ? active ? '#a08040' : '#5a4020'
+    : active ? '#7a5a30' : '#9a7a50';
+  const freqColor = isDark ? '#6B4500' : '#B08050';
+  const sectionLabelColor = isDark ? '#7a6030' : '#8B6340';
+  const brandPlateStyle = isDark
+    ? { background: 'linear-gradient(135deg, #2a1500 0%, #1a0d00 100%)', border: '1px solid rgba(200,153,26,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,220,100,0.08), 0 2px 8px rgba(0,0,0,0.4)' }
+    : { background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid rgba(193,154,107,0.35)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' };
+  const brandTitleColor = isDark ? '#E8C060' : '#6B4A20';
+  const brandSubColor   = isDark ? '#7a6030' : '#9a7050';
+  const backBtnStyle    = isDark
+    ? { background: 'rgba(200,153,26,0.15)', border: '1px solid rgba(200,153,26,0.3)' }
+    : { background: 'rgba(193,154,107,0.12)', border: '1px solid rgba(193,154,107,0.35)' };
+  const backBtnColor    = isDark ? '#C8991A' : '#8B6340';
+
   return (
     <div className="min-h-screen flex flex-col max-w-lg mx-auto relative" dir="rtl"
-      style={{ background: 'linear-gradient(170deg, #2C1A06 0%, #1A0D02 40%, #0F0800 100%)' }}>
+      style={{ background: pageBg }}>
 
       <style>{`
         @keyframes eqbar {
@@ -431,37 +469,30 @@ export function EgyptianRadio() {
           <Link href="/more">
             <button
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
-              style={{
-                background: 'rgba(200,153,26,0.15)',
-                border: '1px solid rgba(200,153,26,0.3)',
-              }}
+              style={backBtnStyle}
             >
-              <ArrowLeft className="w-5 h-5" style={{ color: '#C8991A' }} />
+              <ArrowLeft className="w-5 h-5" style={{ color: backBtnColor }} />
             </button>
           </Link>
 
           <div className="flex-1">
             {/* Brand plate */}
-            <div className="rounded-xl px-4 py-2"
-              style={{
-                background: 'linear-gradient(135deg, #2a1500 0%, #1a0d00 100%)',
-                border: '1px solid rgba(200,153,26,0.25)',
-                boxShadow: 'inset 0 1px 0 rgba(255,220,100,0.08), 0 2px 8px rgba(0,0,0,0.4)',
-              }}
-            >
+            <div className="rounded-xl px-4 py-2" style={brandPlateStyle}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-black text-base leading-tight"
-                    style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060', textShadow: '0 0 8px rgba(232,192,96,0.5)' }}>
+                    style={{ fontFamily: '"Tajawal", sans-serif', color: brandTitleColor,
+                      textShadow: isDark ? '0 0 8px rgba(232,192,96,0.5)' : 'none' }}>
                     الإذاعات الإسلامية
                   </p>
                   <p className="text-[10px] leading-tight mt-0.5"
-                    style={{ fontFamily: '"Courier New", monospace', color: '#7a6030', letterSpacing: '1px' }}>
+                    style={{ fontFamily: '"Courier New", monospace', color: brandSubColor, letterSpacing: '1px' }}>
                     ISLAMIC RADIO · استمع واخشع
                   </p>
                 </div>
                 {/* Vintage speaker icon */}
-                <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 flex-shrink-0" style={{ color: '#C8991A', opacity: 0.7 }}>
+                <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 flex-shrink-0"
+                  style={{ color: isDark ? '#C8991A' : '#8B6340', opacity: 0.7 }}>
                   <rect x="3" y="8" width="5" height="8" rx="0.5" fill="currentColor" fillOpacity="0.4" stroke="currentColor" strokeWidth="1.2"/>
                   <path d="M8 8L17 4V20L8 16" fill="currentColor" fillOpacity="0.25" stroke="currentColor" strokeWidth="1.2"/>
                   <path d="M19 9 Q22 12 19 15" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
@@ -473,13 +504,13 @@ export function EgyptianRadio() {
         </div>
 
         {/* Frequency display */}
-        <FrequencyDisplay activeId={activeId} />
+        <FrequencyDisplay activeId={activeId} isDark={isDark} />
 
         {/* Section label */}
         <div className="flex items-center gap-3 px-5 mb-2">
           <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, transparent, rgba(200,153,26,0.3))' }} />
           <span className="text-[9px] font-bold tracking-widest"
-            style={{ color: '#7a6030', fontFamily: '"Courier New", monospace', letterSpacing: '3px' }}>
+            style={{ color: sectionLabelColor, fontFamily: '"Courier New", monospace', letterSpacing: '3px' }}>
             اختر المحطة
           </span>
           <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(200,153,26,0.3), transparent)' }} />
@@ -502,15 +533,11 @@ export function EgyptianRadio() {
                 className="w-full text-right transition-all duration-200 active:scale-[0.985]"
                 style={{
                   borderRadius: 18,
-                  background: isActive
-                    ? 'linear-gradient(135deg, #3a1f00 0%, #2a1500 50%, #1f0f00 100%)'
-                    : 'linear-gradient(135deg, #2a1500 0%, #1e0e00 100%)',
-                  border: isActive
-                    ? '1px solid rgba(200,153,26,0.5)'
-                    : '1px solid rgba(200,153,26,0.15)',
+                  background: cardBg(isActive),
+                  border: `1px solid ${cardBorder(isActive)}`,
                   boxShadow: isActive
-                    ? '0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,100,0.1)'
-                    : '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,200,80,0.06)',
+                    ? isDark ? '0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,100,0.1)' : '0 4px 16px rgba(0,0,0,0.12)'
+                    : isDark ? '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,200,80,0.06)' : '0 2px 6px rgba(0,0,0,0.07)',
                   outline: 'none',
                 }}
               >
@@ -524,16 +551,16 @@ export function EgyptianRadio() {
                     <div className="flex items-center justify-end gap-2">
                       {isPlaying && <AnalogEq />}
                       <p className="font-bold text-base leading-tight truncate"
-                        style={{ fontFamily: '"Tajawal", sans-serif', color: isActive ? '#E8C060' : '#C8991A' }}>
+                        style={{ fontFamily: '"Tajawal", sans-serif', color: stationNameColor(isActive) }}>
                         {s.name}
                       </p>
                     </div>
                     <p className="text-xs mt-0.5"
-                      style={{ fontFamily: '"Tajawal", sans-serif', color: isActive ? '#a08040' : '#5a4020', opacity: 0.85 }}>
+                      style={{ fontFamily: '"Tajawal", sans-serif', color: stationSubColor(isActive), opacity: 0.9 }}>
                       {s.subtitle}
                     </p>
                     <p className="text-[9px] mt-1"
-                      style={{ fontFamily: '"Courier New", monospace', color: '#6B4500', letterSpacing: '1px', opacity: isActive ? 0.8 : 0.4 }}>
+                      style={{ fontFamily: '"Courier New", monospace', color: freqColor, letterSpacing: '1px', opacity: isActive ? 0.85 : 0.5 }}>
                       {s.freq}
                     </p>
                   </div>

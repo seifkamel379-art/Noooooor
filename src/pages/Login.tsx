@@ -17,7 +17,14 @@ export function Login({ onComplete }: LoginProps) {
     if (!name.trim() || !govId) return;
     const gov = EGYPT_GOVERNORATES.find(g => g.id === govId);
     if (!gov) return;
-    const profile = { name: name.trim(), governorateId: govId, governorateName: gov.name, lat: gov.lat, lng: gov.lng };
+    const existingRaw = localStorage.getItem('user_profile');
+    const existing = existingRaw ? JSON.parse(existingRaw) : null;
+    const uid = existing?.uid || (
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `user-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
+    const profile = { uid, name: name.trim(), governorateId: govId, governorateName: gov.name, lat: gov.lat, lng: gov.lng };
     localStorage.setItem('user_profile', JSON.stringify(profile));
     onComplete();
   };

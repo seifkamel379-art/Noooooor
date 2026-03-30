@@ -19,6 +19,7 @@ import {
   DuaHandsIcon,
   RadioIcon,
   HadithIcon,
+  QiblaCompassIcon,
 } from '@/components/NoorIcons';
 
 function IslamicPattern() {
@@ -32,20 +33,6 @@ function IslamicPattern() {
         ))}
         <line x1="0" y1="20" x2="200" y2="20" stroke="#C19A6B" strokeWidth="0.5" opacity="0.5" strokeDasharray="4 8" />
       </g>
-    </svg>
-  );
-}
-
-function QiblaCompassIcon({ className = '', size = 24 }: { className?: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
-      <polygon points="12,4 10.5,10 12,9 13.5,10" fill="currentColor" opacity="0.9" />
-      <polygon points="12,20 10.5,14 12,15 13.5,14" fill="currentColor" opacity="0.4" />
-      <rect x="10.5" y="2.5" width="3" height="3.5" rx="0.3" fill="currentColor" opacity="0.8" />
-      <line x1="10.5" y1="3.8" x2="13.5" y2="3.8" stroke="currentColor" strokeWidth="0.6" opacity="0.6" />
-      <circle cx="12" cy="12" r="1.2" fill="currentColor" />
     </svg>
   );
 }
@@ -367,12 +354,12 @@ export function MoreMenu() {
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
 
   const MENU_ITEMS = [
-    { Icon: HadithIcon,       label: 'الأحاديث الشريفة',    path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر' },
-    { Icon: QiblaCompassIcon, label: 'تحديد القبلة',         path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة' },
-    { Icon: RadioIcon,        label: 'الإذاعات الإسلامية',  path: '/radio',        desc: 'إذاعة القرآن الكريم وكبار القراء' },
-    { Icon: IslamicStarIcon,  label: 'أسماء الله الحسنى',   path: '/asma',         desc: '99 اسماً مع معانيها' },
-    { Icon: HeadphonesIcon,   label: 'القراء والاستماع',    path: '/reciters',     desc: '50+ قارئ للقرآن الكريم' },
-    { Icon: SmartReaderIcon,  label: 'قارئ التدبر الذكي',   path: '/speed-reader', desc: 'تدبر القرآن كلمةً بكلمة' },
+    { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',      grad: 'linear-gradient(145deg, #22c55e, #15803d)' },
+    { Icon: QiblaCompassIcon,  label: 'تحديد القبلة',        path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة',   grad: 'linear-gradient(145deg, #3b82f6, #1d4ed8)' },
+    { Icon: RadioIcon,         label: 'الإذاعات الإسلامية', path: '/radio',        desc: 'إذاعة القرآن الكريم وكبار القراء',   grad: 'linear-gradient(145deg, #a855f7, #6d28d9)' },
+    { Icon: IslamicStarIcon,   label: 'أسماء الله الحسنى',  path: '/asma',         desc: '99 اسماً مع معانيها وشرحها',          grad: 'linear-gradient(145deg, #eab308, #b45309)' },
+    { Icon: HeadphonesIcon,    label: 'القراء والاستماع',   path: '/reciters',     desc: '50+ قارئ للقرآن الكريم',             grad: 'linear-gradient(145deg, #14b8a6, #0f766e)' },
+    { Icon: SmartReaderIcon,   label: 'قارئ التدبر الذكي',  path: '/speed-reader', desc: 'تدبر القرآن كلمةً بكلمة',            grad: 'linear-gradient(145deg, #f97316, #c2410c)' },
   ];
 
   return (
@@ -416,25 +403,29 @@ export function MoreMenu() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {MENU_ITEMS.map((item, idx) => {
           const Icon = item.Icon;
           return (
             <Link
               key={idx}
               href={item.path}
-              className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
+              className="flex items-center justify-between bg-card p-3.5 rounded-2xl border border-border/40 hover-elevate"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
-                  <Icon size={24} />
+              <div className="flex items-center gap-3.5">
+                {/* iOS-style gradient icon container */}
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                  style={{ background: item.grad }}
+                >
+                  <Icon className="text-white" size={24} />
                 </div>
                 <div>
                   <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>{item.label}</span>
                   <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>{item.desc}</span>
                 </div>
               </div>
-              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+              <ChevronLeft className="w-4 h-4 text-muted-foreground/50" />
             </Link>
           );
         })}
@@ -442,19 +433,22 @@ export function MoreMenu() {
         {/* Share App Card */}
         <button
           onClick={() => setShowShareSheet(true)}
-          className="w-full flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
+          className="w-full flex items-center justify-between bg-card p-3.5 rounded-2xl border border-border/40 hover-elevate"
           data-testid="button-share-app"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
-              <Share2 className="w-6 h-6" />
+          <div className="flex items-center gap-3.5">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+              style={{ background: 'linear-gradient(145deg, #10b981, #047857)' }}
+            >
+              <Share2 className="w-5 h-5 text-white" />
             </div>
-            <div>
+            <div className="text-right">
               <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>الدال على الخير كفاعله</span>
-              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>أرسل التطبيق لأحبابك لكي نتشارك الأجر والثواب</span>
+              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>أرسل التطبيق لأحبابك لكي نتشارك الأجر</span>
             </div>
           </div>
-          <ChevronLeft className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          <ChevronLeft className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
         </button>
 
         {/* Rate App Card */}
@@ -462,101 +456,166 @@ export function MoreMenu() {
           href="https://noor-web--noorweb1000.replit.app/#reviews"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
+          className="flex items-center justify-between bg-card p-3.5 rounded-2xl border border-border/40 hover-elevate"
           data-testid="link-rate-app"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
-              <Star className="w-6 h-6" />
+          <div className="flex items-center gap-3.5">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+              style={{ background: 'linear-gradient(145deg, #f59e0b, #b45309)' }}
+            >
+              <Star className="w-5 h-5 text-white fill-white" />
             </div>
-            <div>
+            <div className="text-right">
               <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>قيّمنا وادعمنا</span>
-              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>رأيك يهمنا ويساعدنا على تطوير "Noor App" ليصل للجميع</span>
+              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>رأيك يساعدنا على تطوير "Noor App"</span>
             </div>
           </div>
-          <ChevronLeft className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          <ChevronLeft className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
         </a>
 
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center justify-between bg-card p-4 rounded-2xl border border-border/50 transition-colors shadow-sm"
+          className="w-full flex items-center justify-between bg-card p-3.5 rounded-2xl border border-border/40 hover-elevate"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
-              {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
+          <div className="flex items-center gap-3.5">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+              style={{ background: theme === 'dark' ? 'linear-gradient(145deg, #6366f1, #4338ca)' : 'linear-gradient(145deg, #f59e0b, #d97706)' }}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5 text-white" /> : <Sun className="w-5 h-5 text-white" />}
             </div>
-            <div>
+            <div className="text-right">
               <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>الوضع الليلي</span>
-              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>{theme === 'dark' ? 'مفعّل' : 'غير مفعّل'}</span>
+              <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>{theme === 'dark' ? 'مفعّل حالياً' : 'غير مفعّل'}</span>
             </div>
           </div>
-          <div className={`w-12 h-6 rounded-full relative border border-border transition-colors ${theme === 'dark' ? 'bg-primary' : 'bg-secondary'}`}>
-            <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-300 ${theme === 'dark' ? 'left-0.5' : 'right-0.5'}`} />
+          <div className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${theme === 'dark' ? 'bg-primary' : 'bg-border'}`}>
+            <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-300 ${theme === 'dark' ? 'left-0.5' : 'right-0.5'}`} />
           </div>
         </button>
       </div>
 
       {/* About App Section */}
-      <div className="mt-6 bg-card border border-primary/15 rounded-3xl overflow-hidden shadow-sm">
-        <div className="bg-gradient-to-l from-primary/10 to-primary/5 px-5 pt-5 pb-3">
-          <IslamicPattern />
-          <div className="text-center mt-1">
-            <p className="text-primary text-4xl" style={{ fontFamily: '"Amiri", "Scheherazade New", serif' }}>نُـور</p>
-            <p className="text-muted-foreground text-xs mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>الإصدار 2.0 • 2026</p>
+      <div className="mt-6 rounded-3xl overflow-hidden border border-primary/20"
+        style={{ background: 'linear-gradient(160deg, hsl(var(--card)) 0%, hsl(var(--card)) 60%, rgba(193,154,107,0.04) 100%)' }}>
+
+        {/* Header with logo + name */}
+        <div className="relative overflow-hidden">
+          {/* Decorative background ornament */}
+          <div className="absolute inset-0 opacity-5 pointer-events-none">
+            <svg viewBox="0 0 400 120" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
+              {[40, 120, 200, 280, 360].map((cx, i) => (
+                <polygon key={i} fill="#C19A6B"
+                  points={`${cx},5 ${cx+7},22 ${cx+26},22 ${cx+10},34 ${cx+17},52 ${cx},40 ${cx-17},52 ${cx-10},34 ${cx-26},22 ${cx-7},22`} />
+              ))}
+            </svg>
           </div>
-          <IslamicPattern />
+
+          <div className="relative z-10 px-6 pt-6 pb-5 text-center">
+            {/* Logo ring */}
+            <div className="mx-auto mb-3 relative w-20 h-20">
+              <div className="absolute inset-0 rounded-[22px] opacity-30"
+                style={{ boxShadow: '0 0 30px rgba(193,154,107,0.5)', background: 'rgba(193,154,107,0.1)' }} />
+              <img src="/logo.png" alt="نور"
+                className="w-full h-full object-contain rounded-[22px]"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </div>
+
+            {/* App name in calligraphic style */}
+            <p className="text-primary font-black"
+              style={{ fontFamily: '"Amiri", "Scheherazade New", serif', fontSize: '2.6rem', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              نُـور
+            </p>
+            <p className="text-muted-foreground text-xs mt-1 tracking-widest uppercase"
+              style={{ fontFamily: '"Tajawal", sans-serif', letterSpacing: '0.12em' }}>
+              Noor App · الإصدار 2.0
+            </p>
+
+            {/* Decorative divider */}
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/30" />
+              <svg viewBox="0 0 20 20" width={14} height={14} fill="none">
+                <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7"
+                  fill="rgba(193,154,107,0.6)" />
+              </svg>
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/30" />
+            </div>
+          </div>
         </div>
 
-        <div className="px-5 pb-5 space-y-4">
-          <div className="pt-4 border-t border-border/30">
-            <h3 className="font-bold text-base text-primary mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>عن التطبيق</h3>
-            <p className="text-sm text-foreground/80 leading-loose" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              تطبيق <strong>نُور</strong> هو رفيقك الإسلامي الشامل، صُمِّم لمساعدة المسلمين على تعزيز صلتهم بالله وإحياء سنة النبي ﷺ في حياتهم اليومية.
+        <div className="px-5 pb-6 space-y-4 border-t border-primary/10">
+          {/* About text */}
+          <div className="pt-4">
+            <p className="text-sm text-foreground/75 leading-loose text-center" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              رفيقك الإسلامي الشامل، صُمِّم لمساعدة المسلمين على تعزيز صلتهم بالله وإحياء سنة النبي ﷺ في حياتهم اليومية.
             </p>
           </div>
 
+          {/* Features grid */}
           <div>
-            <h3 className="font-bold text-sm text-primary mb-3" style={{ fontFamily: '"Tajawal", sans-serif' }}>مميزات التطبيق</h3>
+            <p className="font-bold text-xs text-primary/70 mb-2.5 text-center tracking-wide"
+              style={{ fontFamily: '"Tajawal", sans-serif', letterSpacing: '0.08em' }}>
+              مميزات التطبيق
+            </p>
             <div className="grid grid-cols-2 gap-2">
-              <FeatureChip Icon={MosqueIcon}        text="مواقيت الصلاة" />
-              <FeatureChip Icon={QuranBookIcon}      text="القرآن الكريم كاملاً" />
-              <FeatureChip Icon={HeadphonesIcon}     text="أكثر من 50 قارئاً" />
-              <FeatureChip Icon={TasbihIcon}         text="السبحة الإلكترونية" />
-              <FeatureChip Icon={SmartReaderIcon}    text="قارئ التدبر الذكي" />
-              <FeatureChip Icon={DuaHandsIcon}       text="الأذكار والأدعية" />
-              <FeatureChip Icon={ScrollIcon}         text="تفسير الجلالين" />
-              <FeatureChip Icon={IslamicStarIcon}    text="أسماء الله الحسنى" />
-              <FeatureChip Icon={RadioIcon}          text="الإذاعات الإسلامية" />
-              <FeatureChip Icon={QiblaCompassIcon}   text="تحديد القبلة" />
-              <FeatureChip Icon={HadithIcon}         text="الأحاديث الشريفة" />
-              <FeatureChip Icon={MoonIcon}           text="الوضع الليلي" />
+              {[
+                { Icon: MosqueIcon,      text: 'مواقيت الصلاة',       grad: 'linear-gradient(145deg,#3b82f6,#1d4ed8)' },
+                { Icon: QuranBookIcon,   text: 'القرآن الكريم',        grad: 'linear-gradient(145deg,#22c55e,#15803d)' },
+                { Icon: HeadphonesIcon,  text: '+50 قارئاً',           grad: 'linear-gradient(145deg,#14b8a6,#0f766e)' },
+                { Icon: TasbihIcon,      text: 'السبحة الإلكترونية',   grad: 'linear-gradient(145deg,#C19A6B,#8B6340)' },
+                { Icon: SmartReaderIcon, text: 'قارئ التدبر الذكي',   grad: 'linear-gradient(145deg,#f97316,#c2410c)' },
+                { Icon: DuaHandsIcon,    text: 'الأذكار والأدعية',    grad: 'linear-gradient(145deg,#a855f7,#6d28d9)' },
+                { Icon: ScrollIcon,      text: 'تفسير الجلالين',       grad: 'linear-gradient(145deg,#f59e0b,#b45309)' },
+                { Icon: IslamicStarIcon, text: 'أسماء الله الحسنى',   grad: 'linear-gradient(145deg,#eab308,#b45309)' },
+                { Icon: RadioIcon,       text: 'الإذاعات الإسلامية',  grad: 'linear-gradient(145deg,#a855f7,#6d28d9)' },
+                { Icon: QiblaCompassIcon,text: 'تحديد القبلة',         grad: 'linear-gradient(145deg,#3b82f6,#1d4ed8)' },
+                { Icon: HadithIcon,      text: 'الأحاديث الشريفة',    grad: 'linear-gradient(145deg,#22c55e,#15803d)' },
+                { Icon: MoonIcon,        text: 'الوضع الليلي',         grad: 'linear-gradient(145deg,#6366f1,#4338ca)' },
+              ].map(({ Icon, text, grad }, i) => (
+                <div key={i} className="flex items-center gap-2 bg-secondary/30 rounded-xl px-2.5 py-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: grad }}>
+                    <Icon className="text-white" size={14} />
+                  </div>
+                  <span className="text-xs text-foreground/80 leading-tight" style={{ fontFamily: '"Tajawal", sans-serif' }}>{text}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="border-t border-border/30 pt-3 space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>مصادر البيانات</span>
-              <span className="text-foreground/70 text-left text-[11px]" style={{ fontFamily: '"Tajawal", sans-serif' }}>aladhan.com • alquran.cloud</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>القراء</span>
-              <span className="text-foreground/70" style={{ fontFamily: '"Tajawal", sans-serif' }}>mp3quran.net</span>
-            </div>
+          {/* Data sources */}
+          <div className="rounded-2xl border border-border/30 p-3 space-y-1.5 bg-secondary/20">
+            <p className="text-[10px] font-bold text-primary/60 mb-1 uppercase tracking-widest"
+              style={{ fontFamily: '"Tajawal", sans-serif' }}>مصادر البيانات</p>
+            {[
+              { label: 'مواقيت الصلاة', val: 'aladhan.com' },
+              { label: 'القرآن الكريم', val: 'alquran.cloud' },
+              { label: 'القراء والتلاوات', val: 'mp3quran.net' },
+            ].map((src, i) => (
+              <div key={i} className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>{src.label}</span>
+                <span className="text-primary/70 font-medium text-[11px]" dir="ltr">{src.val}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="border-t border-border/30 pt-3 text-center">
-            <p className="text-foreground/80 text-sm font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>تصميم وتطوير</p>
-            <p className="text-primary font-bold text-base mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>سيف كامل</p>
-            <p className="text-muted-foreground text-xs mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>مطوّر تطبيق نُور</p>
-            <div className="mt-3 flex items-center justify-center gap-2 text-muted-foreground/40">
-              <div className="h-px flex-1 max-w-8" style={{ background: 'rgba(193,154,107,0.3)' }} />
-              <svg width="16" height="16" viewBox="0 0 40 40" fill="#C19A6B" opacity={0.4}>
-                <polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14" />
+          {/* Developer credit */}
+          <div className="text-center pt-1">
+            <p className="text-muted-foreground text-xs" style={{ fontFamily: '"Tajawal", sans-serif' }}>تصميم وتطوير</p>
+            <p className="text-primary font-black text-lg mt-0.5" style={{ fontFamily: '"Amiri", serif' }}>سيف كامل</p>
+            <p className="text-muted-foreground/60 text-[10px] mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>مطوّر تطبيق نُور</p>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <div className="h-px flex-1 max-w-12" style={{ background: 'rgba(193,154,107,0.25)' }} />
+              <svg viewBox="0 0 20 20" width={12} height={12} fill="rgba(193,154,107,0.45)">
+                <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7" />
               </svg>
-              <div className="h-px flex-1 max-w-8" style={{ background: 'rgba(193,154,107,0.3)' }} />
+              <div className="h-px flex-1 max-w-12" style={{ background: 'rgba(193,154,107,0.25)' }} />
             </div>
-            <p className="text-muted-foreground text-xs mt-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>جميع الحقوق محفوظة © 2026</p>
+            <p className="text-muted-foreground/40 text-[10px] mt-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              جميع الحقوق محفوظة © 2026
+            </p>
           </div>
         </div>
       </div>

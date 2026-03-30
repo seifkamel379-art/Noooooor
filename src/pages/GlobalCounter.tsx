@@ -5,6 +5,22 @@ import { Trophy, Eye, EyeOff, RefreshCw, Sparkles } from 'lucide-react';
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const VISIBILITY_KEY = 'noor_leaderboard_visible';
 
+/* Ensure user profile has a stable uid — migrate old profiles that lacked one */
+function ensureUid(): string | null {
+  try {
+    const raw = localStorage.getItem('user_profile');
+    if (!raw) return null;
+    const profile = JSON.parse(raw);
+    if (profile.uid) return profile.uid;
+    const uid = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    profile.uid = uid;
+    localStorage.setItem('user_profile', JSON.stringify(profile));
+    return uid;
+  } catch { return null; }
+}
+
 /* ── Helpers ────────────────────────────────────────────── */
 function formatBigNumber(n: number): string {
   if (n >= 1_000_000_000_000)
@@ -122,6 +138,8 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   const userProfileRaw = localStorage.getItem('user_profile');
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
+  /* Ensure uid exists (migrate old profiles) */
+  const stableUid = userProfile ? (userProfile.uid || ensureUid()) : null;
 
   /* Persist visibility in localStorage */
   const [userVisible, setUserVisibleState] = useState<boolean>(() => {
@@ -137,9 +155,9 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   /* Build sync payload from localStorage */
   const buildSyncPayload = (isPublic: boolean) => ({
-    userId: userProfile.uid,
-    displayName: userProfile.name || 'ذاكر',
-    governorate: userProfile.governorateName || null,
+    userId: stableUid,
+    displayName: userProfile?.name || 'ذاكر',
+    governorate: userProfile?.governorateName || null,
     isPublic,
     tasbeehCount: getLocalTasbeehCount(),
     quranCompletions: Number(localStorage.getItem('quran_completions') || 0),
@@ -156,19 +174,19 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
       .then(d => {
         const list: LeaderboardEntry[] = d.leaderboard ?? [];
         setEntries(list);
-        if (userProfile) {
-          const idx = list.findIndex(e => e.userId === userProfile.uid);
+        if (stableUid) {
+          const idx = list.findIndex(e => e.userId === stableUid);
           setMyRank(idx >= 0 ? idx + 1 : null);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [userProfile?.uid]);
+  }, [stableUid]);
 
   /* On mount: auto-sync to keep tasbeeh count fresh, then fetch leaderboard */
   useEffect(() => {
     const autoSync = async () => {
-      if (userProfile?.uid) {
+      if (stableUid && userProfile) {
         try {
           await fetch(`${API_BASE}/api/sohba/sync`, {
             method: 'POST',
