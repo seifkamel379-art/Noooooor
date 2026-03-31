@@ -36,10 +36,16 @@ PORT=19382 pnpm -w run dev
 ```
 
 This executes `scripts/dev.sh` which:
-1. Starts the API server on port 3001 (in background)
+1. Starts the API server on port 3001 via `pnpm --filter @workspace/api-server run dev` (in background)
 2. Starts Vite on `$PORT` (19382 in dev, forwarded to external 80)
 
 Vite proxies `/api` requests to `localhost:3001`.
+
+## Firebase Auth
+
+Google sign-in uses `signInWithPopup`. On mobile browsers that block popups, it automatically falls back to `signInWithRedirect`. The app calls `getGoogleRedirectResult()` on Login component mount to handle any pending redirect result.
+
+If you see `auth/unauthorized-domain` error, add the Replit domain to Firebase Console → Authentication → Settings → Authorized domains.
 
 ## Key Configuration
 

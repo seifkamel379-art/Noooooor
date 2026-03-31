@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EGYPT_GOVERNORATES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Loader2 } from 'lucide-react';
-import { signInWithGoogle } from '@/lib/firebase';
+import { signInWithGoogle, signInWithGoogleRedirect, getGoogleRedirectResult } from '@/lib/firebase';
 
 interface LoginProps {
   onComplete: () => void;
@@ -26,6 +26,17 @@ export function Login({ onComplete }: LoginProps) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
   const [googleUser, setGoogleUser] = useState<{ uid: string; name: string; photo: string } | null>(null);
+
+  useEffect(() => {
+    setGoogleLoading(true);
+    getGoogleRedirectResult().then((user) => {
+      if (user) {
+        setGoogleUser(user);
+        setName(user.name);
+        setStep(2);
+      }
+    }).finally(() => setGoogleLoading(false));
+  }, []);
 
   const saveProfile = (finalName: string, uid: string) => {
     const gov = EGYPT_GOVERNORATES.find(g => g.id === govId);
@@ -68,7 +79,8 @@ export function Login({ onComplete }: LoginProps) {
       } else if (code === 'auth/unauthorized-domain') {
         setGoogleError('unauthorized-domain');
       } else if (code === 'auth/popup-blocked') {
-        setGoogleError('يرجى السماح للنوافذ المنبثقة في متصفحك ثم حاول مرة أخرى');
+        await signInWithGoogleRedirect();
+        return;
       } else {
         console.error('Google sign-in error:', code, err);
         setGoogleError(`حدث خطأ (${code || 'unknown'}). حاول مرة أخرى.`);

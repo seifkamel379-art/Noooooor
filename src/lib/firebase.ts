@@ -1,5 +1,12 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signOut,
+} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -34,6 +41,26 @@ export async function signInWithGoogle(): Promise<{ uid: string; name: string; e
     email: user.email ?? '',
     photo: user.photoURL ?? '',
   };
+}
+
+export async function signInWithGoogleRedirect(): Promise<void> {
+  await signInWithRedirect(auth, googleProvider);
+}
+
+export async function getGoogleRedirectResult(): Promise<{ uid: string; name: string; email: string; photo: string } | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    if (!result) return null;
+    const user = result.user;
+    return {
+      uid: user.uid,
+      name: user.displayName ?? '',
+      email: user.email ?? '',
+      photo: user.photoURL ?? '',
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function firebaseSignOut() {

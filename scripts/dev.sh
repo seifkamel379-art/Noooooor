@@ -6,14 +6,12 @@ trap 'kill $(jobs -p) 2>/dev/null' EXIT
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-export PORT="${PORT:-5000}"
+export PORT="${PORT:-19382}"
 API_SERVER_PORT=3001
 
-TSX_BIN="$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx"
-
-echo "Using tsx: $TSX_BIN"
 echo "Vite port: $PORT"
+echo "API server port: $API_SERVER_PORT"
 
-(PORT=$API_SERVER_PORT NODE_ENV=development "$TSX_BIN" "$ROOT_DIR/artifacts/api-server/src/index.ts") &
+(PORT=$API_SERVER_PORT pnpm --filter @workspace/api-server run dev) &
 
 exec "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
