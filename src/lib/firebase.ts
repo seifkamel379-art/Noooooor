@@ -9,7 +9,19 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
+// مشروع المصادقة (Google Sign-in)
+const authConfig = {
+  apiKey: 'AIzaSyA3mM7xwWlHzb3U05zPxcvuUvh9sXrDG4E',
+  authDomain: 'noor-app-42696.firebaseapp.com',
+  projectId: 'noor-app-42696',
+  storageBucket: 'noor-app-42696.firebasestorage.app',
+  messagingSenderId: '716336237791',
+  appId: '1:716336237791:web:4c57f956ec276f9848ad6a',
+  measurementId: 'G-36M36YHHSQ',
+};
+
+// مشروع قاعدة البيانات (العداد والترتيب)
+const dbConfig = {
   apiKey: 'AIzaSyB0kNHpgVF2r5jsfuKTPR2WySmQD919-eY',
   authDomain: 'noooor-1c021.firebaseapp.com',
   projectId: 'noooor-1c021',
@@ -19,15 +31,14 @@ const firebaseConfig = {
   measurementId: 'G-Q1QNVQYD16',
 };
 
-let app: FirebaseApp;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
+const authApp: FirebaseApp =
+  getApps().find((a) => a.name === 'authApp') ?? initializeApp(authConfig, 'authApp');
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const dbApp: FirebaseApp =
+  getApps().find((a) => a.name === 'dbApp') ?? initializeApp(dbConfig, 'dbApp');
+
+export const auth = getAuth(authApp);
+export const db = getFirestore(dbApp);
 export const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: 'select_account' });
