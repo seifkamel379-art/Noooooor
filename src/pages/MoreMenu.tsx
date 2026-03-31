@@ -125,7 +125,7 @@ const MessengerSvg = () => (
 function ShareChooserSheet({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const [instaCopied, setInstaCopied] = useState(false);
-  const APP_URL = 'https://noor-web--noorweb1000.replit.app/';
+  const APP_URL = 'https://noor-web-api-server.vercel.app';
   const APP_TITLE = 'تطبيق نُور - رفيقك الإسلامي الشامل';
   const MESSAGE = `تطبيق نـــور - رفيقك الإسلامي الشامل 🌙
 
@@ -471,7 +471,7 @@ export function MoreMenu() {
 
         {/* Rate App Card */}
         <a
-          href="https://noor-web--noorweb1000.replit.app/#reviews"
+          href="https://noor-web-api-server.vercel.app/#reviews"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-between bg-card p-3.5 rounded-2xl border border-border/40 hover-elevate"
