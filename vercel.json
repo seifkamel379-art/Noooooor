@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "pnpm exec vite build --config vite.config.ts",
+  "buildCommand": "cd /vercel/path0 && pnpm exec vite build --config vite.config.ts",
   "outputDirectory": "dist/public",
-  "installCommand": "pnpm install",
+  "installCommand": "cd /vercel/path0 && pnpm install",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
