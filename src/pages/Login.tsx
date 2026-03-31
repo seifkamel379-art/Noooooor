@@ -68,7 +68,8 @@ export function Login({ onComplete }: LoginProps) {
     setGoogleError('');
     try {
       const user = await signInWithGoogle();
-      if (!user) throw new Error('فشل تسجيل الدخول');
+      // null = جارٍ التحويل لـ Google (redirect) — الصفحة هتتحول تلقائياً
+      if (!user) return;
       setGoogleUser(user);
       setName(user.name);
       setStep(2);

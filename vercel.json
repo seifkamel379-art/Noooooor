@@ -3,10 +3,26 @@
   "buildCommand": "cd /vercel/path0 && pnpm exec vite build --config vite.config.ts",
   "outputDirectory": "dist/public",
   "installCommand": "cd /vercel/path0 && pnpm install",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
   "env": {
-    "BASE_PATH": "/"
-  }
+    "BASE_PATH": "/",
+    "VITE_FIREBASE_API_KEY": "AIzaSyA3mM7xwWlHzb3U05zPxcvuUvh9sXrDG4E",
+    "VITE_FIREBASE_AUTH_DOMAIN": "noor-app-42696.firebaseapp.com",
+    "VITE_FIREBASE_PROJECT_ID": "noor-app-42696",
+    "VITE_FIREBASE_STORAGE_BUCKET": "noor-app-42696.firebasestorage.app",
+    "VITE_FIREBASE_MESSAGING_SENDER_ID": "716336237791",
+    "VITE_FIREBASE_APP_ID": "1:716336237791:web:4c57f956ec276f9848ad6a",
+    "VITE_FIREBASE_MEASUREMENT_ID": "G-36M36YHHSQ",
+    "VITE_FIREBASE_DB_API_KEY": "AIzaSyB0kNHpgVF2r5jsfuKTPR2WySmQD919-eY",
+    "VITE_FIREBASE_DB_AUTH_DOMAIN": "noooor-1c021.firebaseapp.com",
+    "VITE_FIREBASE_DB_PROJECT_ID": "noooor-1c021",
+    "VITE_FIREBASE_DB_STORAGE_BUCKET": "noooor-1c021.firebasestorage.app",
+    "VITE_FIREBASE_DB_MESSAGING_SENDER_ID": "1057114703601",
+    "VITE_FIREBASE_DB_APP_ID": "1:1057114703601:web:f0366f0cd765c0b0940b50",
+    "VITE_FIREBASE_DB_MEASUREMENT_ID": "G-Q1QNVQYD16",
+    "HADITH_API_KEY": "$2y$10$zSijdF10JGzOS8ZyQDf5xO1rYuVOiEWV71IogIVeivmQXGjGxkS"
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
