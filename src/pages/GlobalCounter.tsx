@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Eye, EyeOff, RefreshCw, Sparkles } from 'lucide-react';
+import { Trophy, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { TasbihIcon } from '@/components/NoorIcons';
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const VISIBILITY_KEY = 'noor_leaderboard_visible';
@@ -292,7 +293,7 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
         className="rounded-xl px-3 py-2 flex items-center gap-2"
         style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}
       >
-        <Sparkles size={12} style={{ color: '#4ade80', flexShrink: 0 }} />
+        <TasbihIcon size={14} className="shrink-0" style={{ color: '#4ade80' }} />
         <p className="text-[11px]" style={{ color: '#4ade80', fontFamily: '"Tajawal", sans-serif', opacity: 0.85 }}>
           كل تسبيحة تُحسب في العداد العالمي سواء كنت ظاهراً أو مخفياً
         </p>
@@ -369,7 +370,7 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
                 {/* Count */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Sparkles size={10} style={{ color: '#C19A6B' }} />
+                  <TasbihIcon size={14} style={{ color: '#C19A6B' }} />
                   <span
                     className="text-sm font-black"
                     style={{ color: isDark ? '#E8C98A' : '#7A4F1E', fontFamily: '"Tajawal", sans-serif' }}

@@ -4,10 +4,11 @@
    overlays (white highlights + shadow fills) to create a 3D look.
 ──────────────────────────────────────────────────────────── */
 
-interface P { className?: string; size?: number }
+import type { CSSProperties } from 'react';
+interface P { className?: string; size?: number; style?: CSSProperties }
 
 /* ── Prayer beads / Misbaha ───────────────────────────────── */
-export function TasbihIcon({ className = '', size = 24 }: P) {
+export function TasbihIcon({ className = '', size = 24, style }: P) {
   const cx = 12, cy = 14, r = 6.5;
   const beads = Array.from({ length: 12 }, (_, i) => {
     const deg = 15 + i * 30;
@@ -15,7 +16,7 @@ export function TasbihIcon({ className = '', size = 24 }: P) {
     return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
   });
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style}>
       {/* 3D ring shadow */}
       <circle cx={cx} cy={cy + 0.4} r={r} stroke="currentColor" strokeWidth="1" strokeOpacity="0.25" fill="none" />
       {/* ring string */}

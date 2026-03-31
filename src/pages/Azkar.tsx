@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   MORNING_AZKAR, EVENING_AZKAR, AZKAR_AFTER_PRAYER, AZKAR_SLEEP, AZKAR_VARIOUS,
   PROPHETIC_DUAS, AZKAR_WAKEUP, AZKAR_HOME, AZKAR_MASJID, AZKAR_FOOD, AZKAR_TRAVEL, AZKAR_DISTRESS, AZKAR_WEATHER,
@@ -15,7 +15,8 @@ import {
 type TabId = 'morning' | 'evening' | 'sleep' | 'after' | 'various'
            | 'wakeup' | 'home' | 'masjid' | 'food' | 'travel' | 'distress' | 'weather' | 'prophetic';
 
-const TAB_ICONS: Record<TabId, React.ComponentType<{ className?: string; size?: number }>> = {
+type TabIconComp = (props: { className?: string; size?: number }) => JSX.Element;
+const TAB_ICONS: Record<TabId, TabIconComp> = {
   morning:   MorningIcon,
   evening:   EveningIcon,
   sleep:     SleepIcon,
@@ -63,7 +64,7 @@ function IslamicOrnament({ className = '' }: { className?: string }) {
   );
 }
 
-function IslamicCard({ children, isDone, className = '' }: { children: React.ReactNode; isDone: boolean; className?: string }) {
+function IslamicCard({ children, isDone, className = '' }: { children: ReactNode; isDone: boolean; className?: string }) {
   return (
     <div
       className={cn(
@@ -198,22 +199,42 @@ export function Azkar() {
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
         {TABS.map(t => {
           const done = t.data.filter(z => (progress[z.id] ?? 0) >= z.count).length;
+          const allDoneTab = done === t.data.length;
           const isActive = tab === t.id;
+          const Icon = TAB_ICONS[t.id];
           return (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
-                'flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border',
+                'flex-shrink-0 flex flex-col items-center gap-1 px-3 pt-2.5 pb-2 rounded-2xl font-bold transition-all border min-w-[58px]',
                 isActive
-                  ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25'
+                  : allDoneTab
+                  ? 'bg-green-500/10 text-green-600 border-green-500/30'
                   : 'bg-card text-muted-foreground border-border hover:bg-secondary'
               )}
             >
-              {(() => { const Icon = TAB_ICONS[t.id]; return <Icon size={16} />; })()}
-              <span style={{ fontFamily: '"Tajawal", sans-serif' }}>{t.label}</span>
-              {done > 0 && !isActive && (
-                <span className="bg-green-500 text-white text-[9px] px-1 rounded-full">{done}</span>
+              <div className={cn(
+                'w-9 h-9 rounded-xl flex items-center justify-center mb-0.5 transition-all',
+                isActive
+                  ? 'bg-white/20'
+                  : allDoneTab
+                  ? 'bg-green-500/15'
+                  : 'bg-primary/10'
+              )}>
+                <Icon size={20} />
+              </div>
+              <span className="text-[10px] leading-tight text-center whitespace-nowrap" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                {t.label}
+              </span>
+              {allDoneTab && !isActive && (
+                <span className="mt-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 text-white" />
+                </span>
+              )}
+              {done > 0 && !allDoneTab && !isActive && (
+                <span className="mt-0.5 text-[9px] text-green-500 font-bold">{done}/{t.data.length}</span>
               )}
             </button>
           );

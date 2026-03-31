@@ -71,3 +71,22 @@ Builds frontend to `dist/public` and bundles api-server to `dist/index.cjs`. The
 - Qibla direction
 - Community feature ("Sohba")
 - Firebase authentication
+
+## Database Auto-Init
+
+`artifacts/api-server/src/db-init.ts` runs `CREATE TABLE IF NOT EXISTS` at startup (before listening). No manual migration needed — tables are created automatically on any fresh pull/deploy.
+
+## UI Design System
+
+- **Primary color**: `#C19A6B` / `hsl(var(--primary))` — gold/amber
+- **Fonts**: `"Tajawal"` for UI text, `"Amiri"/"Scheherazade New"` for Arabic calligraphy
+- **NoorIcons**: Custom 3D-style SVG icon library at `src/components/NoorIcons.tsx` using `currentColor` for theming
+
+### Recent UI Improvements (March 2026)
+
+- **SplashScreen**: Full 3D Islamic star animation with gold particles, ambient glow blobs, and beautiful Basmala reveal
+- **Home.tsx**: Custom 3D clock SVG icon (`Clock3DIcon`) next to prayer times header
+- **HomeTracker**: Redesigned daily prayers section from circles → table-style rows with unique 3D prayer icons (Fajr/Dhuhr/Asr/Maghrib/Isha each have custom SVG with depth effects); all colors use CSS variables
+- **Azkar.tsx**: Category tabs redesigned to be taller with larger icons (20px), icon containers with background, and visible completion badges
+- **GlobalCounter leaderboard**: Star icon (Sparkles) replaced with TasbihIcon from NoorIcons for the tasbeeh count display
+- **MoreMenu About section**: Icon gradients unified to deep harmonious palette (Islamic greens, navies, golds, purples) instead of rainbow neon colors

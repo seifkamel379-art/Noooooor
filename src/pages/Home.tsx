@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePrayerTimes } from '@/hooks/use-api';
 import { HomeTracker } from '@/components/HomeTracker';
 
@@ -31,6 +31,58 @@ function offsetDate(offset: number): Date {
   const d = new Date();
   d.setDate(d.getDate() + offset);
   return d;
+}
+
+/* 3D Clock SVG icon */
+function Clock3DIcon({ size = 20 }: { size?: number }) {
+  const c = size / 2;
+  const r = size * 0.42;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none">
+      <defs>
+        <radialGradient id="clockFace" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.06" />
+        </radialGradient>
+      </defs>
+      {/* Shadow */}
+      <circle cx={c + size * 0.04} cy={c + size * 0.05} r={r} fill="currentColor" fillOpacity="0.12" />
+      {/* Face */}
+      <circle cx={c} cy={c} r={r} fill="url(#clockFace)" stroke="currentColor" strokeWidth={size * 0.07} strokeOpacity="0.9" />
+      {/* Top highlight arc */}
+      <path
+        d={`M ${c - r * 0.55} ${c - r * 0.55} A ${r * 0.85} ${r * 0.85} 0 0 1 ${c + r * 0.45} ${c - r * 0.65}`}
+        stroke="white" strokeWidth={size * 0.045} strokeOpacity="0.38" fill="none" strokeLinecap="round"
+      />
+      {/* Hour marks */}
+      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg, i) => {
+        const rad = (deg - 90) * Math.PI / 180;
+        const len = i % 3 === 0 ? size * 0.09 : size * 0.05;
+        const x1 = c + (r - size * 0.03) * Math.cos(rad);
+        const y1 = c + (r - size * 0.03) * Math.sin(rad);
+        const x2 = c + (r - size * 0.03 - len) * Math.cos(rad);
+        const y2 = c + (r - size * 0.03 - len) * Math.sin(rad);
+        return (
+          <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2}
+            stroke="currentColor" strokeWidth={i % 3 === 0 ? size * 0.055 : size * 0.03}
+            strokeOpacity={i % 3 === 0 ? 0.8 : 0.45} strokeLinecap="round" />
+        );
+      })}
+      {/* Hour hand (pointing to ~10) */}
+      <line x1={c} y1={c}
+        x2={c + r * 0.5 * Math.cos((300 - 90) * Math.PI / 180)}
+        y2={c + r * 0.5 * Math.sin((300 - 90) * Math.PI / 180)}
+        stroke="currentColor" strokeWidth={size * 0.09} strokeLinecap="round" strokeOpacity="0.95" />
+      {/* Minute hand (pointing to ~12) */}
+      <line x1={c} y1={c}
+        x2={c + r * 0.7 * Math.cos((-90) * Math.PI / 180)}
+        y2={c + r * 0.7 * Math.sin((-90) * Math.PI / 180)}
+        stroke="currentColor" strokeWidth={size * 0.06} strokeLinecap="round" strokeOpacity="0.85" />
+      {/* Center dot */}
+      <circle cx={c} cy={c} r={size * 0.07} fill="currentColor" />
+      <circle cx={c - size * 0.02} cy={c - size * 0.02} r={size * 0.03} fill="white" fillOpacity="0.6" />
+    </svg>
+  );
 }
 
 export function Home() {
@@ -156,7 +208,9 @@ export function Home() {
       <div className="bg-card rounded-3xl p-5 shadow-sm border border-border">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-bold text-lg flex items-center gap-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            <Clock className="w-5 h-5 text-primary" />
+            <span className="text-primary">
+              <Clock3DIcon size={22} />
+            </span>
             مواقيت الصلاة
           </h2>
           {userProfile.governorateName && (

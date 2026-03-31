@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode, type ComponentType } from 'react';
 import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
@@ -145,7 +145,7 @@ ${APP_URL}
     label: string;
     bg: string;
     color: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
     action: () => void;
     hidden?: boolean;
   };
@@ -324,7 +324,7 @@ ${APP_URL}
   );
 }
 
-function FeatureChip({ Icon, text }: { Icon: React.ComponentType<{ className?: string; size?: number }>; text: string }) {
+function FeatureChip({ Icon, text }: { Icon: ComponentType<{ className?: string; size?: number }>; text: string }) {
   return (
     <div className="flex items-center gap-2 bg-secondary/40 rounded-xl px-3 py-2.5">
       <Icon className="w-4 h-4 flex-shrink-0 text-primary" size={16} />
@@ -354,12 +354,12 @@ export function MoreMenu() {
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
 
   const MENU_ITEMS = [
-    { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',      grad: 'linear-gradient(145deg, #22c55e, #15803d)' },
-    { Icon: QiblaCompassIcon,  label: 'تحديد القبلة',        path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة',   grad: 'linear-gradient(145deg, #3b82f6, #1d4ed8)' },
-    { Icon: RadioIcon,         label: 'الإذاعات الإسلامية', path: '/radio',        desc: 'إذاعة القرآن الكريم وكبار القراء',   grad: 'linear-gradient(145deg, #a855f7, #6d28d9)' },
-    { Icon: IslamicStarIcon,   label: 'أسماء الله الحسنى',  path: '/asma',         desc: '99 اسماً مع معانيها وشرحها',          grad: 'linear-gradient(145deg, #eab308, #b45309)' },
-    { Icon: HeadphonesIcon,    label: 'القراء والاستماع',   path: '/reciters',     desc: '50+ قارئ للقرآن الكريم',             grad: 'linear-gradient(145deg, #14b8a6, #0f766e)' },
-    { Icon: SmartReaderIcon,   label: 'قارئ التدبر الذكي',  path: '/speed-reader', desc: 'تدبر القرآن كلمةً بكلمة',            grad: 'linear-gradient(145deg, #f97316, #c2410c)' },
+    { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',      grad: 'linear-gradient(145deg, #2d6a4f, #1b4332)' },
+    { Icon: QiblaCompassIcon,  label: 'تحديد القبلة',        path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة',   grad: 'linear-gradient(145deg, #1e4d7b, #0f2d4d)' },
+    { Icon: RadioIcon,         label: 'الإذاعات الإسلامية', path: '/radio',        desc: 'إذاعة القرآن الكريم وكبار القراء',   grad: 'linear-gradient(145deg, #5c3a7a, #3a1f52)' },
+    { Icon: IslamicStarIcon,   label: 'أسماء الله الحسنى',  path: '/asma',         desc: '99 اسماً مع معانيها وشرحها',          grad: 'linear-gradient(145deg, #8B6340, #5c3e1e)' },
+    { Icon: HeadphonesIcon,    label: 'القراء والاستماع',   path: '/reciters',     desc: '50+ قارئ للقرآن الكريم',             grad: 'linear-gradient(145deg, #1a5c5c, #0d3b3b)' },
+    { Icon: SmartReaderIcon,   label: 'قارئ التدبر الذكي',  path: '/speed-reader', desc: 'تدبر القرآن كلمةً بكلمة',            grad: 'linear-gradient(145deg, #7a3a1e, #4d2310)' },
   ];
 
   return (
@@ -482,7 +482,7 @@ export function MoreMenu() {
           <div className="flex items-center gap-3.5">
             <div
               className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
-              style={{ background: theme === 'dark' ? 'linear-gradient(145deg, #6366f1, #4338ca)' : 'linear-gradient(145deg, #f59e0b, #d97706)' }}
+              style={{ background: theme === 'dark' ? 'linear-gradient(145deg, #2a2a5c, #181832)' : 'linear-gradient(145deg, #8B6340, #5c3e1e)' }}
             >
               {theme === 'light' ? <Moon className="w-5 h-5 text-white" /> : <Sun className="w-5 h-5 text-white" />}
             </div>
@@ -561,18 +561,18 @@ export function MoreMenu() {
             </p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { Icon: MosqueIcon,      text: 'مواقيت الصلاة',       grad: 'linear-gradient(145deg,#3b82f6,#1d4ed8)' },
-                { Icon: QuranBookIcon,   text: 'القرآن الكريم',        grad: 'linear-gradient(145deg,#22c55e,#15803d)' },
-                { Icon: HeadphonesIcon,  text: '+50 قارئاً',           grad: 'linear-gradient(145deg,#14b8a6,#0f766e)' },
-                { Icon: TasbihIcon,      text: 'السبحة الإلكترونية',   grad: 'linear-gradient(145deg,#C19A6B,#8B6340)' },
-                { Icon: SmartReaderIcon, text: 'قارئ التدبر الذكي',   grad: 'linear-gradient(145deg,#f97316,#c2410c)' },
-                { Icon: DuaHandsIcon,    text: 'الأذكار والأدعية',    grad: 'linear-gradient(145deg,#a855f7,#6d28d9)' },
-                { Icon: ScrollIcon,      text: 'تفسير الجلالين',       grad: 'linear-gradient(145deg,#f59e0b,#b45309)' },
-                { Icon: IslamicStarIcon, text: 'أسماء الله الحسنى',   grad: 'linear-gradient(145deg,#eab308,#b45309)' },
-                { Icon: RadioIcon,       text: 'الإذاعات الإسلامية',  grad: 'linear-gradient(145deg,#a855f7,#6d28d9)' },
-                { Icon: QiblaCompassIcon,text: 'تحديد القبلة',         grad: 'linear-gradient(145deg,#3b82f6,#1d4ed8)' },
-                { Icon: HadithIcon,      text: 'الأحاديث الشريفة',    grad: 'linear-gradient(145deg,#22c55e,#15803d)' },
-                { Icon: MoonIcon,        text: 'الوضع الليلي',         grad: 'linear-gradient(145deg,#6366f1,#4338ca)' },
+                { Icon: MosqueIcon,       text: 'مواقيت الصلاة',       grad: 'linear-gradient(145deg,#1e4d7b,#0f2d4d)' },
+                { Icon: QuranBookIcon,    text: 'القرآن الكريم',        grad: 'linear-gradient(145deg,#2d6a4f,#1b4332)' },
+                { Icon: HeadphonesIcon,   text: '+50 قارئاً',           grad: 'linear-gradient(145deg,#1a5c5c,#0d3b3b)' },
+                { Icon: TasbihIcon,       text: 'السبحة الإلكترونية',   grad: 'linear-gradient(145deg,#8B6340,#5c3e1e)' },
+                { Icon: SmartReaderIcon,  text: 'قارئ التدبر الذكي',   grad: 'linear-gradient(145deg,#7a3a1e,#4d2310)' },
+                { Icon: DuaHandsIcon,     text: 'الأذكار والأدعية',    grad: 'linear-gradient(145deg,#5c3a7a,#3a1f52)' },
+                { Icon: ScrollIcon,       text: 'تفسير الجلالين',       grad: 'linear-gradient(145deg,#7a5c1e,#4d3a10)' },
+                { Icon: IslamicStarIcon,  text: 'أسماء الله الحسنى',   grad: 'linear-gradient(145deg,#8B6340,#4d3210)' },
+                { Icon: RadioIcon,        text: 'الإذاعات الإسلامية',  grad: 'linear-gradient(145deg,#5c3a7a,#2e1a42)' },
+                { Icon: QiblaCompassIcon, text: 'تحديد القبلة',         grad: 'linear-gradient(145deg,#1e4d7b,#102840)' },
+                { Icon: HadithIcon,       text: 'الأحاديث الشريفة',    grad: 'linear-gradient(145deg,#2d6a4f,#163828)' },
+                { Icon: MoonIcon,         text: 'الوضع الليلي',         grad: 'linear-gradient(145deg,#2a2a5c,#181832)' },
               ].map(({ Icon, text, grad }, i) => (
                 <div key={i} className="flex items-center gap-2 bg-secondary/30 rounded-xl px-2.5 py-2">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
