@@ -187,13 +187,15 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   const toggleVisibility = async () => {
     if (!userProfile || !stableUid) return;
-    setSyncing(true);
     const newVisible = !userVisible;
-    setUserVisible(newVisible); // تحديث الواجهة فوراً بدون انتظار
+    setUserVisible(newVisible); // تحديث الواجهة فوراً
+    setSyncing(true);
     try {
       await syncUserLeaderboard(buildSyncPayload(newVisible));
       await loadLeaderboard();
-    } catch { /* ignore */ }
+    } catch {
+      setUserVisible(!newVisible); // ارجع للحالة القديمة لو فشل
+    }
     setSyncing(false);
   };
 
@@ -214,14 +216,22 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
           <div>
             <p className="text-sm font-bold" style={{ color: gold, fontFamily: '"Tajawal", sans-serif' }}>
               {userProfile.name || 'أنت'}
-              {myRank && (
-                <span className="mr-2 text-xs opacity-70">— المرتبة #{myRank.toLocaleString('ar-EG')}</span>
-              )}
             </p>
-            <p className="text-xs mt-0.5" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.65 }}>
-              {userVisible
-                ? 'اسمك ظاهر في الترتيب'
-                : 'اسمك مخفي — تسبيحاتك تُحسب دائماً'}
+            <p className="text-xs mt-0.5 flex items-center gap-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              {userVisible ? (
+                <>
+                  <Eye size={11} style={{ color: '#4ade80' }} />
+                  <span style={{ color: '#4ade80' }}>
+                    ظاهر في الترتيب
+                    {myRank ? ` — المرتبة #${myRank.toLocaleString('ar-EG')}` : ''}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <EyeOff size={11} style={{ color: '#C19A6B', opacity: 0.55 }} />
+                  <span style={{ color: '#C19A6B', opacity: 0.55 }}>مخفي — تسبيحاتك تُحسب دائماً</span>
+                </>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -232,25 +242,31 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
+            {/* الزرار يقول الفعل اللي هيحصل لما تضغط عليه */}
             <button
               onClick={toggleVisibility}
               disabled={syncing}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
               style={{
-                background: userVisible ? 'rgba(193,154,107,0.2)' : 'rgba(193,154,107,0.08)',
-                border: `1px solid rgba(193,154,107,${userVisible ? '0.5' : '0.2'})`,
-                color: '#C19A6B',
+                background: userVisible
+                  ? 'rgba(239,68,68,0.1)'       // أحمر خفيف لو ظاهر → هتضغط تخفي
+                  : 'rgba(74,222,128,0.12)',      // أخضر خفيف لو مخفي → هتضغط تظهر
+                border: userVisible
+                  ? '1px solid rgba(239,68,68,0.3)'
+                  : '1px solid rgba(74,222,128,0.35)',
+                color: userVisible ? '#ef4444' : '#4ade80',
                 fontFamily: '"Tajawal", sans-serif',
+                opacity: syncing ? 0.6 : 1,
               }}
             >
               {syncing ? (
                 <RefreshCw size={12} className="animate-spin" />
               ) : userVisible ? (
-                <Eye size={12} />
+                <EyeOff size={12} />   // ظاهر → اضغط تخفي
               ) : (
-                <EyeOff size={12} />
+                <Eye size={12} />       // مخفي → اضغط تظهر
               )}
-              {userVisible ? 'ظاهر' : 'مخفي'}
+              {userVisible ? 'إخفاء' : 'إظهار'}
             </button>
           </div>
         </div>
@@ -288,7 +304,7 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
             لا يوجد مستخدمون في الترتيب بعد
           </p>
           <p className="text-xs mt-1" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.35 }}>
-            اضغط "مخفي" لتغيير إعدادك وتظهر في الترتيب
+            اضغط "إظهار" لتظهر اسمك في الترتيب
           </p>
         </div>
       ) : (
