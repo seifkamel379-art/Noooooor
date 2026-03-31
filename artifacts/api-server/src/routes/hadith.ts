@@ -38,7 +38,7 @@ router.get("/hadith/books", async (_req, res) => {
 
 router.get("/hadith/hadiths", async (req, res) => {
   const { book, chapter, page = "1", paginate = "10" } = req.query as Record<string, string>;
-  if (!book) return res.status(400).json({ error: "book is required" });
+  if (!book) { res.status(400).json({ error: "book is required" }); return; }
   try {
     let url = `${BASE}/hadiths?apiKey=${encodeURIComponent(API_KEY)}&book=${encodeURIComponent(book)}&paginate=${paginate}&page=${page}`;
     if (chapter) url += `&chapter=${encodeURIComponent(chapter)}`;

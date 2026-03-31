@@ -1,12 +1,20 @@
 {
   "version": 2,
-  "buildCommand": "pnpm exec vite build --config vite.config.ts",
-  "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "buildCommand": "tsc --build artifacts/api-server/tsconfig.json",
+  "builds": [
+    {
+      "src": "artifacts/api-server/src/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "artifacts/api-server/src/index.ts"
+    }
   ],
   "env": {
-    "BASE_PATH": "/"
+    "NODE_ENV": "production"
   }
 }
