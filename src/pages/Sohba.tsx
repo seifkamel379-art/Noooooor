@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+import { syncUserLeaderboard, fetchLeaderboard as fetchLeaderboardFromFirestore } from '@/lib/firestore';
 
 /* ─── Types ───────────────────────────────────────────── */
 interface Badge {
@@ -735,21 +735,17 @@ export function Sohba() {
     if (!profile || !userId) return;
     setSyncStatus('syncing');
     try {
-      await fetch(`${API_BASE}/api/sohba/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          displayName: profile.name,
-          governorate: profile.governorateName || null,
-          isPublic: pub,
-          tasbeehCount: tasbeehTotal,
-          quranCompletions,
-          currentSurah,
-          azkarStreak,
-          tadabburStreak,
-          earnedBadges,
-        }),
+      await syncUserLeaderboard({
+        userId,
+        displayName: profile.name,
+        governorate: profile.governorateName || null,
+        isPublic: pub,
+        tasbeehCount: tasbeehTotal,
+        quranCompletions,
+        currentSurah,
+        azkarStreak,
+        tadabburStreak,
+        earnedBadges,
       });
       setSyncStatus('done');
     } catch {
@@ -761,9 +757,8 @@ export function Sohba() {
   const fetchLeaderboard = useCallback(async () => {
     setLoadingLb(true);
     try {
-      const res = await fetch(`${API_BASE}/api/sohba/leaderboard`);
-      const data = await res.json();
-      setLeaderboard(data.leaderboard || []);
+      const list = await fetchLeaderboardFromFirestore();
+      setLeaderboard(list);
     } catch {
       setLeaderboard([]);
     } finally {

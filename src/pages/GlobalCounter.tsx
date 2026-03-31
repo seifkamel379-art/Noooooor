@@ -2,27 +2,35 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { TasbihIcon } from '@/components/NoorIcons';
+import {
+  subscribeToGlobalCounter,
+  subscribeToActiveSessions,
+  registerSession,
+  refreshSession,
+  unregisterSession,
+  syncUserLeaderboard,
+  fetchLeaderboard,
+  type LeaderboardEntry,
+} from '@/lib/firestore';
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const VISIBILITY_KEY = 'noor_leaderboard_visible';
 
-/* Ensure user profile has a stable uid — migrate old profiles that lacked one */
 function ensureUid(): string | null {
   try {
     const raw = localStorage.getItem('user_profile');
     if (!raw) return null;
     const profile = JSON.parse(raw);
     if (profile.uid) return profile.uid;
-    const uid = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const uid =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     profile.uid = uid;
     localStorage.setItem('user_profile', JSON.stringify(profile));
     return uid;
   } catch { return null; }
 }
 
-/* ── Helpers ────────────────────────────────────────────── */
 function formatBigNumber(n: number): string {
   if (n >= 1_000_000_000_000)
     return (n / 1_000_000_000_000).toLocaleString('ar-EG', { maximumFractionDigits: 2 }) + ' تريليون';
@@ -33,7 +41,7 @@ function formatBigNumber(n: number): string {
   return n.toLocaleString('ar-EG');
 }
 
-function useCountUp(target: number, duration: number = 600) {
+function useCountUp(target: number, duration = 600) {
   const [display, setDisplay] = useState(target);
   const animRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
@@ -66,7 +74,7 @@ function useCountUp(target: number, duration: number = 600) {
 
 function useDarkMode() {
   const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains('dark')
+    document.documentElement.classList.contains('dark'),
   );
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -78,7 +86,6 @@ function useDarkMode() {
   return isDark;
 }
 
-/* Generate or retrieve a stable session ID per browser tab */
 function getSessionId(): string {
   let sid = sessionStorage.getItem('noor_sid');
   if (!sid) {
@@ -88,7 +95,6 @@ function getSessionId(): string {
   return sid;
 }
 
-/* Read tasbeeh count from localStorage */
 function getLocalTasbeehCount(): number {
   try {
     const raw = localStorage.getItem('tasbih_totals');
@@ -99,16 +105,6 @@ function getLocalTasbeehCount(): number {
 
 type RippleItem = { id: number; x: number; y: number };
 
-interface LeaderboardEntry {
-  userId: string;
-  displayName: string;
-  governorate?: string | null;
-  tasbeehCount: number;
-  noorScore: number;
-  isPublic: boolean;
-}
-
-/* ── OrnamentDivider ─────────────────────────────────────── */
 function OrnamentDivider({ flip = false, isDark }: { flip?: boolean; isDark: boolean }) {
   return (
     <svg
@@ -126,7 +122,6 @@ function OrnamentDivider({ flip = false, isDark }: { flip?: boolean; isDark: boo
   );
 }
 
-/* ── Leaderboard Tab ─────────────────────────────────────── */
 function LeaderboardTab({ isDark }: { isDark: boolean }) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,10 +134,8 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   const userProfileRaw = localStorage.getItem('user_profile');
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
-  /* Ensure uid exists (migrate old profiles) */
   const stableUid = userProfile ? (userProfile.uid || ensureUid()) : null;
 
-  /* Persist visibility in localStorage */
   const [userVisible, setUserVisibleState] = useState<boolean>(() => {
     const saved = localStorage.getItem(VISIBILITY_KEY);
     if (saved !== null) return saved === 'true';
@@ -154,9 +147,8 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
     setUserVisibleState(v);
   };
 
-  /* Build sync payload from localStorage */
   const buildSyncPayload = (isPublic: boolean) => ({
-    userId: stableUid,
+    userId: stableUid as string,
     displayName: userProfile?.name || 'ذاكر',
     governorate: userProfile?.governorateName || null,
     isPublic,
@@ -165,54 +157,42 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
     currentSurah: Number(localStorage.getItem('last_surah') || 1),
     azkarStreak: Number(localStorage.getItem('azkar_streak') || 0),
     tadabburStreak: Number(localStorage.getItem('tadabbur_streak') || 0),
-    earnedBadges: [],
+    earnedBadges: [] as string[],
   });
 
-  const fetchLeaderboard = useCallback(() => {
+  const loadLeaderboard = useCallback(async () => {
     setLoading(true);
-    fetch(`${API_BASE}/api/counter/leaderboard`)
-      .then(r => r.json())
-      .then(d => {
-        const list: LeaderboardEntry[] = d.leaderboard ?? [];
-        setEntries(list);
-        if (stableUid) {
-          const idx = list.findIndex(e => e.userId === stableUid);
-          setMyRank(idx >= 0 ? idx + 1 : null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    try {
+      const list = await fetchLeaderboard();
+      setEntries(list);
+      if (stableUid) {
+        const idx = list.findIndex((e) => e.userId === stableUid);
+        setMyRank(idx >= 0 ? idx + 1 : null);
+      }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
   }, [stableUid]);
 
-  /* On mount: auto-sync to keep tasbeeh count fresh, then fetch leaderboard */
   useEffect(() => {
     const autoSync = async () => {
       if (stableUid && userProfile) {
         try {
-          await fetch(`${API_BASE}/api/sohba/sync`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildSyncPayload(userVisible)),
-          });
+          await syncUserLeaderboard(buildSyncPayload(userVisible));
         } catch { /* ignore */ }
       }
-      fetchLeaderboard();
+      await loadLeaderboard();
     };
     autoSync();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleVisibility = async () => {
-    if (!userProfile) return;
+    if (!userProfile || !stableUid) return;
     setSyncing(true);
     const newVisible = !userVisible;
     try {
-      await fetch(`${API_BASE}/api/sohba/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildSyncPayload(newVisible)),
-      });
+      await syncUserLeaderboard(buildSyncPayload(newVisible));
       setUserVisible(newVisible);
-      fetchLeaderboard();
+      await loadLeaderboard();
     } catch { /* ignore */ }
     setSyncing(false);
   };
@@ -226,7 +206,6 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   return (
     <div className="flex flex-col gap-4 pb-8">
-      {/* User controls */}
       {userProfile && (
         <div
           className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
@@ -247,7 +226,7 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchLeaderboard}
+              onClick={loadLeaderboard}
               className="p-2 rounded-full"
               style={{ background: 'rgba(193,154,107,0.12)', color: '#C19A6B' }}
             >
@@ -288,7 +267,6 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
         </div>
       )}
 
-      {/* Note about counting */}
       <div
         className="rounded-xl px-3 py-2 flex items-center gap-2"
         style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}
@@ -299,7 +277,6 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
         </p>
       </div>
 
-      {/* List */}
       {loading ? (
         <div className="flex justify-center py-10">
           <RefreshCw size={24} className="animate-spin" style={{ color: '#C19A6B', opacity: 0.5 }} />
@@ -318,7 +295,7 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
         <div className="space-y-2">
           {entries.map((entry, idx) => {
             const rank = idx + 1;
-            const isMe = !!(userProfile && entry.userId === userProfile.uid);
+            const isMe = !!(userProfile && entry.userId === (userProfile.uid || stableUid));
             return (
               <motion.div
                 key={entry.userId}
@@ -333,7 +310,6 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
                   border: `1px solid rgba(193,154,107,${isMe ? '0.45' : isDark ? '0.15' : '0.2'})`,
                 }}
               >
-                {/* Rank */}
                 <div className="w-7 flex items-center justify-center flex-shrink-0">
                   {rank <= 3 ? (
                     <Trophy size={18} style={{ color: medalColor(rank) }} />
@@ -347,16 +323,13 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
                   )}
                 </div>
 
-                {/* Name */}
                 <div className="flex-1 min-w-0">
                   <p
                     className="text-sm font-bold truncate"
                     style={{ color: isDark ? '#E8C98A' : '#7A4F1E', fontFamily: '"Tajawal", sans-serif' }}
                   >
                     {entry.displayName}
-                    {isMe && (
-                      <span className="mr-1 text-[10px] opacity-60">(أنت)</span>
-                    )}
+                    {isMe && <span className="mr-1 text-[10px] opacity-60">(أنت)</span>}
                   </p>
                   {entry.governorate && (
                     <p
@@ -368,7 +341,6 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
                   )}
                 </div>
 
-                {/* Count */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <TasbihIcon size={14} style={{ color: '#C19A6B' }} />
                   <span
@@ -412,8 +384,8 @@ export function GlobalCounter() {
     setPulse(true);
     setTimeout(() => setPulse(false), 600);
     const id = ++rippleIdRef.current;
-    setRipples(r => [...r, { id, x: 50, y: 50 }]);
-    setTimeout(() => setRipples(r => r.filter(x => x.id !== id)), 1200);
+    setRipples((r) => [...r, { id, x: 50, y: 50 }]);
+    setTimeout(() => setRipples((r) => r.filter((x) => x.id !== id)), 1200);
   }, []);
 
   useEffect(() => {
@@ -423,41 +395,29 @@ export function GlobalCounter() {
     prevCountRef.current = count;
   }, [count, triggerPulse]);
 
+  /* Firestore real-time subscriptions */
   useEffect(() => {
-    let es: EventSource | null = null;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    setConnected(false);
+
+    const unsubCounter = subscribeToGlobalCounter(({ count: c }) => {
+      setCount(c);
+      setConnected(true);
+    });
+
+    const unsubSessions = subscribeToActiveSessions((n) => {
+      setActiveUsers(n);
+    });
+
+    /* Register this session for presence */
     const sid = getSessionId();
-
-    const connect = () => {
-      es = new EventSource(`${API_BASE}/api/counter/stream?sid=${encodeURIComponent(sid)}`);
-      es.onopen = () => setConnected(true);
-      es.onmessage = (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          if (typeof data.count === 'number') setCount(data.count);
-          if (typeof data.activeUsers === 'number') setActiveUsers(data.activeUsers);
-        } catch {}
-      };
-      es.onerror = () => {
-        setConnected(false);
-        es?.close();
-        retryTimer = setTimeout(connect, 3000);
-      };
-    };
-
-    fetch(`${API_BASE}/api/counter`)
-      .then(r => r.json())
-      .then(d => {
-        if (typeof d.count === 'number') setCount(d.count);
-        if (typeof d.activeUsers === 'number') setActiveUsers(d.activeUsers);
-      })
-      .catch(() => {});
-
-    connect();
+    registerSession(sid).catch(() => {});
+    const heartbeat = setInterval(() => refreshSession(sid).catch(() => {}), 30_000);
 
     return () => {
-      es?.close();
-      if (retryTimer) clearTimeout(retryTimer);
+      unsubCounter();
+      unsubSessions();
+      clearInterval(heartbeat);
+      unregisterSession(sid).catch(() => {});
     };
   }, []);
 
@@ -486,7 +446,7 @@ export function GlobalCounter() {
         </svg>
 
         <AnimatePresence>
-          {ripples.map(r => (
+          {ripples.map((r) => (
             <motion.div
               key={r.id}
               className="absolute rounded-full"
@@ -522,7 +482,7 @@ export function GlobalCounter() {
         {([
           { key: 'counter', label: 'العداد' },
           { key: 'leaderboard', label: 'الترتيب العالمي' },
-        ] as const).map(t => (
+        ] as const).map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -565,7 +525,8 @@ export function GlobalCounter() {
                   transition={{ duration: 0.4, ease: 'easeOut' }}
                   className="relative flex flex-col items-center justify-center rounded-full"
                   style={{
-                    width: 220, height: 220,
+                    width: 220,
+                    height: 220,
                     border: `1px solid rgba(193,154,107,${isDark ? '0.3' : '0.45'})`,
                     background: `rgba(193,154,107,${isDark ? '0.05' : '0.08'})`,
                     boxShadow: pulse
@@ -588,81 +549,68 @@ export function GlobalCounter() {
                       fontWeight: 900,
                       color: numberColor,
                       textShadow: numberShadow,
-                      direction: 'ltr',
                     }}
                   >
                     {digits}
                   </motion.span>
-                  <p
-                    className="relative z-10 text-[10px] mt-2"
-                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.6 : 0.75 }}
+                  <span
+                    className="relative z-10 text-[10px] mt-1"
+                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.7 }}
                   >
                     تسبيحة
-                  </p>
+                  </span>
                 </motion.div>
               </div>
 
-              {count >= 1_000_000 && (
-                <div className="mb-4 text-center">
-                  <span className="text-sm" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.7 : 0.8 }}>
-                    ≈ {formatBigNumber(count)}
+              {/* Stats row */}
+              <div className="flex items-center gap-6 mb-6">
+                <div className="flex flex-col items-center gap-1">
+                  <span
+                    className="text-xl font-black"
+                    style={{ color: numberColor, fontFamily: '"Tajawal", sans-serif' }}
+                  >
+                    {formatBigNumber(displayCount)}
                   </span>
-                </div>
-              )}
-
-              {/* Active users */}
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className="flex items-center gap-3 px-6 py-3 rounded-2xl"
-                  style={{
-                    background: `rgba(193,154,107,${isDark ? '0.08' : '0.1'})`,
-                    border: `1px solid rgba(193,154,107,${isDark ? '0.2' : '0.3'})`,
-                  }}
-                >
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: '#4ade80' }}
-                  />
-                  <span className="text-sm font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
-                    الذاكرون الآن
-                  </span>
-                  <span className="text-lg font-black" style={{ color: numberColor, fontFamily: '"Tajawal", sans-serif' }}>
-                    {activeUsers.toLocaleString('ar-EG')}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: connected ? '#4ade80' : '#ef4444' }}
-                  />
                   <span
                     className="text-[10px]"
-                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.5 }}
+                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.6 }}
                   >
-                    {connected ? 'متصل بالشبكة العالمية' : 'إعادة الاتصال...'}
+                    إجمالي التسبيح
+                  </span>
+                </div>
+
+                <div
+                  className="w-px h-8"
+                  style={{ background: `rgba(193,154,107,${isDark ? '0.2' : '0.3'})` }}
+                />
+
+                <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        background: connected ? '#4ade80' : '#ef4444',
+                        boxShadow: connected ? '0 0 6px #4ade80' : 'none',
+                      }}
+                    />
+                    <span
+                      className="text-xl font-black"
+                      style={{ color: numberColor, fontFamily: '"Tajawal", sans-serif' }}
+                    >
+                      {activeUsers.toLocaleString('ar-EG')}
+                    </span>
+                  </div>
+                  <span
+                    className="text-[10px]"
+                    style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.6 }}
+                  >
+                    ذاكر الآن
                   </span>
                 </div>
               </div>
 
-              {/* Motivational text */}
-              <div className="mt-8 text-center px-8">
-                <OrnamentDivider flip isDark={isDark} />
-                <p
-                  className="mt-3 text-sm leading-relaxed"
-                  style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.55 : 0.7 }}
-                >
-                  سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ
-                </p>
-                <p
-                  className="text-[11px] mt-2"
-                  style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: isDark ? 0.35 : 0.45 }}
-                >
-                  كلمتانِ خفيفتانِ على اللسان، ثقيلتانِ في الميزان
-                </p>
-              </div>
+              {/* Bottom ornament */}
+              <OrnamentDivider flip isDark={isDark} />
             </motion.div>
           ) : (
             <motion.div
