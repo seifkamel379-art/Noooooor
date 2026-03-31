@@ -16,4 +16,6 @@ echo "Vite port: $PORT"
 
 (PORT=$API_SERVER_PORT NODE_ENV=development "$TSX_BIN" "$ROOT_DIR/artifacts/api-server/src/index.ts") &
 
-exec "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
+"$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts" &
+
+wait

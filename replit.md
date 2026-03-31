@@ -32,7 +32,7 @@ This is a pnpm monorepo workspace.
 
 The "Start application" workflow runs:
 ```
-PORT=19382 npm run dev
+PORT=19382 pnpm -w run dev
 ```
 
 This executes `scripts/dev.sh` which:
