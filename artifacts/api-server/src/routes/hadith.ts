@@ -5,7 +5,7 @@ const router = Router();
 
 const API_KEY =
   process.env.HADITH_API_KEY ||
-  "$2y$10$4vuKb0BZyCFZeegR3fJqeeZp6VeykmumLqit5hr3q4qHjgFA";
+  "$2y$10$zSijdF10JGzOS8ZyQDf5xO1rYuVOiEWV71IogIVeivmQXGjGxkS";
 
 const BASE = "https://hadithapi.com/api";
 
