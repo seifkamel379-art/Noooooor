@@ -189,9 +189,9 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
     if (!userProfile || !stableUid) return;
     setSyncing(true);
     const newVisible = !userVisible;
+    setUserVisible(newVisible); // تحديث الواجهة فوراً بدون انتظار
     try {
       await syncUserLeaderboard(buildSyncPayload(newVisible));
-      setUserVisible(newVisible);
       await loadLeaderboard();
     } catch { /* ignore */ }
     setSyncing(false);

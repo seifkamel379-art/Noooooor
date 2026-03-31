@@ -1,8 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function useDarkMode() {
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  );
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+  return isDark;
+}
 
 /* ── Book definitions with bold colors matching reference design ── */
 const BOOKS = [
@@ -87,24 +101,48 @@ function BookSvg() {
 
 /* ── Single Hadith card ────────────────────────────────────────── */
 function HadithCard({ hadith, book }: { hadith: HadithItem; book: Book }) {
+  const isDark = useDarkMode();
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      <div className="h-1 w-full" style={{ background: book.iconBg }} />
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: isDark ? 'rgba(193,154,107,0.04)' : 'rgba(193,154,107,0.03)',
+        border: `1px solid rgba(193,154,107,${isDark ? '0.18' : '0.2'})`,
+      }}
+    >
+      {/* شريط لوني رفيع للتمييز بين الكتب */}
+      <div className="h-[3px] w-full" style={{ background: book.iconBg, opacity: isDark ? 0.8 : 0.7 }} />
       <div className="p-4">
+        {/* رقم الحديث بألوان التطبيق */}
         <div
-          className="text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 text-white"
-          style={{ background: book.iconBg, fontFamily: '"Tajawal", sans-serif' }}
+          className="text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3"
+          style={{
+            background: isDark ? 'rgba(193,154,107,0.15)' : 'rgba(193,154,107,0.12)',
+            border: `1px solid rgba(193,154,107,${isDark ? '0.35' : '0.3'})`,
+            color: isDark ? '#E8C98A' : '#7A4F1E',
+            fontFamily: '"Tajawal", sans-serif',
+          }}
         >
           حديث {parseInt(hadith.hadithNumber).toLocaleString('ar-EG')}
         </div>
         {hadith.englishNarrator && (
-          <p className="text-xs text-muted-foreground mb-2 text-right" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+          <p
+            className="text-xs mb-2 text-right"
+            style={{
+              color: isDark ? 'rgba(193,154,107,0.55)' : 'rgba(122,79,30,0.6)',
+              fontFamily: '"Tajawal", sans-serif',
+            }}
+          >
             {hadith.englishNarrator}
           </p>
         )}
         <p
-          className="text-sm text-foreground text-right"
-          style={{ fontFamily: '"Amiri", serif', lineHeight: '2.2rem' }}
+          className="text-sm text-right"
+          style={{
+            fontFamily: '"Amiri", serif',
+            lineHeight: '2.2rem',
+            color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(30,20,10,0.88)',
+          }}
         >
           {hadith.hadithArabic}
         </p>
@@ -156,12 +194,16 @@ function HadithReader({ book, onBack }: { book: Book; onBack: () => void }) {
       {isLoading && (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-2xl p-4 animate-pulse">
-              <div className="h-3 bg-secondary rounded-full w-1/4 mb-3" />
+            <div
+              key={i}
+              className="rounded-2xl p-4 animate-pulse"
+              style={{ background: 'rgba(193,154,107,0.04)', border: '1px solid rgba(193,154,107,0.15)' }}
+            >
+              <div className="h-3 rounded-full w-1/4 mb-3" style={{ background: 'rgba(193,154,107,0.12)' }} />
               <div className="space-y-2">
-                <div className="h-3 bg-secondary rounded-full" />
-                <div className="h-3 bg-secondary rounded-full w-5/6" />
-                <div className="h-3 bg-secondary rounded-full w-4/5" />
+                <div className="h-3 rounded-full" style={{ background: 'rgba(193,154,107,0.08)' }} />
+                <div className="h-3 rounded-full w-5/6" style={{ background: 'rgba(193,154,107,0.08)' }} />
+                <div className="h-3 rounded-full w-4/5" style={{ background: 'rgba(193,154,107,0.08)' }} />
               </div>
             </div>
           ))}

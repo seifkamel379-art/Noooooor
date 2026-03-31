@@ -1,42 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { EGYPT_GOVERNORATES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Loader2 } from 'lucide-react';
-import { signInWithGoogle, signInWithGoogleRedirect, getGoogleRedirectResult } from '@/lib/firebase';
+import { Check } from 'lucide-react';
 
 interface LoginProps {
   onComplete: () => void;
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M43.6 20.5h-19.7v7.5h11.3c-1.1 5.2-5.6 8.8-11.3 8.8-6.9 0-12.5-5.6-12.5-12.5s5.6-12.5 12.5-12.5c3.1 0 5.9 1.1 8 3l5.7-5.7C34 6.2 29.3 4 24.3 4 13 4 4 13 4 24.3S13 44.5 24.3 44.5c10.6 0 19.7-7.7 19.7-20.2 0-1.3-.1-2.6-.4-3.8z" fill="#FFC107"/>
-      <path d="M6.3 14.7l6.6 4.8C14.5 16 19 12.5 24.3 12.5c3.1 0 5.9 1.1 8 3l5.7-5.7C34 6.2 29.3 4 24.3 4 16.4 4 9.6 8.3 6.3 14.7z" fill="#FF3D00"/>
-      <path d="M24.3 44.5c4.9 0 9.5-1.8 13-4.8l-6-5.1c-1.9 1.4-4.3 2.2-7 2.2-5.6 0-10.1-3.5-11.3-8.7l-6.5 5C9.7 40.2 16.5 44.5 24.3 44.5z" fill="#4CAF50"/>
-      <path d="M43.6 20.5H24v7.5h11.3c-.5 2.5-2 4.7-4.2 6.1l6 5.1c3.6-3.3 5.5-8.1 5.5-13.5 0-1.3-.1-2.6-.4-3.8l1.4.6z" fill="#1976D2"/>
-    </svg>
-  );
 }
 
 export function Login({ onComplete }: LoginProps) {
   const [name, setName] = useState('');
   const [govId, setGovId] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleError, setGoogleError] = useState('');
-  const [googleUser, setGoogleUser] = useState<{ uid: string; name: string; photo: string } | null>(null);
-
-  useEffect(() => {
-    setGoogleLoading(true);
-    getGoogleRedirectResult().then((user) => {
-      if (user) {
-        setGoogleUser(user);
-        setName(user.name);
-        setStep(2);
-      }
-    }).finally(() => setGoogleLoading(false));
-  }, []);
 
   const saveProfile = (finalName: string, uid: string) => {
     const gov = EGYPT_GOVERNORATES.find(g => g.id === govId);
@@ -48,7 +22,7 @@ export function Login({ onComplete }: LoginProps) {
       governorateName: gov.name,
       lat: gov.lat,
       lng: gov.lng,
-      photo: googleUser?.photo ?? '',
+      photo: '',
     };
     localStorage.setItem('user_profile', JSON.stringify(profile));
     onComplete();
@@ -61,43 +35,6 @@ export function Login({ onComplete }: LoginProps) {
     })();
     const uid = existing?.uid || crypto.randomUUID();
     saveProfile(name, uid);
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    setGoogleError('');
-    try {
-      const user = await signInWithGoogle();
-      // null = جارٍ التحويل لـ Google (redirect) — الصفحة هتتحول تلقائياً
-      if (!user) return;
-      setGoogleUser(user);
-      setName(user.name);
-      setStep(2);
-    } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? '';
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        setGoogleError('');
-      } else if (code === 'auth/unauthorized-domain') {
-        setGoogleError('unauthorized-domain');
-      } else if (code === 'auth/popup-blocked') {
-        await signInWithGoogleRedirect();
-        return;
-      } else {
-        console.error('Google sign-in error:', code, err);
-        setGoogleError(`حدث خطأ (${code || 'unknown'}). حاول مرة أخرى.`);
-      }
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleGovConfirm = () => {
-    if (!govId) return;
-    if (googleUser) {
-      saveProfile(googleUser.name, googleUser.uid);
-    } else {
-      handleManualSubmit();
-    }
   };
 
   return (
@@ -126,7 +63,7 @@ export function Login({ onComplete }: LoginProps) {
 
         <AnimatePresence mode="wait">
           {step === 1 ? (
-            /* ── Step 1: Name + Google ── */
+            /* ── Step 1: Name ── */
             <motion.div
               key="step1"
               initial={{ opacity: 0, y: 16 }}
@@ -135,63 +72,6 @@ export function Login({ onComplete }: LoginProps) {
               transition={{ duration: 0.35 }}
               className="flex flex-col gap-3"
             >
-              {/* Google sign-in button */}
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold transition-all disabled:opacity-60"
-                style={{
-                  background: 'rgba(255,255,255,0.07)',
-                  border: '1.5px solid rgba(255,255,255,0.15)',
-                  color: '#fff',
-                  fontFamily: '"Tajawal", sans-serif',
-                  fontSize: '1rem',
-                }}
-              >
-                {googleLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
-                {googleLoading ? 'جارٍ التسجيل...' : 'تسجيل الدخول بجوجل'}
-              </button>
-
-              {googleError === 'unauthorized-domain' ? (
-                <div
-                  className="rounded-xl p-4 text-xs"
-                  style={{ background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.3)' }}
-                  dir="rtl"
-                >
-                  <p className="text-red-300 font-bold mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    يجب إضافة النطاق في Firebase Console:
-                  </p>
-                  <p className="text-white/60 mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    ١. افتح: Firebase Console → Authentication → Settings → Authorized domains
-                  </p>
-                  <p className="text-white/60 mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    ٢. اضغط «Add domain» وأضف هذا النطاق:
-                  </p>
-                  <code
-                    className="block text-[10px] text-yellow-300 break-all p-2 rounded-lg"
-                    style={{ background: 'rgba(0,0,0,0.4)', direction: 'ltr', textAlign: 'left' }}
-                  >
-                    {window.location.hostname}
-                  </code>
-                </div>
-              ) : googleError ? (
-                <p className="text-red-400 text-xs text-center" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                  {googleError}
-                </p>
-              ) : null}
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 my-1">
-                <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
-                <span className="text-white/30 text-xs" style={{ fontFamily: '"Tajawal", sans-serif' }}>أو</span>
-                <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
-              </div>
-
-              {/* Manual name entry */}
               <div
                 className="rounded-2xl p-5"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.09)' }}
@@ -252,7 +132,7 @@ export function Login({ onComplete }: LoginProps) {
               >
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => { setStep(1); setGoogleUser(null); setGovId(''); }}
+                    onClick={() => { setStep(1); setGovId(''); }}
                     className="text-white/40 p-1 rounded-lg transition-colors"
                     style={{ background: 'rgba(255,255,255,0.06)' }}
                   >
@@ -260,24 +140,14 @@ export function Login({ onComplete }: LoginProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <div className="flex items-center gap-2 flex-1">
-                    {googleUser?.photo ? (
-                      <img
-                        src={googleUser.photo}
-                        alt={googleUser.name}
-                        className="w-9 h-9 rounded-full object-cover"
-                        style={{ border: '1.5px solid rgba(193,154,107,0.5)' }}
-                      />
-                    ) : null}
-                    <div>
-                      <h2 className="text-white text-base font-bold leading-tight"
-                        style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                        أهلاً {googleUser?.name || name}
-                      </h2>
-                      <p className="text-white/35 text-xs" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                        اختر محافظتك لمواقيت الصلاة
-                      </p>
-                    </div>
+                  <div>
+                    <h2 className="text-white text-base font-bold leading-tight"
+                      style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                      أهلاً {name}
+                    </h2>
+                    <p className="text-white/35 text-xs" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                      اختر محافظتك لمواقيت الصلاة
+                    </p>
                   </div>
                 </div>
               </div>
@@ -342,7 +212,7 @@ export function Login({ onComplete }: LoginProps) {
 
               {/* Confirm button */}
               <button
-                onClick={handleGovConfirm}
+                onClick={handleManualSubmit}
                 disabled={!govId}
                 className="w-full py-4 font-bold rounded-2xl transition-all disabled:opacity-35"
                 style={{
