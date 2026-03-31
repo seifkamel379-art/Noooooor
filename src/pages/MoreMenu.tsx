@@ -126,15 +126,14 @@ function ShareChooserSheet({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const [instaCopied, setInstaCopied] = useState(false);
   const APP_URL = 'https://noor-web--noorweb1000.replit.app/';
-  const APP_TITLE = 'تطبيق نُور - رفيقك الإسلامي';
-  const MESSAGE = `السلام عليكم ورحمة الله 🌙
+  const APP_TITLE = 'تطبيق نُور - رفيقك الإسلامي الشامل';
+  const MESSAGE = `تطبيق نـــور - رفيقك الإسلامي الشامل 🌙
 
-حبيت أهديك تطبيق (Noor App) نُور، تطبيق إسلامي مميز وبدون إعلانات، بيساعدك تحافظ على أذكارك وصلاتك وتسبيحاتك.
+النبي ﷺ قال: "الدال على الخير كفاعله". 🌸
+حمله من اللينك ده، وشاركه مع حبايبك عشان الأجر يعم ويزيد:
+🔗 ${APP_URL}
 
-قال ﷺ: «الدال على الخير كفاعله».. حمله من هنا وشاركنا الأجر:
-${APP_URL}
-
-نسألكم الدعاء`;
+نسألكم الدعاء بظهر الغيب 🤲`;
 
   const encodedMsg = encodeURIComponent(MESSAGE);
   const encodedUrl = encodeURIComponent(APP_URL);
@@ -173,7 +172,7 @@ ${APP_URL}
       bg: '#0088cc',
       color: '#fff',
       icon: <TelegramSvg />,
-      action: () => { window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(MESSAGE.split('\n')[0])}`, '_blank'); onClose(); },
+      action: () => { window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedMsg}`, '_blank'); onClose(); },
     },
     {
       id: 'twitter',
@@ -245,7 +244,26 @@ ${APP_URL}
       icon: <Share2 size={22} />,
       action: async () => {
         if (navigator.share) {
-          try { await navigator.share({ title: APP_TITLE, text: MESSAGE, url: APP_URL }); } catch { /* dismissed */ }
+          try {
+            const logoUrl = `${window.location.origin}/logo.png`;
+            let files: File[] | undefined;
+            try {
+              const resp = await fetch(logoUrl);
+              if (resp.ok) {
+                const blob = await resp.blob();
+                const file = new File([blob], 'noor-app.png', { type: blob.type || 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                  files = [file];
+                }
+              }
+            } catch { /* image fetch failed, share without image */ }
+
+            if (files) {
+              await navigator.share({ title: APP_TITLE, text: MESSAGE, files });
+            } else {
+              await navigator.share({ title: APP_TITLE, text: MESSAGE, url: APP_URL });
+            }
+          } catch { /* dismissed */ }
         }
         onClose();
       },
