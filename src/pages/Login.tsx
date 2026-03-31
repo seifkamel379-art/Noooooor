@@ -62,10 +62,16 @@ export function Login({ onComplete }: LoginProps) {
       setName(user.name);
       setStep(2);
     } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('popup-closed')) {
+      const code = (err as { code?: string })?.code ?? '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         setGoogleError('');
+      } else if (code === 'auth/unauthorized-domain') {
+        setGoogleError('unauthorized-domain');
+      } else if (code === 'auth/popup-blocked') {
+        setGoogleError('يرجى السماح للنوافذ المنبثقة في متصفحك ثم حاول مرة أخرى');
       } else {
-        setGoogleError('حدث خطأ. حاول مرة أخرى.');
+        console.error('Google sign-in error:', code, err);
+        setGoogleError(`حدث خطأ (${code || 'unknown'}). حاول مرة أخرى.`);
       }
     } finally {
       setGoogleLoading(false);
@@ -137,9 +143,33 @@ export function Login({ onComplete }: LoginProps) {
                 {googleLoading ? 'جارٍ التسجيل...' : 'تسجيل الدخول بجوجل'}
               </button>
 
-              {googleError && (
-                <p className="text-red-400 text-xs text-center">{googleError}</p>
-              )}
+              {googleError === 'unauthorized-domain' ? (
+                <div
+                  className="rounded-xl p-4 text-xs"
+                  style={{ background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.3)' }}
+                  dir="rtl"
+                >
+                  <p className="text-red-300 font-bold mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                    يجب إضافة النطاق في Firebase Console:
+                  </p>
+                  <p className="text-white/60 mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                    ١. افتح: Firebase Console → Authentication → Settings → Authorized domains
+                  </p>
+                  <p className="text-white/60 mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                    ٢. اضغط «Add domain» وأضف هذا النطاق:
+                  </p>
+                  <code
+                    className="block text-[10px] text-yellow-300 break-all p-2 rounded-lg"
+                    style={{ background: 'rgba(0,0,0,0.4)', direction: 'ltr', textAlign: 'left' }}
+                  >
+                    {window.location.hostname}
+                  </code>
+                </div>
+              ) : googleError ? (
+                <p className="text-red-400 text-xs text-center" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  {googleError}
+                </p>
+              ) : null}
 
               {/* Divider */}
               <div className="flex items-center gap-3 my-1">
