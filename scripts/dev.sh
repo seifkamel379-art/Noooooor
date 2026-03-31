@@ -14,4 +14,4 @@ echo "API server port: $API_SERVER_PORT"
 
 (PORT=$API_SERVER_PORT pnpm --filter @workspace/api-server run dev) &
 
-exec "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
+"$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
