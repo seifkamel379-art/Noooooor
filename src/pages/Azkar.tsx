@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type ReactElement } from 'react';
 import {
   MORNING_AZKAR, EVENING_AZKAR, AZKAR_AFTER_PRAYER, AZKAR_SLEEP, AZKAR_VARIOUS,
   PROPHETIC_DUAS, AZKAR_WAKEUP, AZKAR_HOME, AZKAR_MASJID, AZKAR_FOOD, AZKAR_TRAVEL, AZKAR_DISTRESS, AZKAR_WEATHER,
@@ -15,7 +15,7 @@ import {
 type TabId = 'morning' | 'evening' | 'sleep' | 'after' | 'various'
            | 'wakeup' | 'home' | 'masjid' | 'food' | 'travel' | 'distress' | 'weather' | 'prophetic';
 
-type TabIconComp = (props: { className?: string; size?: number }) => JSX.Element;
+type TabIconComp = (props: { className?: string; size?: number }) => ReactElement;
 const TAB_ICONS: Record<TabId, TabIconComp> = {
   morning:   MorningIcon,
   evening:   EveningIcon,

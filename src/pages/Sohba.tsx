@@ -35,7 +35,7 @@ interface UserStats {
 interface LeaderboardEntry {
   userId: string;
   displayName: string;
-  governorate?: string;
+  governorate?: string | null;
   tasbeehCount: number;
   quranCompletions: number;
   azkarStreak: number;
@@ -216,7 +216,7 @@ function BadgeCard({ badge, unlocked, completions }: { badge: Badge; unlocked: b
         }
       >
         {unlocked
-          ? <Icon size={24} style={{ color: badge.color }} />
+          ? <span style={{ color: badge.color, display: 'flex' }}><Icon size={24} /></span>
           : <Lock size={18} className="text-[#C19A6B]/30" />
         }
 
@@ -725,10 +725,9 @@ export function Sohba() {
   const userId = profile ? getUserId(profile) : null;
 
   useEffect(() => {
-    if (!welcomeSeen) {
-      const t = setTimeout(() => setShowWelcome(true), 400);
-      return () => clearTimeout(t);
-    }
+    if (welcomeSeen) return undefined;
+    const t = setTimeout(() => setShowWelcome(true), 400);
+    return () => clearTimeout(t);
   }, [welcomeSeen]);
 
   const syncToLeaderboard = useCallback(async (pub: boolean) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactElement } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { MORNING_AZKAR, EVENING_AZKAR, SURAH_NAMES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -250,7 +250,7 @@ function IshaIcon({ done }: { done: boolean }) {
   );
 }
 
-type PrayerIconComp = ({ done }: { done: boolean }) => JSX.Element;
+type PrayerIconComp = ({ done }: { done: boolean }) => ReactElement;
 const PRAYER_ICONS: Record<PrayerKey, PrayerIconComp> = {
   fajr: FajrIcon,
   dhuhr: DhuhrIcon,
