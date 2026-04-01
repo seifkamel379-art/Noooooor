@@ -2,7 +2,7 @@ import { useState, type ReactNode, type ComponentType } from 'react';
 import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
-  Star, Copy, X, Check, Mail, MessageSquare,
+  Star, Copy, X, Check, Mail, MessageSquare, Settings2,
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -491,6 +491,28 @@ export function MoreMenu() {
           </div>
           <ChevronLeft className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
         </a>
+
+        {/* Settings Card */}
+        <Link href="/settings">
+          <button
+            className="w-full flex items-center justify-between bg-card p-3.5 rounded-2xl border border-border/40 hover-elevate"
+            data-testid="button-settings"
+          >
+            <div className="flex items-center gap-3.5">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(145deg, #5a4a8a, #3a2d6a)' }}
+              >
+                <Settings2 className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-right">
+                <span className="font-bold text-base block" style={{ fontFamily: '"Tajawal", sans-serif' }}>الخصائص</span>
+                <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>الخلفية وحجم الخط وإعدادات التطبيق</span>
+              </div>
+            </div>
+            <ChevronLeft className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+          </button>
+        </Link>
 
         {/* Dark Mode Toggle */}
         <button

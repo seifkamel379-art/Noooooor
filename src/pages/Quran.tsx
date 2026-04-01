@@ -17,13 +17,23 @@ function getWordAudioUrl(surah: number, ayah: number, wordIdx: number): string {
 }
 
 function AyahMarker({ num, bookmarked, dark }: { num: number; bookmarked?: boolean; dark: boolean }) {
+  const gold = bookmarked ? '#d4a843' : dark ? '#c9a96e' : '#8B5E3C';
+  const fill = bookmarked ? 'rgba(212,168,67,0.25)' : dark ? 'rgba(193,154,107,0.12)' : 'rgba(193,154,107,0.15)';
   return (
     <span className="inline-block align-middle mx-1" style={{ direction: 'ltr', unicodeBidi: 'embed' }}>
-      <svg width="28" height="28" viewBox="0 0 100 100" style={{ display: 'inline', verticalAlign: 'middle' }}>
-        <circle cx="50" cy="50" r="46" fill="none" stroke={bookmarked ? '#C19A6B' : dark ? '#7a5c2a' : '#C19A6B'} strokeWidth="2.5" />
-        <circle cx="50" cy="50" r="38" fill={bookmarked ? 'rgba(193,154,107,0.25)' : 'rgba(193,154,107,0.08)'} stroke={bookmarked ? '#C19A6B' : dark ? '#5a3e18' : 'rgba(193,154,107,0.5)'} strokeWidth="1.5" />
-        <text x="50" y="56" textAnchor="middle" dominantBaseline="middle"
-          style={{ fontSize: num > 99 ? '28px' : '32px', fill: bookmarked ? '#C19A6B' : dark ? '#c9a96e' : '#8B5E3C', fontFamily: 'serif', fontWeight: 'bold' }}>
+      <svg width="30" height="30" viewBox="0 0 100 100" style={{ display: 'inline', verticalAlign: 'middle' }}>
+        {/* 8-petal rosette like Mushaf Al-Madinah */}
+        {[0,45,90,135].map(angle => (
+          <ellipse key={angle}
+            cx="50" cy="50" rx="44" ry="18"
+            fill={fill}
+            stroke={gold} strokeWidth="1.5"
+            transform={`rotate(${angle} 50 50)`}
+          />
+        ))}
+        <circle cx="50" cy="50" r="22" fill={bookmarked ? 'rgba(212,168,67,0.3)' : dark ? 'rgba(40,28,10,0.9)' : 'rgba(253,245,228,0.95)'} stroke={gold} strokeWidth="1.5" />
+        <text x="50" y="55" textAnchor="middle" dominantBaseline="middle"
+          style={{ fontSize: num > 99 ? '24px' : '28px', fill: gold, fontFamily: '"Scheherazade New","Amiri",serif', fontWeight: '700' }}>
           {num}
         </text>
       </svg>
@@ -296,106 +306,121 @@ export function Quran() {
     <div className="h-screen flex flex-col relative" dir="rtl" style={{ background: C.pageBg }}>
       {/* ── Header ── */}
       <div
-        className="px-4 py-3 flex items-center justify-between z-10 flex-shrink-0"
+        className="px-3 py-2.5 flex items-center justify-between z-10 flex-shrink-0 gap-2"
         style={{ background: C.headerBg, borderBottom: `1px solid ${C.headerBorder}`, boxShadow: C.headerShadow }}
       >
+        {/* Back button */}
         <button
           onClick={() => { setSelectedSurah(null); setMode('normal'); setSelectedAyah(null); setActiveAyah(null); wordAudioRef.current?.pause(); }}
-          className="p-2 rounded-full"
-          style={{ background: C.btnBg, border: `1px solid ${C.btnBorder}` }}
+          className="flex items-center justify-center rounded-xl flex-shrink-0 transition-all"
+          style={{ width: 36, height: 36, background: C.btnBg, border: `1px solid ${C.btnBorder}` }}
+          title="قائمة السور"
         >
-          <X className="w-4 h-4" style={{ color: '#C19A6B' }} />
+          <ChevronRight className="w-5 h-5" style={{ color: '#C19A6B' }} />
         </button>
 
-        <div className="text-center flex-1 px-2">
-          <h2 className="font-bold text-base" style={{ fontFamily: '"Amiri", serif', color: C.surahTitle }}>{surahName}</h2>
-          <p className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+        {/* Center: surah name + juz */}
+        <div className="text-center flex-1 min-w-0">
+          <h2 className="font-bold text-base leading-tight truncate" style={{ fontFamily: '"Scheherazade New", "Amiri", serif', color: C.surahTitle }}>{surahName}</h2>
+          <p className="text-[11px]" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
             الجزء {currentJuz ?? surahData?.ayahs?.[0]?.juz ?? '—'}
             {hizbDisplay ? ` • ${hizbDisplay}` : ''}
           </p>
         </div>
 
-        <div className="flex gap-1.5 items-center">
-          {/* Font size controls */}
+        {/* Right actions */}
+        <div className="flex gap-1 items-center flex-shrink-0">
+          {/* Decrease font */}
           <button
             onClick={decreaseFontSize}
             disabled={fontSize <= FONT_MIN}
-            className="flex items-center justify-center rounded-full transition-all"
+            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
             style={{
-              width: 32, height: 32,
+              width: 36, height: 36,
               background: C.btnBg,
               border: `1px solid ${C.btnBorder}`,
-              color: fontSize <= FONT_MIN ? 'rgba(193,154,107,0.3)' : '#C19A6B',
-              flexShrink: 0,
+              opacity: fontSize <= FONT_MIN ? 0.35 : 1,
             }}
             title="تصغير الخط"
           >
-            <AArrowDown className="w-4 h-4" />
+            <AArrowDown className="w-4 h-4" style={{ color: '#C19A6B' }} />
           </button>
+          {/* Increase font */}
           <button
             onClick={increaseFontSize}
             disabled={fontSize >= FONT_MAX}
-            className="flex items-center justify-center rounded-full transition-all"
+            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
             style={{
-              width: 32, height: 32,
+              width: 36, height: 36,
               background: C.btnBg,
               border: `1px solid ${C.btnBorder}`,
-              color: fontSize >= FONT_MAX ? 'rgba(193,154,107,0.3)' : '#C19A6B',
-              flexShrink: 0,
+              opacity: fontSize >= FONT_MAX ? 0.35 : 1,
             }}
             title="تكبير الخط"
           >
-            <AArrowUp className="w-4 h-4" />
+            <AArrowUp className="w-4 h-4" style={{ color: '#C19A6B' }} />
           </button>
+          {/* Bookmark jump */}
           {bookmark && (
             <button
               onClick={goToBookmark}
-              className="p-2 rounded-full relative"
-              style={{ background: 'rgba(193,154,107,0.15)', border: `1px solid ${C.bookmarkBorder}` }}
-              title="انتقل للعلامة المحفوظة"
+              className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
+              style={{ width: 36, height: 36, background: 'rgba(193,154,107,0.18)', border: `1px solid ${C.bookmarkBorder}` }}
+              title="علامة الحفظ"
             >
               <Bookmark className="w-4 h-4 fill-current" style={{ color: '#C19A6B' }} />
             </button>
           )}
+          {/* Listen mode */}
           <button
             onClick={() => { setMode(mode === 'listen' ? 'normal' : 'listen'); setSelectedAyah(null); }}
-            className="p-2 rounded-full transition-all"
+            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
             style={{
+              width: 36, height: 36,
               background: mode === 'listen' ? '#C19A6B' : C.btnBg,
-              border: `1px solid ${C.btnBorder}`,
+              border: `1px solid ${mode === 'listen' ? '#C19A6B' : C.btnBorder}`,
             }}
+            title="الاستماع"
           >
             <Headphones className="w-4 h-4" style={{ color: mode === 'listen' ? '#0f0c07' : '#C19A6B' }} />
           </button>
+          {/* Tafsir mode */}
           <button
             onClick={() => { setMode(mode === 'tafsir' ? 'normal' : 'tafsir'); setSelectedAyah(null); }}
-            className="p-2 rounded-full transition-all"
+            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
             style={{
+              width: 36, height: 36,
               background: mode === 'tafsir' ? '#C19A6B' : C.btnBg,
-              border: `1px solid ${C.btnBorder}`,
+              border: `1px solid ${mode === 'tafsir' ? '#C19A6B' : C.btnBorder}`,
             }}
+            title="التفسير"
           >
             <FileText className="w-4 h-4" style={{ color: mode === 'tafsir' ? '#0f0c07' : '#C19A6B' }} />
           </button>
         </div>
       </div>
 
-      {/* Mode hint */}
-      {mode === 'listen' && (
-        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
-          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>👂 اضغط على أي كلمة لسماع نطقها</p>
-        </div>
-      )}
-      {mode === 'tafsir' && (
-        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
-          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>📖 اضغط على أي آية لعرض تفسيرها</p>
-        </div>
-      )}
-      {mode === 'normal' && (
-        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
-          <p className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>اضغط على آية لتعيين علامة الحفظ</p>
-        </div>
-      )}
+      {/* Mode hint strip */}
+      <div
+        className="flex items-center justify-center gap-2 px-4 py-1.5 flex-shrink-0"
+        style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}
+      >
+        {mode === 'listen' && (
+          <>
+            <Headphones className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#C19A6B' }} />
+            <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي كلمة لسماع نطقها</p>
+          </>
+        )}
+        {mode === 'tafsir' && (
+          <>
+            <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#C19A6B' }} />
+            <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض تفسيرها</p>
+          </>
+        )}
+        {mode === 'normal' && (
+          <p className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>اضغط على آية لحفظ موضعك</p>
+        )}
+      </div>
 
       {/* ── Quran Text ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-4 px-3">
@@ -403,46 +428,77 @@ export function Quran() {
           <div className="text-center py-20 animate-pulse" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>جاري تحميل السورة...</div>
         ) : (
           <div
-            className="rounded-2xl min-h-full overflow-hidden"
+            className="min-h-full overflow-hidden"
             style={{
               background: C.mushafBg,
-              border: `1px solid ${C.mushafBorder}`,
+              border: `2px solid ${C.mushafBorder}`,
               boxShadow: C.mushafShadow,
+              borderRadius: '8px',
             }}
           >
-            {/* Top ornamental border */}
-            <div className="relative overflow-hidden" style={{ height: '6px', background: 'linear-gradient(90deg, #3d2a0a 0%, #C19A6B 20%, #f0c040 50%, #C19A6B 80%, #3d2a0a 100%)' }} />
+            {/* Top double-rule border - Madinah Mushaf style */}
+            <div style={{ height: '3px', background: dark ? '#5a3e18' : '#8B5E3C' }} />
+            <div style={{ height: '1px', background: 'transparent' }} />
+            <div style={{ height: '8px', background: `linear-gradient(90deg, ${dark ? '#3d2a0a' : '#5c3518'} 0%, #C19A6B 15%, #f0c040 30%, #C19A6B 50%, #f0c040 70%, #C19A6B 85%, ${dark ? '#3d2a0a' : '#5c3518'} 100%)` }} />
+            <div style={{ height: '3px', background: dark ? '#5a3e18' : '#8B5E3C' }} />
 
-            {/* Surah name banner */}
+            {/* Surah name banner - Madinah Mushaf style */}
             <div
-              className="py-5 px-4 text-center"
-              style={{ borderBottom: `1px solid ${C.headerBorder}`, background: dark ? 'rgba(193,154,107,0.05)' : 'rgba(193,154,107,0.07)' }}
+              className="py-4 px-4 text-center"
+              style={{
+                borderBottom: `2px solid ${C.mushafBorder}`,
+                background: dark
+                  ? 'linear-gradient(180deg, rgba(193,154,107,0.12) 0%, rgba(193,154,107,0.06) 100%)'
+                  : 'linear-gradient(180deg, rgba(193,154,107,0.18) 0%, rgba(193,154,107,0.08) 100%)',
+              }}
             >
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(to right, transparent, rgba(193,154,107,0.5))' }} />
-                <svg width="16" height="16" viewBox="0 0 100 100"><polygon points="50,5 61,35 93,35 68,57 77,88 50,70 23,88 32,57 7,35 39,35" fill="#C19A6B" opacity="0.8" /></svg>
-                <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(to left, transparent, rgba(193,154,107,0.5))' }} />
+              {/* Decorative SVG top */}
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <svg width="60" height="10" viewBox="0 0 120 20" fill="none">
+                  <path d="M0 10 Q20 2 40 10 Q60 18 80 10 Q100 2 120 10" stroke={dark ? '#C19A6B' : '#8B5E3C'} strokeWidth="1.5" fill="none" opacity="0.7"/>
+                </svg>
+                <svg width="14" height="14" viewBox="0 0 100 100"><polygon points="50,5 61,35 93,35 68,57 77,88 50,70 23,88 32,57 7,35 39,35" fill="#C19A6B" /></svg>
+                <svg width="60" height="10" viewBox="0 0 120 20" fill="none">
+                  <path d="M0 10 Q20 18 40 10 Q60 2 80 10 Q100 18 120 10" stroke={dark ? '#C19A6B' : '#8B5E3C'} strokeWidth="1.5" fill="none" opacity="0.7"/>
+                </svg>
               </div>
-              <h2 className="text-3xl mb-2" style={{ fontFamily: '"Amiri Quran", "Amiri", serif', color: C.surahTitle }}>{surahName}</h2>
+
+              {/* Surah name in rectangle frame */}
+              <div
+                className="inline-block px-8 py-2 mx-auto mb-2"
+                style={{
+                  border: `1.5px solid ${dark ? 'rgba(193,154,107,0.5)' : 'rgba(139,94,60,0.6)'}`,
+                  borderRadius: '4px',
+                  background: dark ? 'rgba(193,154,107,0.08)' : 'rgba(253,245,228,0.9)',
+                  boxShadow: `inset 0 1px 0 ${dark ? 'rgba(193,154,107,0.15)' : 'rgba(193,154,107,0.2)'}`,
+                }}
+              >
+                <h2 className="text-2xl tracking-widest" style={{ fontFamily: '"Scheherazade New", "Amiri Quran", serif', color: C.surahTitle, letterSpacing: '0.12em' }}>
+                  سُورَةُ {surahName}
+                </h2>
+              </div>
+
               {selectedSurah !== 1 && selectedSurah !== 9 && (
-                <p className="text-lg mt-1" style={{ fontFamily: '"Amiri Quran", "Amiri", serif', color: C.bismillah }}>
-                  بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                <p className="text-xl mt-1 block" style={{ fontFamily: '"Scheherazade New", "Amiri Quran", serif', color: C.bismillah, lineHeight: 2.2 }}>
+                  بِسۡمِ ٱللَّهِ ٱلرَّحۡمَـٰنِ ٱلرَّحِیمِ
                 </p>
               )}
-              <div className="flex items-center justify-center gap-2 mt-3">
-                <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(to right, transparent, rgba(193,154,107,0.4))' }} />
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C19A6B', opacity: 0.6 }} />
-                <div className="w-2 h-2 rounded-full" style={{ background: '#C19A6B' }} />
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C19A6B', opacity: 0.6 }} />
-                <div className="h-px flex-1 max-w-16" style={{ background: 'linear-gradient(to left, transparent, rgba(193,154,107,0.4))' }} />
+
+              {/* Decorative bottom */}
+              <div className="flex items-center justify-center gap-1 mt-2">
+                <div className="h-px flex-1 max-w-20" style={{ background: `linear-gradient(to right, transparent, ${dark ? 'rgba(193,154,107,0.5)' : 'rgba(139,94,60,0.5)'})` }} />
+                <div className="w-1 h-1 rounded-full" style={{ background: '#C19A6B', opacity: 0.5 }} />
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C19A6B' }} />
+                <div className="w-1 h-1 rounded-full" style={{ background: '#C19A6B', opacity: 0.5 }} />
+                <div className="h-px flex-1 max-w-20" style={{ background: `linear-gradient(to left, transparent, ${dark ? 'rgba(193,154,107,0.5)' : 'rgba(139,94,60,0.5)'})` }} />
               </div>
             </div>
 
             {/* Ayah text body */}
             <div
-              className="p-5 text-justify relative"
+              className="px-5 py-6 text-justify relative"
               style={{
-                fontFamily: '"Amiri Quran", "Amiri", serif',
+                fontFamily: '"Scheherazade New", "Amiri Quran", "Amiri", serif',
                 color: C.ayahText,
                 direction: 'rtl',
                 fontSize: `${fontSize}rem`,
@@ -540,8 +596,10 @@ export function Quran() {
               })}
             </div>
 
-            {/* Bottom ornamental border */}
-            <div style={{ height: '6px', background: 'linear-gradient(90deg, #3d2a0a 0%, #C19A6B 20%, #f0c040 50%, #C19A6B 80%, #3d2a0a 100%)' }} />
+            {/* Bottom ornamental border - Madinah Mushaf style */}
+            <div style={{ height: '3px', background: dark ? '#5a3e18' : '#8B5E3C' }} />
+            <div style={{ height: '8px', background: `linear-gradient(90deg, ${dark ? '#3d2a0a' : '#5c3518'} 0%, #C19A6B 15%, #f0c040 30%, #C19A6B 50%, #f0c040 70%, #C19A6B 85%, ${dark ? '#3d2a0a' : '#5c3518'} 100%)` }} />
+            <div style={{ height: '3px', background: dark ? '#5a3e18' : '#8B5E3C' }} />
           </div>
         )}
       </div>

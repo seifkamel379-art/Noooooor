@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MiniPlayer } from "@/components/MiniPlayer";
 import { AudioProvider } from "@/contexts/AudioContext";
+import { AppSettingsProvider, useAppSettings } from "@/contexts/AppSettingsContext";
 import { SplashScreen } from "@/components/SplashScreen";
 
 import { Login } from "@/pages/Login";
@@ -17,6 +18,7 @@ import { Azkar } from "@/pages/Azkar";
 import { Tasbih } from "@/pages/Tasbih";
 import { GlobalCounter } from "@/pages/GlobalCounter";
 import { MoreMenu } from "@/pages/MoreMenu";
+import { Settings } from "@/pages/Settings";
 import { Asma } from "@/pages/Asma";
 import { Reciters } from "@/pages/Reciters";
 import { SpeedReader } from "@/pages/SpeedReader";
@@ -28,10 +30,38 @@ import { Hadith } from "@/pages/Hadith";
 
 const queryClient = new QueryClient();
 
-function AppShell({ children }: { children: React.ReactNode }) {
+function GlobalBackground() {
+  const { activeBgSrc } = useAppSettings();
+  if (!activeBgSrc) return null;
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary/30">
-      {children}
+    <div
+      className="fixed inset-0 z-0 pointer-events-none"
+      style={{
+        backgroundImage: `url(${activeBgSrc})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{ background: 'rgba(0,0,0,0.45)' }}
+      />
+    </div>
+  );
+}
+
+function AppShell({ children }: { children: React.ReactNode }) {
+  const { activeBgSrc } = useAppSettings();
+  return (
+    <div
+      className="min-h-[100dvh] text-foreground selection:bg-primary/30 relative"
+      style={{ background: activeBgSrc ? 'transparent' : undefined }}
+    >
+      {!activeBgSrc && <div className="absolute inset-0 bg-background -z-10" />}
+      <div className="relative z-10">
+        {children}
+      </div>
       <MiniPlayer />
       <BottomNav />
     </div>
@@ -39,9 +69,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function FullScreenShell({ children }: { children: React.ReactNode }) {
+  const { activeBgSrc } = useAppSettings();
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary/30">
-      {children}
+    <div
+      className="min-h-[100dvh] text-foreground selection:bg-primary/30 relative"
+      style={{ background: activeBgSrc ? 'transparent' : undefined }}
+    >
+      {!activeBgSrc && <div className="absolute inset-0 bg-background -z-10" />}
+      <div className="relative z-10">
+        {children}
+      </div>
     </div>
   );
 }
@@ -66,6 +103,9 @@ function Router() {
       </Route>
       <Route path="/more">
         <AppShell><MoreMenu /></AppShell>
+      </Route>
+      <Route path="/settings">
+        <AppShell><Settings /></AppShell>
       </Route>
       <Route path="/asma">
         <FullScreenShell><Asma /></FullScreenShell>
@@ -93,6 +133,15 @@ function Router() {
       </Route>
       <Route component={NotFound} />
     </Switch>
+  );
+}
+
+function AppContent() {
+  return (
+    <>
+      <GlobalBackground />
+      <Router />
+    </>
   );
 }
 
@@ -150,14 +199,16 @@ function App() {
 
       {splashDone && isLoggedIn === true && (
         <QueryClientProvider client={queryClient}>
-          <AudioProvider>
-            <TooltipProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-              </WouterRouter>
-              <Toaster />
-            </TooltipProvider>
-          </AudioProvider>
+          <AppSettingsProvider>
+            <AudioProvider>
+              <TooltipProvider>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <AppContent />
+                </WouterRouter>
+                <Toaster />
+              </TooltipProvider>
+            </AudioProvider>
+          </AppSettingsProvider>
         </QueryClientProvider>
       )}
     </>
