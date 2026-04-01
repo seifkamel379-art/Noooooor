@@ -5,9 +5,6 @@ import { TasbihIcon } from '@/components/NoorIcons';
 import {
   subscribeToGlobalCounter,
   subscribeToActiveSessions,
-  registerSession,
-  refreshSession,
-  unregisterSession,
   syncUserLeaderboard,
   fetchLeaderboard,
   type LeaderboardEntry,
@@ -86,14 +83,6 @@ function useDarkMode() {
   return isDark;
 }
 
-function getSessionId(): string {
-  let sid = sessionStorage.getItem('noor_sid');
-  if (!sid) {
-    sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    sessionStorage.setItem('noor_sid', sid);
-  }
-  return sid;
-}
 
 function getLocalTasbeehCount(): number {
   try {
@@ -424,16 +413,9 @@ export function GlobalCounter() {
       setActiveUsers(n);
     });
 
-    /* Register this session for presence */
-    const sid = getSessionId();
-    registerSession(sid).catch(() => {});
-    const heartbeat = setInterval(() => refreshSession(sid).catch(() => {}), 30_000);
-
     return () => {
       unsubCounter();
       unsubSessions();
-      clearInterval(heartbeat);
-      unregisterSession(sid).catch(() => {});
     };
   }, []);
 

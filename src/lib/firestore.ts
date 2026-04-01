@@ -59,14 +59,14 @@ export async function initCounter(): Promise<number> {
 }
 
 export async function incrementGlobalCounter(amount = 1): Promise<void> {
-  try {
-    await updateDoc(COUNTER_DOC, {
-      totalCount: increment(amount),
-      updatedAt: serverTimestamp(),
-    });
-  } catch {
-    await setDoc(COUNTER_DOC, { totalCount: amount, updatedAt: serverTimestamp() }, { merge: true });
-  }
+  // setDoc مع merge:true + increment() آمن تماماً:
+  // - لو الـ doc مش موجود: يعمله بـ totalCount = amount
+  // - لو موجود: يزيد totalCount بـ amount بشكل atomic
+  await setDoc(
+    COUNTER_DOC,
+    { totalCount: increment(amount), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
 }
 
 export function subscribeToGlobalCounter(
@@ -81,9 +81,32 @@ export function subscribeToGlobalCounter(
   });
 }
 
-/* ─── Active Sessions (presence) ────────────────────────── */
+/* ─── Active Dhikr Sessions ─────────────────────────────── */
+// عدد الذاكرين الآن = من ضغطوا زرار التسبيح في آخر 3 دقائق
 const SESSIONS_COL = collection(db, 'activeSessions');
-const SESSION_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const SESSION_TTL_MS = 3 * 60 * 1000; // 3 دقائق
+
+function getOrCreateSessionId(): string {
+  let sid = sessionStorage.getItem('noor_sid');
+  if (!sid) {
+    sid = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem('noor_sid', sid);
+  }
+  return sid;
+}
+
+export async function recordTasbeehPress(): Promise<void> {
+  // يُستدعى من صفحة التسبيح عند كل ضغطة
+  // يسجّل/يجدد جلسة المستخدم في Firebase لحساب عدد الذاكرين الآن
+  try {
+    const sid = getOrCreateSessionId();
+    await setDoc(
+      doc(db, 'activeSessions', sid),
+      { lastSeen: serverTimestamp() },
+      { merge: true },
+    );
+  } catch { /* ignore */ }
+}
 
 export async function registerSession(sid: string): Promise<void> {
   await setDoc(doc(db, 'activeSessions', sid), {

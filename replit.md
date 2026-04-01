@@ -41,11 +41,30 @@ This executes `scripts/dev.sh` which:
 
 Vite proxies `/api` requests to `localhost:3001`.
 
-## Firebase Auth
+## Firebase
 
-Google sign-in uses `signInWithPopup`. On mobile browsers that block popups, it automatically falls back to `signInWithRedirect`. The app calls `getGoogleRedirectResult()` on Login component mount to handle any pending redirect result.
+Single Firebase project: **noooooor-app** (projectId: `noooooor-app`)
+- Config hardcoded in `src/lib/firebase.ts` as fallback values, also in `vercel.json` env vars
+- Used for: Global Counter (Firestore), Active Sessions presence, Leaderboard
+- Login is manual name entry only (no Google sign-in)
+- `firebaseSignOut` in `src/lib/firebase.ts` is still exported for MoreMenu logout button
 
-If you see `auth/unauthorized-domain` error, add the Replit domain to Firebase Console → Authentication → Settings → Authorized domains.
+### Firestore Collections
+- `globalCounter/main` — total tasbeeh count, incremented atomically with `increment()`
+- `activeSessions/{sessionId}` — tracks users actively pressing tasbeeh (TTL: 3 min). Updated on every button press via `recordTasbeehPress()` in Tasbih.tsx
+- `sohbaLeaderboard/{userId}` — per-user leaderboard entries, only queried when `isPublic=true`
+
+### Required Firestore Rules (noooooor-app project)
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
 
 ## Key Configuration
 

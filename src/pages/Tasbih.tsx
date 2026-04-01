@@ -1,6 +1,6 @@
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { TASBIH_TYPES } from '@/lib/constants';
-import { incrementGlobalCounter } from '@/lib/firestore';
+import { incrementGlobalCounter, recordTasbeehPress } from '@/lib/firestore';
 import { BarChart2 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
@@ -124,6 +124,7 @@ export function Tasbih() {
     const currentDaily = parseInt(localStorage.getItem(dailyKey) ?? '0', 10);
     localStorage.setItem(dailyKey, String(currentDaily + 1));
     incrementGlobalCounter(1).catch(() => {});
+    recordTasbeehPress().catch(() => {}); // يسجّل الضغطة لحساب الذاكرين الآن
   };
 
   const handleResetConfirm = () => {
