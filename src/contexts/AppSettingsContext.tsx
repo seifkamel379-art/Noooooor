@@ -60,11 +60,9 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   })();
 
   useEffect(() => {
-    if (appFontScale !== 1) {
-      document.documentElement.style.setProperty('--app-font-scale', String(appFontScale));
-    } else {
-      document.documentElement.style.setProperty('--app-font-scale', '1');
-    }
+    document.documentElement.style.setProperty('--app-font-scale', String(appFontScale));
+    document.documentElement.style.fontSize = `${appFontScale}rem`;
+    return () => { document.documentElement.style.fontSize = ''; };
   }, [appFontScale]);
 
   return (

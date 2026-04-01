@@ -17,23 +17,13 @@ function getWordAudioUrl(surah: number, ayah: number, wordIdx: number): string {
 }
 
 function AyahMarker({ num, bookmarked, dark }: { num: number; bookmarked?: boolean; dark: boolean }) {
-  const gold = bookmarked ? '#d4a843' : dark ? '#c9a96e' : '#8B5E3C';
-  const fill = bookmarked ? 'rgba(212,168,67,0.25)' : dark ? 'rgba(193,154,107,0.12)' : 'rgba(193,154,107,0.15)';
   return (
     <span className="inline-block align-middle mx-1" style={{ direction: 'ltr', unicodeBidi: 'embed' }}>
-      <svg width="30" height="30" viewBox="0 0 100 100" style={{ display: 'inline', verticalAlign: 'middle' }}>
-        {/* 8-petal rosette like Mushaf Al-Madinah */}
-        {[0,45,90,135].map(angle => (
-          <ellipse key={angle}
-            cx="50" cy="50" rx="44" ry="18"
-            fill={fill}
-            stroke={gold} strokeWidth="1.5"
-            transform={`rotate(${angle} 50 50)`}
-          />
-        ))}
-        <circle cx="50" cy="50" r="22" fill={bookmarked ? 'rgba(212,168,67,0.3)' : dark ? 'rgba(40,28,10,0.9)' : 'rgba(253,245,228,0.95)'} stroke={gold} strokeWidth="1.5" />
-        <text x="50" y="55" textAnchor="middle" dominantBaseline="middle"
-          style={{ fontSize: num > 99 ? '24px' : '28px', fill: gold, fontFamily: '"Scheherazade New","Amiri",serif', fontWeight: '700' }}>
+      <svg width="28" height="28" viewBox="0 0 100 100" style={{ display: 'inline', verticalAlign: 'middle' }}>
+        <circle cx="50" cy="50" r="46" fill="none" stroke={bookmarked ? '#C19A6B' : dark ? '#7a5c2a' : '#C19A6B'} strokeWidth="2.5" />
+        <circle cx="50" cy="50" r="38" fill={bookmarked ? 'rgba(193,154,107,0.25)' : 'rgba(193,154,107,0.08)'} stroke={bookmarked ? '#C19A6B' : dark ? '#5a3e18' : 'rgba(193,154,107,0.5)'} strokeWidth="1.5" />
+        <text x="50" y="56" textAnchor="middle" dominantBaseline="middle"
+          style={{ fontSize: num > 99 ? '28px' : '32px', fill: bookmarked ? '#C19A6B' : dark ? '#c9a96e' : '#8B5E3C', fontFamily: 'serif', fontWeight: 'bold' }}>
           {num}
         </text>
       </svg>
@@ -306,121 +296,105 @@ export function Quran() {
     <div className="h-screen flex flex-col relative" dir="rtl" style={{ background: C.pageBg }}>
       {/* ── Header ── */}
       <div
-        className="px-3 py-2.5 flex items-center justify-between z-10 flex-shrink-0 gap-2"
+        className="px-4 py-3 flex items-center justify-between z-10 flex-shrink-0"
         style={{ background: C.headerBg, borderBottom: `1px solid ${C.headerBorder}`, boxShadow: C.headerShadow }}
       >
-        {/* Back button */}
         <button
           onClick={() => { setSelectedSurah(null); setMode('normal'); setSelectedAyah(null); setActiveAyah(null); wordAudioRef.current?.pause(); }}
-          className="flex items-center justify-center rounded-xl flex-shrink-0 transition-all"
-          style={{ width: 36, height: 36, background: C.btnBg, border: `1px solid ${C.btnBorder}` }}
-          title="قائمة السور"
+          className="p-2 rounded-full"
+          style={{ background: C.btnBg, border: `1px solid ${C.btnBorder}` }}
         >
-          <ChevronRight className="w-5 h-5" style={{ color: '#C19A6B' }} />
+          <X className="w-4 h-4" style={{ color: '#C19A6B' }} />
         </button>
 
-        {/* Center: surah name + juz */}
-        <div className="text-center flex-1 min-w-0">
-          <h2 className="font-bold text-base leading-tight truncate" style={{ fontFamily: '"Scheherazade New", "Amiri", serif', color: C.surahTitle }}>{surahName}</h2>
-          <p className="text-[11px]" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+        <div className="text-center flex-1 px-2">
+          <h2 className="font-bold text-base" style={{ fontFamily: '"Amiri", serif', color: C.surahTitle }}>{surahName}</h2>
+          <p className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
             الجزء {currentJuz ?? surahData?.ayahs?.[0]?.juz ?? '—'}
             {hizbDisplay ? ` • ${hizbDisplay}` : ''}
           </p>
         </div>
 
-        {/* Right actions */}
-        <div className="flex gap-1 items-center flex-shrink-0">
-          {/* Decrease font */}
+        <div className="flex gap-1.5 items-center">
           <button
             onClick={decreaseFontSize}
             disabled={fontSize <= FONT_MIN}
-            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
+            className="flex items-center justify-center rounded-full transition-all"
             style={{
-              width: 36, height: 36,
+              width: 32, height: 32,
               background: C.btnBg,
               border: `1px solid ${C.btnBorder}`,
-              opacity: fontSize <= FONT_MIN ? 0.35 : 1,
+              color: fontSize <= FONT_MIN ? 'rgba(193,154,107,0.3)' : '#C19A6B',
+              flexShrink: 0,
             }}
             title="تصغير الخط"
           >
-            <AArrowDown className="w-4 h-4" style={{ color: '#C19A6B' }} />
+            <AArrowDown className="w-4 h-4" />
           </button>
-          {/* Increase font */}
           <button
             onClick={increaseFontSize}
             disabled={fontSize >= FONT_MAX}
-            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
+            className="flex items-center justify-center rounded-full transition-all"
             style={{
-              width: 36, height: 36,
+              width: 32, height: 32,
               background: C.btnBg,
               border: `1px solid ${C.btnBorder}`,
-              opacity: fontSize >= FONT_MAX ? 0.35 : 1,
+              color: fontSize >= FONT_MAX ? 'rgba(193,154,107,0.3)' : '#C19A6B',
+              flexShrink: 0,
             }}
             title="تكبير الخط"
           >
-            <AArrowUp className="w-4 h-4" style={{ color: '#C19A6B' }} />
+            <AArrowUp className="w-4 h-4" />
           </button>
-          {/* Bookmark jump */}
           {bookmark && (
             <button
               onClick={goToBookmark}
-              className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
-              style={{ width: 36, height: 36, background: 'rgba(193,154,107,0.18)', border: `1px solid ${C.bookmarkBorder}` }}
-              title="علامة الحفظ"
+              className="p-2 rounded-full relative"
+              style={{ background: 'rgba(193,154,107,0.15)', border: `1px solid ${C.bookmarkBorder}` }}
+              title="انتقل للعلامة المحفوظة"
             >
               <Bookmark className="w-4 h-4 fill-current" style={{ color: '#C19A6B' }} />
             </button>
           )}
-          {/* Listen mode */}
           <button
             onClick={() => { setMode(mode === 'listen' ? 'normal' : 'listen'); setSelectedAyah(null); }}
-            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
+            className="p-2 rounded-full transition-all"
             style={{
-              width: 36, height: 36,
               background: mode === 'listen' ? '#C19A6B' : C.btnBg,
-              border: `1px solid ${mode === 'listen' ? '#C19A6B' : C.btnBorder}`,
+              border: `1px solid ${C.btnBorder}`,
             }}
-            title="الاستماع"
           >
             <Headphones className="w-4 h-4" style={{ color: mode === 'listen' ? '#0f0c07' : '#C19A6B' }} />
           </button>
-          {/* Tafsir mode */}
           <button
             onClick={() => { setMode(mode === 'tafsir' ? 'normal' : 'tafsir'); setSelectedAyah(null); }}
-            className="flex flex-col items-center justify-center rounded-xl transition-all gap-0.5"
+            className="p-2 rounded-full transition-all"
             style={{
-              width: 36, height: 36,
               background: mode === 'tafsir' ? '#C19A6B' : C.btnBg,
-              border: `1px solid ${mode === 'tafsir' ? '#C19A6B' : C.btnBorder}`,
+              border: `1px solid ${C.btnBorder}`,
             }}
-            title="التفسير"
           >
             <FileText className="w-4 h-4" style={{ color: mode === 'tafsir' ? '#0f0c07' : '#C19A6B' }} />
           </button>
         </div>
       </div>
 
-      {/* Mode hint strip */}
-      <div
-        className="flex items-center justify-center gap-2 px-4 py-1.5 flex-shrink-0"
-        style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}
-      >
-        {mode === 'listen' && (
-          <>
-            <Headphones className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#C19A6B' }} />
-            <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي كلمة لسماع نطقها</p>
-          </>
-        )}
-        {mode === 'tafsir' && (
-          <>
-            <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#C19A6B' }} />
-            <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض تفسيرها</p>
-          </>
-        )}
-        {mode === 'normal' && (
-          <p className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>اضغط على آية لحفظ موضعك</p>
-        )}
-      </div>
+      {/* Mode hint */}
+      {mode === 'listen' && (
+        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
+          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي كلمة لسماع نطقها</p>
+        </div>
+      )}
+      {mode === 'tafsir' && (
+        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
+          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض تفسيرها</p>
+        </div>
+      )}
+      {mode === 'normal' && (
+        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
+          <p className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>اضغط على آية لتعيين علامة الحفظ</p>
+        </div>
+      )}
 
       {/* ── Quran Text ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-4 px-3">

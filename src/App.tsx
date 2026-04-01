@@ -52,13 +52,8 @@ function GlobalBackground() {
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {
-  const { activeBgSrc } = useAppSettings();
   return (
-    <div
-      className="min-h-[100dvh] text-foreground selection:bg-primary/30 relative"
-      style={{ background: activeBgSrc ? 'transparent' : undefined }}
-    >
-      {!activeBgSrc && <div className="absolute inset-0 bg-background -z-10" />}
+    <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary/30 relative">
       <div className="relative z-10">
         {children}
       </div>
@@ -69,13 +64,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function FullScreenShell({ children }: { children: React.ReactNode }) {
-  const { activeBgSrc } = useAppSettings();
   return (
-    <div
-      className="min-h-[100dvh] text-foreground selection:bg-primary/30 relative"
-      style={{ background: activeBgSrc ? 'transparent' : undefined }}
-    >
-      {!activeBgSrc && <div className="absolute inset-0 bg-background -z-10" />}
+    <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary/30 relative">
       <div className="relative z-10">
         {children}
       </div>
