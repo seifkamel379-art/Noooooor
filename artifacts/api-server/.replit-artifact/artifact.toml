@@ -10,7 +10,7 @@ name = "API Server"
 paths = ["/"]
 
 [services.development]
-run = "PORT=19382 pnpm -w run dev"
+run = "pnpm -w run dev"
 
 [services.production]
 build = "npm run build && pnpm --filter @workspace/api-server run build"
@@ -21,5 +21,3 @@ args = ["node", "artifacts/api-server/dist/index.cjs"]
 [services.production.run.env]
 PORT = "8080"
 
-[services.production.health.startup]
-path = "/"

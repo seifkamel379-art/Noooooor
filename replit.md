@@ -32,12 +32,12 @@ This is a pnpm monorepo workspace.
 
 The "Start application" workflow runs:
 ```
-PORT=19382 pnpm -w run dev
+pnpm -w run dev
 ```
 
 This executes `scripts/dev.sh` which:
 1. Starts the API server on port 3001 via `pnpm --filter @workspace/api-server run dev` (in background)
-2. Starts Vite on `$PORT` (19382 in dev, forwarded to external 80)
+2. Starts Vite on `$PORT` (defaults to 19382, mapped to external port 80)
 
 Vite proxies `/api` requests to `localhost:3001`.
 
