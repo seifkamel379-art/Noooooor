@@ -116,6 +116,8 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [myRank, setMyRank] = useState<number | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const gold = isDark ? '#E8C98A' : '#7A4F1E';
   const cardBg = isDark ? 'rgba(193,154,107,0.06)' : 'rgba(193,154,107,0.08)';
@@ -151,23 +153,37 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
 
   const loadLeaderboard = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const list = await fetchLeaderboard();
       setEntries(list);
+      setFetchError(null);
       if (stableUid) {
         const idx = list.findIndex((e) => e.userId === stableUid);
         setMyRank(idx >= 0 ? idx + 1 : null);
       }
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? '';
+      if (code === 'permission-denied') {
+        setFetchError('permission-denied');
+      } else {
+        setFetchError('network');
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [stableUid]);
 
   useEffect(() => {
     const autoSync = async () => {
+      setSyncError(null);
       if (stableUid && userProfile) {
         try {
           await syncUserLeaderboard(buildSyncPayload(userVisible));
-        } catch { /* ignore */ }
+        } catch (err: unknown) {
+          const code = (err as { code?: string })?.code ?? '';
+          if (code === 'permission-denied') setSyncError('permission-denied');
+        }
       }
       await loadLeaderboard();
     };
@@ -177,13 +193,16 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
   const toggleVisibility = async () => {
     if (!userProfile || !stableUid) return;
     const newVisible = !userVisible;
-    setUserVisible(newVisible); // تحديث الواجهة فوراً
+    setUserVisible(newVisible);
     setSyncing(true);
+    setSyncError(null);
     try {
       await syncUserLeaderboard(buildSyncPayload(newVisible));
       await loadLeaderboard();
-    } catch {
-      setUserVisible(!newVisible); // ارجع للحالة القديمة لو فشل
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? '';
+      if (code === 'permission-denied') setSyncError('permission-denied');
+      setUserVisible(!newVisible);
     }
     setSyncing(false);
   };
@@ -282,11 +301,36 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
         </p>
       </div>
 
+      {/* رسالة خطأ الـ sync */}
+      {(syncError === 'permission-denied' || fetchError === 'permission-denied') && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}
+        >
+          <p className="text-xs font-bold mb-1" style={{ color: '#ef4444', fontFamily: '"Tajawal", sans-serif' }}>
+            خطأ في الصلاحيات — Firestore rules
+          </p>
+          <p className="text-[11px] leading-relaxed" style={{ color: '#ef4444', fontFamily: '"Tajawal", sans-serif', opacity: 0.8 }}>
+            افتح Firebase Console → مشروع noooooor-app → Firestore → Rules والصق القواعد المطلوبة ثم اضغط Publish
+          </p>
+        </div>
+      )}
+      {fetchError === 'network' && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}
+        >
+          <p className="text-xs" style={{ color: '#ef4444', fontFamily: '"Tajawal", sans-serif' }}>
+            تعذّر الاتصال بالخادم — تأكد من الإنترنت واضغط ↻
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-10">
           <RefreshCw size={24} className="animate-spin" style={{ color: '#C19A6B', opacity: 0.5 }} />
         </div>
-      ) : entries.length === 0 ? (
+      ) : entries.length === 0 && !fetchError ? (
         <div className="text-center py-10">
           <Trophy size={32} style={{ color: '#C19A6B', opacity: 0.3, margin: '0 auto 8px' }} />
           <p className="text-sm" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif', opacity: 0.5 }}>

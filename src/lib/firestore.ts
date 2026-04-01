@@ -6,10 +6,6 @@ import {
   deleteDoc,
   onSnapshot,
   collection,
-  query,
-  where,
-  orderBy,
-  limit,
   getDocs,
   increment,
   serverTimestamp,
@@ -161,14 +157,14 @@ export async function syncUserLeaderboard(data: SohbaUserData): Promise<number> 
 }
 
 export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
-  const q = query(
-    collection(db, 'sohbaLeaderboard'),
-    where('isPublic', '==', true),
-    orderBy('noorScore', 'desc'),
-    limit(50),
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as LeaderboardEntry);
+  // نجيب كل الـ docs بدون composite index
+  // ونفلتر ونرتب على جانب الـ client
+  const snap = await getDocs(collection(db, 'sohbaLeaderboard'));
+  const all = snap.docs.map((d) => d.data() as LeaderboardEntry);
+  return all
+    .filter((e) => e.isPublic === true)
+    .sort((a, b) => (b.noorScore ?? 0) - (a.noorScore ?? 0))
+    .slice(0, 50);
 }
 
 export async function fetchUserEntry(userId: string): Promise<LeaderboardEntry | null> {
