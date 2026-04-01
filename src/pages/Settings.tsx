@@ -11,7 +11,7 @@ export function Settings() {
 
   const {
     bgType, bgPreset, bgCustom,
-    appFontScale,
+    appFontScale, hasBg,
     setBgType, setBgPreset, setBgCustom,
     setAppFontScale,
   } = useAppSettings();
@@ -30,11 +30,13 @@ export function Settings() {
     reader.readAsDataURL(file);
   };
 
-  const sectionBg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(193,154,107,0.06)';
+  const sectionBg = hasBg
+    ? (dark ? 'rgba(10,8,4,0.88)' : 'rgba(253,251,245,0.92)')
+    : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(193,154,107,0.06)');
   const borderColor = dark ? 'rgba(193,154,107,0.2)' : 'rgba(193,154,107,0.3)';
   const textColor = dark ? '#e8d9b8' : '#2C1E16';
   const subText = dark ? 'rgba(232,217,184,0.55)' : '#8B5E3C';
-  const pageBg = dark ? '#0f0c07' : '#FDFBF5';
+  const pageBg = hasBg ? 'transparent' : (dark ? '#0f0c07' : '#FDFBF5');
 
   const fontLabels = ['صغير', 'عادي', 'كبير', 'أكبر'];
   const fontValues = [0.85, 1, 1.15, 1.3];

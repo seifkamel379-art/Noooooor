@@ -45,15 +45,16 @@ function GlobalBackground() {
     >
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.45)' }}
+        style={{ background: 'rgba(0,0,0,0.28)' }}
       />
     </div>
   );
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {
+  const { hasBg } = useAppSettings();
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary/30 relative">
+    <div className={`min-h-[100dvh] ${hasBg ? 'bg-transparent' : 'bg-background'} text-foreground selection:bg-primary/30 relative`}>
       <div className="relative z-10">
         {children}
       </div>
@@ -64,8 +65,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function FullScreenShell({ children }: { children: React.ReactNode }) {
+  const { hasBg } = useAppSettings();
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary/30 relative">
+    <div className={`min-h-[100dvh] ${hasBg ? 'bg-transparent' : 'bg-background'} text-foreground selection:bg-primary/30 relative`}>
       <div className="relative z-10">
         {children}
       </div>

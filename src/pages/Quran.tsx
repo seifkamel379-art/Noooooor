@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuranSurahs, useSurah, useTafsir } from '@/hooks/use-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { SURAH_NAMES } from '@/lib/constants';
 import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown } from 'lucide-react';
 import { padZero, cn } from '@/lib/utils';

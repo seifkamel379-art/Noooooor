@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Square, Volume2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { ADHAN_RECITERS } from '@/lib/constants';
 
 function MosqueSVG() {

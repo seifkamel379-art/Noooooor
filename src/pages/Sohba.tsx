@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Crown, Wind, Heart, Waves, BookOpen, ScrollText,

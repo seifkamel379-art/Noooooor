@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 /* ─── Vintage woodgrain background pattern ───────────────── */
 function WoodBg() {

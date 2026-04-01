@@ -28,6 +28,7 @@ interface AppSettings {
   setBgCustom: (v: string) => void;
   setAppFontScale: (v: number) => void;
   activeBgSrc: string | null;
+  hasBg: boolean;
 }
 
 const AppSettingsContext = createContext<AppSettings | null>(null);
@@ -65,11 +66,13 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     return () => { document.documentElement.style.fontSize = ''; };
   }, [appFontScale]);
 
+  const hasBg = activeBgSrc !== null;
+
   return (
     <AppSettingsContext.Provider value={{
       bgType, bgPreset, bgCustom, appFontScale,
       setBgType, setBgPreset, setBgCustom, setAppFontScale,
-      activeBgSrc,
+      activeBgSrc, hasBg,
     }}>
       {children}
     </AppSettingsContext.Provider>

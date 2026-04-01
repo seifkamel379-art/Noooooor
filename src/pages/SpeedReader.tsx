@@ -3,6 +3,7 @@ import { ArrowLeft, Play, Pause, SkipBack, SkipForward, ChevronFirst, ChevronLas
 import { Link } from 'wouter';
 import { useQuranSurahs, useSurah } from '@/hooks/use-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { SURAH_NAMES } from '@/lib/constants';
 
 const TOTAL_QURAN_WORDS = 77430;
