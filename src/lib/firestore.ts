@@ -163,7 +163,7 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   const all = snap.docs.map((d) => d.data() as LeaderboardEntry);
   return all
     .filter((e) => e.isPublic === true)
-    .sort((a, b) => (b.noorScore ?? 0) - (a.noorScore ?? 0))
+    .sort((a, b) => (b.tasbeehCount ?? 0) - (a.tasbeehCount ?? 0))
     .slice(0, 50);
 }
 

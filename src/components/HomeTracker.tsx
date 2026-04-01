@@ -498,8 +498,8 @@ export function HomeTracker() {
     <div className="space-y-4" dir="rtl">
 
       {/* ── Progress header ── */}
-      <div className="rounded-3xl p-4 border border-primary/20"
-        style={{ background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.03) 100%)' }}>
+      <div className="rounded-3xl p-4 border border-primary/20 bg-card"
+        style={{ boxShadow: '0 1px 6px rgba(197,160,89,0.06)' }}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"

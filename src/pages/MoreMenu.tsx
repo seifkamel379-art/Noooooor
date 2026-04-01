@@ -395,7 +395,7 @@ export function MoreMenu() {
 
       {/* User profile card */}
       {userProfile && (
-        <div className="mb-5 bg-gradient-to-l from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center justify-between">
+        <div className="mb-5 bg-card border border-border rounded-2xl p-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             {userProfile.photo ? (
               <img src={userProfile.photo} alt={userProfile.name} className="w-10 h-10 rounded-full border-2 border-primary/30" referrerPolicy="no-referrer" />

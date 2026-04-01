@@ -23,10 +23,12 @@ interface AppSettings {
   bgPreset: string;
   bgCustom: string;
   appFontScale: number;
+  cardOpacity: number;
   setBgType: (v: BgType) => void;
   setBgPreset: (v: string) => void;
   setBgCustom: (v: string) => void;
   setAppFontScale: (v: number) => void;
+  setCardOpacity: (v: number) => void;
   activeBgSrc: string | null;
   hasBg: boolean;
 }
@@ -46,11 +48,15 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   const [appFontScale, setAppFontScaleState] = useState<number>(() => {
     try { return Number(localStorage.getItem('app_font_scale') ?? '1'); } catch { return 1; }
   });
+  const [cardOpacity, setCardOpacityState] = useState<number>(() => {
+    try { return Number(localStorage.getItem('app_card_opacity') ?? '0.92'); } catch { return 0.92; }
+  });
 
   const setBgType = (v: BgType) => { setBgTypeState(v); localStorage.setItem('app_bg_type', v); };
   const setBgPreset = (v: string) => { setBgPresetState(v); localStorage.setItem('app_bg_preset', v); };
   const setBgCustom = (v: string) => { setBgCustomState(v); localStorage.setItem('app_bg_custom', v); };
   const setAppFontScale = (v: number) => { setAppFontScaleState(v); localStorage.setItem('app_font_scale', String(v)); };
+  const setCardOpacity = (v: number) => { setCardOpacityState(v); localStorage.setItem('app_card_opacity', String(v)); };
 
   const activeBgSrc: string | null = (() => {
     if (bgType === 'preset') {
@@ -66,12 +72,16 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     return () => { document.documentElement.style.fontSize = ''; };
   }, [appFontScale]);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--app-card-opacity', String(cardOpacity));
+  }, [cardOpacity]);
+
   const hasBg = activeBgSrc !== null;
 
   return (
     <AppSettingsContext.Provider value={{
-      bgType, bgPreset, bgCustom, appFontScale,
-      setBgType, setBgPreset, setBgCustom, setAppFontScale,
+      bgType, bgPreset, bgCustom, appFontScale, cardOpacity,
+      setBgType, setBgPreset, setBgCustom, setAppFontScale, setCardOpacity,
       activeBgSrc, hasBg,
     }}>
       {children}

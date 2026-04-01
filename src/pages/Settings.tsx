@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Link } from 'wouter';
-import { ChevronLeft, Image, Upload, X, Type } from 'lucide-react';
+import { ChevronLeft, Image, Upload, X, Type, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppSettings, PRESET_BACKGROUNDS } from '@/contexts/AppSettingsContext';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -11,9 +11,9 @@ export function Settings() {
 
   const {
     bgType, bgPreset, bgCustom,
-    appFontScale, hasBg,
+    appFontScale, hasBg, cardOpacity,
     setBgType, setBgPreset, setBgCustom,
-    setAppFontScale,
+    setAppFontScale, setCardOpacity,
   } = useAppSettings();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -141,11 +141,71 @@ export function Settings() {
           </div>
         </motion.div>
 
-        {/* ── Background Section ── */}
+        {/* ── Card Opacity Section ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="rounded-2xl p-4"
+          style={{ background: sectionBg, border: `1px solid ${borderColor}` }}
+        >
+          <div className="flex items-center gap-2.5 mb-4">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(145deg, #7B5EA7, #5B3E8A)' }}
+            >
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif', color: textColor }}>شفافية الخانات</p>
+              <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: subText }}>اضبط مستوى شفافية خانات التطبيق</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-xs font-bold w-8 text-center" style={{ fontFamily: '"Tajawal", sans-serif', color: subText }}>شفاف</span>
+            <div className="flex-1 relative">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={Math.round(cardOpacity * 100)}
+                onChange={e => setCardOpacity(Number(e.target.value) / 100)}
+                className="w-full accent-[#7B5EA7]"
+                style={{ height: 4 }}
+              />
+            </div>
+            <span className="text-xs font-bold w-8 text-center" style={{ fontFamily: '"Tajawal", sans-serif', color: subText }}>صلب</span>
+          </div>
+
+          <div
+            className="mt-3 p-3 rounded-xl text-center"
+            style={{ background: 'rgba(123,94,167,0.08)', border: `1px solid ${borderColor}` }}
+          >
+            <div
+              className="rounded-xl p-3 border mb-2"
+              style={{
+                background: dark
+                  ? `hsl(20 18% 12% / ${cardOpacity})`
+                  : `hsl(0 0% 100% / ${cardOpacity})`,
+                border: `1px solid ${borderColor}`,
+              }}
+            >
+              <p className="text-sm font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: textColor }}>معاينة الخانة</p>
+              <p className="text-xs mt-1" style={{ fontFamily: '"Tajawal", sans-serif', color: subText }}>هكذا ستبدو خانات التطبيق</p>
+            </div>
+            <p className="text-xs" style={{ color: subText, fontFamily: '"Tajawal", sans-serif' }}>
+              الشفافية: {Math.round(cardOpacity * 100)}%
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ── Background Section ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
           className="rounded-2xl p-4"
           style={{ background: sectionBg, border: `1px solid ${borderColor}` }}
         >
@@ -297,7 +357,7 @@ export function Settings() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          transition={{ delay: 0.2 }}
           className="rounded-xl p-3 text-center"
           style={{ background: 'rgba(193,154,107,0.06)', border: `1px solid ${borderColor}` }}
         >
