@@ -37,7 +37,7 @@ pnpm -w run dev
 
 This executes `scripts/dev.sh` which:
 1. Starts the API server on port 3001 via `pnpm --filter @workspace/api-server run dev` (in background)
-2. Starts Vite on `$PORT` (defaults to 19382, mapped to external port 80)
+2. Starts Vite on `$PORT` (defaults to 19382, mapped externally by Replit)
 
 Vite proxies `/api` requests to `localhost:3001`.
 
