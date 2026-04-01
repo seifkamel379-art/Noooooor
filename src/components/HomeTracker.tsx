@@ -637,7 +637,7 @@ export function HomeTracker() {
           style={
             azkarDone
               ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
-              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--card)' }
+              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--color-card)' }
           }>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -672,7 +672,7 @@ export function HomeTracker() {
           style={
             state.quranWird
               ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
-              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--card)' }
+              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--color-card)' }
           }>
           <div className="p-4">
             <div className="flex items-center justify-between">
@@ -766,7 +766,7 @@ export function HomeTracker() {
           style={
             tasbih500Done
               ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
-              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--card)' }
+              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--color-card)' }
           }>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -807,7 +807,7 @@ export function HomeTracker() {
       </div>
 
       {/* ── Heatmap ── */}
-      <div className="rounded-3xl overflow-hidden border border-primary/15" style={{ background: 'var(--card)' }}>
+      <div className="rounded-3xl overflow-hidden border border-primary/15" style={{ background: 'var(--color-card)' }}>
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm text-primary" style={{ fontFamily: '"Tajawal", sans-serif' }}>سجل الأيام</h3>

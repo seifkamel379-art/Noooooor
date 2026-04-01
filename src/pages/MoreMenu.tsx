@@ -539,7 +539,7 @@ export function MoreMenu() {
 
       {/* About App Section */}
       <div className="mt-6 rounded-3xl overflow-hidden border border-primary/20"
-        style={{ background: 'linear-gradient(160deg, hsl(var(--card)) 0%, hsl(var(--card)) 60%, rgba(193,154,107,0.04) 100%)' }}>
+        style={{ background: 'var(--color-card)' }}>
 
         {/* Header with logo + name */}
         <div className="relative overflow-hidden">
