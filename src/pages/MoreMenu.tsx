@@ -342,7 +342,7 @@ function ShareChooserSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-const NAME_COOLDOWN_DAYS = 15;
+const NAME_COOLDOWN_DAYS = 10;
 const NAME_LAST_CHANGED_KEY = 'name_last_changed';
 
 function daysUntilCanChange(lastChangedTs: number | null): number {
@@ -418,7 +418,7 @@ function EditNameDialog({
               >
                 <Clock className="w-4 h-4 text-primary/70 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                  بعد التعديل لن تتمكن من تغيير الاسم مجدداً لمدة <span className="font-bold text-primary">15 يوماً</span>
+                  بعد التعديل لن تتمكن من تغيير الاسم مجدداً لمدة <span className="font-bold text-primary">10 أيام</span>
                 </p>
               </div>
               <button

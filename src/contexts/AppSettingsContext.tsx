@@ -4,7 +4,7 @@ import bg1 from '@assets/IMG-20260401-WA0004_1775009490731.jpg';
 import bg2 from '@assets/the-most-important-religious-and-historical-monuments-in-medin_1775009490792.jpg';
 import bg3 from '@assets/206_1775009490804.jpg';
 import bg4 from '@assets/a578a280e7356a625fd94fc7da3b31dd_1775009490816.jpg';
-import bg5 from '@assets/مكة_المكرمة_(86706)_1775009490829.jpg';
+import bg5 from '@assets/masjid_haram_1775009490829.jpg';
 import bg6 from '@assets/558c82d32c077684789946b614f3d9e5_1775009490844.jpg';
 
 export const PRESET_BACKGROUNDS = [
