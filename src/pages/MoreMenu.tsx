@@ -1,8 +1,8 @@
-import { useState, type ReactNode, type ComponentType } from 'react';
+import { useState, useEffect, useRef, type ReactNode, type ComponentType } from 'react';
 import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
-  Star, Copy, X, Check, Mail, MessageSquare, Settings2,
+  Star, Copy, X, Check, Mail, MessageSquare, Settings2, Pencil, Clock,
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -342,6 +342,134 @@ function ShareChooserSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
+const NAME_COOLDOWN_DAYS = 15;
+const NAME_LAST_CHANGED_KEY = 'name_last_changed';
+
+function daysUntilCanChange(lastChangedTs: number | null): number {
+  if (!lastChangedTs) return 0;
+  const msElapsed = Date.now() - lastChangedTs;
+  const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
+  const remaining = NAME_COOLDOWN_DAYS - daysElapsed;
+  return remaining > 0 ? Math.ceil(remaining) : 0;
+}
+
+function EditNameDialog({
+  currentName,
+  onSave,
+  onCancel,
+}: {
+  currentName: string;
+  onSave: (newName: string) => void;
+  onCancel: () => void;
+}) {
+  const lastChangedTs = Number(localStorage.getItem(NAME_LAST_CHANGED_KEY) ?? '0') || null;
+  const daysLeft = daysUntilCanChange(lastChangedTs);
+  const canEdit = daysLeft === 0;
+
+  const [value, setValue] = useState(currentName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (canEdit) inputRef.current?.focus();
+  }, [canEdit]);
+
+  const handleSave = () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === currentName) { onCancel(); return; }
+    onSave(trimmed);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pb-8" dir="rtl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+      <motion.div
+        initial={{ y: 80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 80, opacity: 0 }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+        className="relative bg-card border border-border rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/50">
+          <button onClick={onCancel} className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/60">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>تعديل الاسم</p>
+          <div className="w-8" />
+        </div>
+
+        <div className="px-5 py-5">
+          {canEdit ? (
+            <>
+              <input
+                ref={inputRef}
+                type="text"
+                value={value}
+                onChange={e => setValue(e.target.value)}
+                maxLength={30}
+                className="w-full rounded-xl border border-border bg-secondary/30 px-4 py-3 text-base font-bold text-center outline-none focus:ring-2 focus:ring-primary/40 mb-4"
+                style={{ fontFamily: '"Tajawal", sans-serif', direction: 'rtl' }}
+                placeholder="أدخل اسمك"
+                onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+              />
+              <div
+                className="mb-4 flex items-start gap-2 rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(193,154,107,0.08)', border: '1px solid rgba(193,154,107,0.2)' }}
+              >
+                <Clock className="w-4 h-4 text-primary/70 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  بعد التعديل لن تتمكن من تغيير الاسم مجدداً لمدة <span className="font-bold text-primary">15 يوماً</span>
+                </p>
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={!value.trim() || value.trim() === currentName}
+                className="w-full py-3 rounded-xl font-bold text-sm transition-all"
+                style={{
+                  fontFamily: '"Tajawal", sans-serif',
+                  background: (!value.trim() || value.trim() === currentName)
+                    ? 'rgba(193,154,107,0.2)'
+                    : 'linear-gradient(135deg, #C19A6B, #8B5E3C)',
+                  color: (!value.trim() || value.trim() === currentName) ? 'rgba(139,94,60,0.5)' : '#fff',
+                }}
+              >
+                حفظ الاسم
+              </button>
+            </>
+          ) : (
+            <div className="text-center py-3">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'rgba(193,154,107,0.12)' }}
+              >
+                <Clock className="w-7 h-7 text-primary" />
+              </div>
+              <p className="font-bold text-base mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                لا يمكن التعديل الآن
+              </p>
+              <p className="text-sm text-muted-foreground mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                يمكنك تغيير اسمك بعد{' '}
+                <span className="font-bold text-primary">{daysLeft} {daysLeft === 1 ? 'يوم' : 'أيام'}</span>
+              </p>
+              <button
+                onClick={onCancel}
+                className="w-full py-3 rounded-xl font-bold text-sm"
+                style={{
+                  fontFamily: '"Tajawal", sans-serif',
+                  background: 'rgba(193,154,107,0.12)',
+                  color: '#8B5E3C',
+                }}
+              >
+                حسناً
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function FeatureChip({ Icon, text }: { Icon: ComponentType<{ className?: string; size?: number }>; text: string }) {
   return (
     <div className="flex items-center gap-2 bg-secondary/40 rounded-xl px-3 py-2.5">
@@ -355,6 +483,8 @@ export function MoreMenu() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showEditNameDialog, setShowEditNameDialog] = useState(false);
+  const [profileVersion, setProfileVersion] = useState(0);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -368,8 +498,21 @@ export function MoreMenu() {
     window.dispatchEvent(new Event('app-logout'));
   };
 
+  const handleSaveName = (newName: string) => {
+    const raw = localStorage.getItem('user_profile');
+    if (!raw) return;
+    const profile = JSON.parse(raw);
+    profile.name = newName;
+    localStorage.setItem('user_profile', JSON.stringify(profile));
+    localStorage.setItem(NAME_LAST_CHANGED_KEY, String(Date.now()));
+    setProfileVersion(v => v + 1);
+    setShowEditNameDialog(false);
+  };
+
   const userProfileRaw = localStorage.getItem('user_profile');
   const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
+
+  void profileVersion;
 
   const MENU_ITEMS = [
     { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',      grad: 'linear-gradient(145deg, #2d6a4f, #1b4332)' },
@@ -389,6 +532,13 @@ export function MoreMenu() {
         {showShareSheet && (
           <ShareChooserSheet onClose={() => setShowShareSheet(false)} />
         )}
+        {showEditNameDialog && userProfile && (
+          <EditNameDialog
+            currentName={userProfile.name ?? ''}
+            onSave={handleSaveName}
+            onCancel={() => setShowEditNameDialog(false)}
+          />
+        )}
       </AnimatePresence>
 
       <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>المزيد</h1>
@@ -407,7 +557,18 @@ export function MoreMenu() {
               </div>
             )}
             <div>
-              <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>{userProfile.name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>{userProfile.name}</p>
+                <button
+                  onClick={() => setShowEditNameDialog(true)}
+                  className="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+                  style={{ background: 'rgba(193,154,107,0.12)' }}
+                  title="تعديل الاسم"
+                  data-testid="button-edit-name"
+                >
+                  <Pencil className="w-3 h-3 text-primary/70" />
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>{userProfile.governorateName}</p>
             </div>
           </div>
