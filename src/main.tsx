@@ -30,6 +30,18 @@ document.addEventListener('touchmove', (e: TouchEvent) => {
   }
 }, { passive: false });
 
+// Disable context menu (long-press menu) for native app feel
+document.addEventListener('contextmenu', (e: MouseEvent) => {
+  e.preventDefault();
+});
+
+// Disable text selection via keyboard shortcut
+document.addEventListener('selectstart', (e: Event) => {
+  const target = e.target as HTMLElement;
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || (target as HTMLElement).isContentEditable) return;
+  e.preventDefault();
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
