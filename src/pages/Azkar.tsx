@@ -1,105 +1,9 @@
-import { useState, type ReactNode, type ReactElement } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Check, RotateCcw, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { getTodayKey, cn } from '@/lib/utils';
 import { HISN_CATEGORIES, HISN_ITEMS, type HisnCategory } from '@/lib/hisnData';
-import {
-  MorningIcon, EveningIcon, SleepIcon, DuaHandsIcon, SupplicationIcon,
-  MosqueIcon, HomeEnterIcon, FoodIcon, TravelIcon, RainIcon, ShieldHeartIcon,
-  ProphetIcon, IslamicStarIcon,
-} from '@/components/NoorIcons';
-
-/* ── Icon map by category ID ─────────────────────*/
-type IconComp = (props: { className?: string; size?: number }) => ReactElement;
-const ICON_MAP: Record<number, IconComp> = {
-  27: MorningIcon,      // أذكار الصباح والمساء
-  28: SleepIcon,        // أذكار النوم
-  1:  MorningIcon,      // الاستيقاظ
-  6:  DuaHandsIcon,
-  7:  DuaHandsIcon,
-  8:  SupplicationIcon,
-  9:  SupplicationIcon,
-  10: HomeEnterIcon,
-  11: HomeEnterIcon,
-  12: MosqueIcon,
-  13: MosqueIcon,
-  14: MosqueIcon,
-  15: SupplicationIcon,
-  16: DuaHandsIcon,
-  17: DuaHandsIcon,
-  18: DuaHandsIcon,
-  19: DuaHandsIcon,
-  20: DuaHandsIcon,
-  21: DuaHandsIcon,
-  22: SupplicationIcon,
-  23: ProphetIcon,
-  24: DuaHandsIcon,
-  25: SupplicationIcon,
-  26: DuaHandsIcon,
-  29: SleepIcon,
-  30: SleepIcon,
-  31: SleepIcon,
-  32: SupplicationIcon,
-  33: SupplicationIcon,
-  34: ShieldHeartIcon,
-  35: ShieldHeartIcon,
-  36: ShieldHeartIcon,
-  37: ShieldHeartIcon,
-  38: ShieldHeartIcon,
-  39: ShieldHeartIcon,
-  40: ShieldHeartIcon,
-  41: DuaHandsIcon,
-  42: DuaHandsIcon,
-  43: DuaHandsIcon,
-  44: DuaHandsIcon,
-  45: ShieldHeartIcon,
-  46: DuaHandsIcon,
-  47: DuaHandsIcon,
-  48: DuaHandsIcon,
-  49: DuaHandsIcon,
-  51: ShieldHeartIcon,
-  55: DuaHandsIcon,
-  56: DuaHandsIcon,
-  57: DuaHandsIcon,
-  60: MosqueIcon,
-  61: RainIcon,
-  62: RainIcon,
-  63: RainIcon,
-  64: RainIcon,
-  65: RainIcon,
-  67: EveningIcon,
-  68: FoodIcon,
-  69: FoodIcon,
-  70: FoodIcon,
-  71: FoodIcon,
-  74: FoodIcon,
-  75: FoodIcon,
-  76: FoodIcon,
-  95: TravelIcon,
-  96: TravelIcon,
-  97: TravelIcon,
-  98: TravelIcon,
-  99: TravelIcon,
-  100: TravelIcon,
-  101: TravelIcon,
-  102: TravelIcon,
-  103: TravelIcon,
-  104: TravelIcon,
-  105: TravelIcon,
-  107: ProphetIcon,
-  115: MosqueIcon,
-  116: MosqueIcon,
-  117: MosqueIcon,
-  118: MosqueIcon,
-  119: MosqueIcon,
-  120: MosqueIcon,
-  121: MosqueIcon,
-  129: SupplicationIcon,
-  130: SupplicationIcon,
-  131: ProphetIcon,
-};
-function getIcon(id: number): IconComp { return ICON_MAP[id] ?? IslamicStarIcon; }
 
 /* ── Ornament ────────────────────────────────────*/
 function IslamicOrnament() {
@@ -289,25 +193,55 @@ function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () =>
   );
 }
 
+/* ── Star ornament SVG ───────────────────────────*/
+function GoldStar({ size = 14, opacity = 0.55 }: { size?: number; opacity?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" style={{ opacity }}>
+      <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7" fill="#C19A6B"/>
+    </svg>
+  );
+}
+
+/* ── Corner geometric decoration ─────────────────*/
+function CornerPattern({ flip = false }: { flip?: boolean }) {
+  return (
+    <svg
+      width="36" height="36" viewBox="0 0 36 36"
+      style={{ opacity: 0.07, transform: flip ? 'scaleX(-1)' : undefined }}
+      className="text-[#C19A6B]"
+    >
+      <path d="M0,0 L18,0 L18,4 L4,4 L4,18 L0,18 Z" fill="#C19A6B"/>
+      <circle cx="16" cy="16" r="4" fill="none" stroke="#C19A6B" strokeWidth="1.5"/>
+    </svg>
+  );
+}
+
 /* ── Categories grid ─────────────────────────────*/
 function CategoriesView({ onSelect }: { onSelect: (cat: HisnCategory) => void }) {
   const todayKey = getTodayKey();
 
   return (
     <div className="pb-24 pt-4 px-4 max-w-lg mx-auto" dir="rtl">
-      <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>الأذكار والأدعية</h1>
-      <p className="text-[11px] text-muted-foreground mb-4" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-        من حصن المسلم — تتجدد الأذكار تلقائياً كل يوم
-      </p>
+      {/* Page header */}
+      <div className="text-center mb-5">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <GoldStar size={12} opacity={0.4}/>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>الأذكار والأدعية</h1>
+          <GoldStar size={12} opacity={0.4}/>
+        </div>
+        <p className="text-[11px] text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+          من حصن المسلم — تتجدد الأذكار تلقائياً كل يوم
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         {HISN_CATEGORIES.map((cat, idx) => {
-          const Icon = getIcon(cat.id);
           const stored = localStorage.getItem(`azkar_hisn_${todayKey}_${cat.id}`);
           const prog: Record<number, number> = stored ? JSON.parse(stored) : {};
           const items = HISN_ITEMS[cat.id] ?? [];
           const done = items.filter(z => (prog[z.id] ?? 0) >= z.count).length;
           const allDone = items.length > 0 && done === items.length;
+          const pct = items.length > 0 ? (done / items.length) * 100 : 0;
           const hasDone = done > 0;
 
           return (
@@ -316,33 +250,71 @@ function CategoriesView({ onSelect }: { onSelect: (cat: HisnCategory) => void })
               onClick={() => onSelect(cat)}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.015, duration: 0.2 }}
-              className="flex flex-col items-center gap-2.5 bg-card border border-border/40 rounded-2xl p-4 text-center hover-elevate relative"
+              transition={{ delay: idx * 0.012, duration: 0.2 }}
+              className="relative flex flex-col text-right rounded-2xl overflow-hidden hover-elevate"
+              style={{
+                background: allDone
+                  ? 'linear-gradient(145deg, rgba(34,197,94,0.08), rgba(34,197,94,0.03))'
+                  : 'var(--color-card)',
+                border: allDone
+                  ? '1.5px solid rgba(34,197,94,0.35)'
+                  : hasDone
+                  ? '1.5px solid rgba(193,154,107,0.45)'
+                  : '1.5px solid rgba(193,154,107,0.15)',
+                minHeight: 110,
+              }}
             >
-              {/* progress badge */}
+              {/* Corner decorations */}
+              <div className="absolute top-0 right-0"><CornerPattern/></div>
+              <div className="absolute top-0 left-0"><CornerPattern flip/></div>
+
+              {/* Done overlay badge */}
               {allDone && (
-                <div className="absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center bg-green-500">
+                <div className="absolute top-2.5 left-2.5 w-5 h-5 rounded-full flex items-center justify-center bg-green-500 shadow-sm">
                   <Check className="w-3 h-3 text-white"/>
                 </div>
               )}
-              {hasDone && !allDone && (
-                <div className="absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(193,154,107,0.25)' }}>
-                  <span className="text-[8px] font-bold text-primary">{done}</span>
-                </div>
-              )}
 
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, rgba(193,154,107,0.18), rgba(193,154,107,0.06))' }}>
-                <Icon size={24} className="text-primary"/>
-              </div>
-              <p className="text-xs font-bold leading-tight text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                {cat.title}
-              </p>
-              {items.length > 0 && (
-                <p className="text-[10px] text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                  {items.length} ذكر
+              {/* Card body */}
+              <div className="flex-1 flex flex-col justify-between px-3.5 pt-3 pb-0">
+                {/* Star + count row */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <GoldStar size={11} opacity={allDone ? 0.3 : 0.5}/>
+                  {items.length > 0 && (
+                    <span
+                      className="text-[10px] font-bold"
+                      style={{ color: allDone ? '#22c55e' : '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}
+                    >
+                      {allDone ? 'مكتمل' : `${items.length} ذكر`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <p
+                  className="font-bold leading-snug text-foreground mb-2"
+                  style={{
+                    fontFamily: '"Tajawal", sans-serif',
+                    fontSize: cat.title.length > 14 ? '0.72rem' : '0.82rem',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {cat.title}
                 </p>
-              )}
+              </div>
+
+              {/* Progress bar at bottom */}
+              <div className="w-full h-1 rounded-none overflow-hidden" style={{ background: 'rgba(193,154,107,0.1)' }}>
+                <div
+                  className="h-full transition-all duration-700"
+                  style={{
+                    width: `${pct}%`,
+                    background: allDone
+                      ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                      : 'linear-gradient(90deg, #C19A6B, #a07a4a)',
+                  }}
+                />
+              </div>
             </motion.button>
           );
         })}
