@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -352,7 +352,6 @@ export function Hadith() {
             </p>
           )}
         </div>
-        <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
       </div>
 
       {/* Content */}
