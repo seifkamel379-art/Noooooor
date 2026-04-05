@@ -817,7 +817,7 @@ export function Sohba() {
 
   return (
     <div
-      className="min-h-screen pb-24"
+      className="min-h-screen pb-36"
       style={{ background: dark
         ? 'linear-gradient(180deg, #0f0c07 0%, #1a1208 100%)'
         : 'linear-gradient(180deg, #FDFBF0 0%, #F5EDD8 100%)'
