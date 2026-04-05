@@ -1,9 +1,14 @@
 import { useState, useEffect, useMemo, type ReactElement } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { MORNING_AZKAR, EVENING_AZKAR, SURAH_NAMES } from '@/lib/constants';
+import { SURAH_NAMES } from '@/lib/constants';
+import { HISN_ITEMS } from '@/lib/hisnData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Link } from 'wouter';
+
+/* IDs for أذكار الصباح والمساء (category 27 in hisnData) */
+const MORNING_EVENING_CATEGORY_ID = 27;
+const MORNING_EVENING_ITEMS = HISN_ITEMS[MORNING_EVENING_CATEGORY_ID] ?? [];
 
 const TASBIH_DAILY_GOAL = 500;
 
@@ -370,12 +375,12 @@ function getDayScore(dateKey: string): number {
     }
   } catch {}
   try {
-    const raw = localStorage.getItem(`azkar_${dateKey}`);
+    const raw = localStorage.getItem(`azkar_hisn_${dateKey}_${MORNING_EVENING_CATEGORY_ID}`);
     if (raw) {
-      const p = JSON.parse(raw);
-      const m = MORNING_AZKAR.every(z => (p[z.id] ?? 0) >= z.count);
-      const e = EVENING_AZKAR.every(z => (p[z.id] ?? 0) >= z.count);
-      if (m && e) score += 1;
+      const p: Record<number, number> = JSON.parse(raw);
+      const allDone = MORNING_EVENING_ITEMS.length > 0 &&
+        MORNING_EVENING_ITEMS.every(z => (p[z.id] ?? 0) >= z.count);
+      if (allDone) score += 1;
     }
   } catch {}
   try {
@@ -413,11 +418,13 @@ export function HomeTracker() {
   );
   const [wardType, setWardTypePref] = useLocalStorage<WardType>('quran_ward_type', 'hizb');
   const [bookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
-  const [azkarProgress] = useLocalStorage<Record<string, number>>(`azkar_${currentDateKey}`, {});
+  const [azkarProgress] = useLocalStorage<Record<number, number>>(
+    `azkar_hisn_${currentDateKey}_${MORNING_EVENING_CATEGORY_ID}`, {}
+  );
 
-  const morningDone = MORNING_AZKAR.every(z => (azkarProgress[z.id] ?? 0) >= z.count);
-  const eveningDone = EVENING_AZKAR.every(z => (azkarProgress[z.id] ?? 0) >= z.count);
-  const azkarDone = morningDone && eveningDone;
+  const azkarItemsDone = MORNING_EVENING_ITEMS.filter(z => (azkarProgress[z.id] ?? 0) >= z.count).length;
+  const azkarTotalItems = MORNING_EVENING_ITEMS.length;
+  const azkarDone = azkarTotalItems > 0 && azkarItemsDone === azkarTotalItems;
 
   const [dailyTasbihCount, setDailyTasbihCount] = useState(() =>
     parseInt(localStorage.getItem(`tasbih_daily_${currentDateKey}`) ?? '0', 10)
@@ -648,7 +655,11 @@ export function HomeTracker() {
               <div>
                 <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>أذكار الصباح والمساء</p>
                 <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}>
-                  {azkarDone ? 'مكتمل ✓' : morningDone ? 'الصباح ✓ · المساء لم يكتمل' : eveningDone ? 'المساء ✓ · الصباح لم يكتمل' : 'لم يبدأ بعد'}
+                  {azkarDone
+                    ? 'مكتمل ✓'
+                    : azkarItemsDone > 0
+                    ? `${azkarItemsDone} / ${azkarTotalItems} ذكر`
+                    : 'لم يبدأ بعد'}
                 </p>
               </div>
             </div>
