@@ -1113,6 +1113,12 @@ export function Sohba() {
                       isMe={entry.userId === userId}
                     />
                   ))}
+                  <p
+                    className="text-center text-xs mt-4 mb-2 opacity-40"
+                    style={{ fontFamily: '"Tajawal", sans-serif', color: '#8B6B3D' }}
+                  >
+                    ﴿ وَاذْكُرُوا اللَّهَ كَثِيرًا لَّعَلَّكُمْ تُفْلِحُونَ ﴾
+                  </p>
                 </div>
               )}
             </motion.div>
