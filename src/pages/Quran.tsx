@@ -3,9 +3,71 @@ import { useQuranSurahs, useSurah, useTafsir } from '@/hooks/use-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { SURAH_NAMES } from '@/lib/constants';
-import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown } from 'lucide-react';
+import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown, Download } from 'lucide-react';
 import { padZero, cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
+import { motion, AnimatePresence } from 'framer-motion';
+
+type MoshafType = { id: number; name: string; description: string; img_src: string; download_link: string };
+
+function MoshafSheet({ dark, onClose }: { dark: boolean; onClose: () => void }) {
+  const [moshafList, setMoshafList] = useState<MoshafType[]>([]);
+  useEffect(() => {
+    fetch('/data/moshaf.json').then(r => r.json()).then(setMoshafList).catch(() => {});
+  }, []);
+  const bg = dark ? '#1a1208' : '#fdfbf0';
+  const border = dark ? 'rgba(193,154,107,0.15)' : 'rgba(193,154,107,0.2)';
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" dir="rtl" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="relative w-full max-w-lg rounded-t-3xl shadow-2xl"
+        style={{ background: bg, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-2" style={{ background: 'rgba(193,154,107,0.4)' }} />
+        <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: border }}>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(193,154,107,0.12)' }}>
+            <X size={16} className="text-[#C19A6B]" />
+          </button>
+          <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? '#d4b483' : '#5D4037' }}>تحميل نسخة المصحف</p>
+          <div className="w-8" />
+        </div>
+        <div className="overflow-y-auto flex-1 px-4 py-3 pb-safe" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+          {moshafList.length === 0 && (
+            <div className="flex flex-col gap-3">
+              {[1,2,3].map(i => <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: dark ? 'rgba(193,154,107,0.08)' : 'rgba(193,154,107,0.1)' }} />)}
+            </div>
+          )}
+          <div className="flex flex-col gap-2.5">
+            {moshafList.map(m => (
+              <a
+                key={m.id}
+                href={m.download_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3.5 rounded-2xl"
+                style={{ background: dark ? 'rgba(193,154,107,0.06)' : 'rgba(193,154,107,0.08)', border: `1px solid ${border}` }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? '#d4b483' : '#5D4037' }}>{m.name}</p>
+                  <p className="text-xs mt-0.5 line-clamp-1" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? '#8B6B3D' : '#9E7B4A' }}>{m.description}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,#8B6340,#C19A6B)' }}>
+                  <Download size={14} className="text-white" />
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 const FONT_MIN = 1.2;
 const FONT_MAX = 2.8;
@@ -55,6 +117,7 @@ export function Quran() {
 
   const [bookmark, setBookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
   const [fontSize, setFontSize] = useLocalStorage<number>('quran_font_size', 1.75);
+  const [showMoshaf, setShowMoshaf] = useState(false);
 
   const [, setQuranCurrentSurahIdx] = useLocalStorage<number>('quran_current_surah_idx', 1);
   const [, setQuranCompletions] = useLocalStorage<number>('quran_completions', 0);
