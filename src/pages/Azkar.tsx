@@ -193,26 +193,153 @@ function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () =>
   );
 }
 
-/* ── Star ornament SVG ───────────────────────────*/
-function GoldStar({ size = 14, opacity = 0.55 }: { size?: number; opacity?: number }) {
+/* ── Islamic 8-point star background watermark ───*/
+function IslamicWatermark() {
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" style={{ opacity }}>
-      <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7" fill="#C19A6B"/>
+    <svg
+      viewBox="0 0 100 100"
+      className="absolute"
+      style={{
+        width: 90, height: 90,
+        bottom: -18, left: -18,
+        opacity: 0.055,
+        pointerEvents: 'none',
+      }}
+    >
+      <g fill="#C19A6B">
+        <polygon points="50,5 58,35 88,35 65,55 73,85 50,68 27,85 35,55 12,35 42,35"/>
+        <polygon points="50,5 58,35 88,35 65,55 73,85 50,68 27,85 35,55 12,35 42,35"
+          transform="rotate(22.5 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="15" fill="none" stroke="#C19A6B" strokeWidth="1.5"/>
+      <circle cx="50" cy="50" r="22" fill="none" stroke="#C19A6B" strokeWidth="0.6"/>
     </svg>
   );
 }
 
-/* ── Corner geometric decoration ─────────────────*/
-function CornerPattern({ flip = false }: { flip?: boolean }) {
+/* ── Small ornamental divider ─────────────────────*/
+function OrnaDivider() {
   return (
-    <svg
-      width="36" height="36" viewBox="0 0 36 36"
-      style={{ opacity: 0.07, transform: flip ? 'scaleX(-1)' : undefined }}
-      className="text-[#C19A6B]"
+    <div className="flex items-center justify-center gap-1 my-1.5">
+      <div className="h-px w-5" style={{ background: 'rgba(193,154,107,0.35)' }}/>
+      <svg width="8" height="8" viewBox="0 0 20 20" style={{ opacity: 0.6 }}>
+        <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7" fill="#C19A6B"/>
+      </svg>
+      <div className="h-px w-5" style={{ background: 'rgba(193,154,107,0.35)' }}/>
+    </div>
+  );
+}
+
+/* ── Category card ───────────────────────────────*/
+function CategoryCard({
+  cat, idx, onSelect, todayKey,
+}: {
+  cat: HisnCategory;
+  idx: number;
+  onSelect: (c: HisnCategory) => void;
+  todayKey: string;
+}) {
+  const stored = localStorage.getItem(`azkar_hisn_${todayKey}_${cat.id}`);
+  const prog: Record<number, number> = stored ? JSON.parse(stored) : {};
+  const items = HISN_ITEMS[cat.id] ?? [];
+  const done = items.filter(z => (prog[z.id] ?? 0) >= z.count).length;
+  const allDone = items.length > 0 && done === items.length;
+  const pct = items.length > 0 ? (done / items.length) * 100 : 0;
+  const hasDone = done > 0 && !allDone;
+
+  const borderColor = allDone
+    ? 'rgba(34,197,94,0.4)'
+    : hasDone
+    ? 'rgba(193,154,107,0.55)'
+    : 'rgba(193,154,107,0.18)';
+
+  const topAccent = allDone
+    ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+    : 'linear-gradient(90deg, #C19A6B 0%, #e8c99a 50%, #C19A6B 100%)';
+
+  return (
+    <motion.button
+      onClick={() => onSelect(cat)}
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: idx * 0.01, duration: 0.22, ease: 'easeOut' }}
+      className="relative flex flex-col rounded-2xl overflow-hidden text-center hover-elevate"
+      style={{
+        border: `1.5px solid ${borderColor}`,
+        background: allDone
+          ? 'linear-gradient(160deg, rgba(34,197,94,0.07) 0%, var(--color-card) 100%)'
+          : 'var(--color-card)',
+        minHeight: 120,
+      }}
     >
-      <path d="M0,0 L18,0 L18,4 L4,4 L4,18 L0,18 Z" fill="#C19A6B"/>
-      <circle cx="16" cy="16" r="4" fill="none" stroke="#C19A6B" strokeWidth="1.5"/>
-    </svg>
+      {/* Golden top accent stripe */}
+      <div className="w-full h-0.5 flex-shrink-0" style={{ background: topAccent }}/>
+
+      {/* Watermark star in corner */}
+      <IslamicWatermark/>
+
+      {/* Done badge */}
+      {allDone && (
+        <div
+          className="absolute top-3 left-3 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.5)' }}
+        >
+          <Check className="w-3 h-3 text-white"/>
+        </div>
+      )}
+
+      {/* In-progress count dot */}
+      {hasDone && (
+        <div
+          className="absolute top-3 left-3 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(193,154,107,0.2)', border: '1px solid rgba(193,154,107,0.4)' }}
+        >
+          <span className="text-[8px] font-bold" style={{ color: '#C19A6B' }}>{done}</span>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-2.5 py-3">
+        <OrnaDivider/>
+
+        <p
+          className="font-bold text-foreground leading-snug mt-1"
+          style={{
+            fontFamily: '"Tajawal", sans-serif',
+            fontSize: cat.title.length > 16 ? '0.68rem' : cat.title.length > 11 ? '0.75rem' : '0.85rem',
+            lineHeight: 1.5,
+            direction: 'rtl',
+          }}
+        >
+          {cat.title}
+        </p>
+
+        {items.length > 0 && (
+          <p
+            className="mt-1.5 text-[10px] font-semibold"
+            style={{
+              color: allDone ? '#22c55e' : 'rgba(193,154,107,0.75)',
+              fontFamily: '"Tajawal", sans-serif',
+            }}
+          >
+            {allDone ? 'مكتمل' : `${items.length} ذكر`}
+          </p>
+        )}
+      </div>
+
+      {/* Progress bar at very bottom */}
+      <div className="w-full h-1 flex-shrink-0" style={{ background: 'rgba(193,154,107,0.08)' }}>
+        <div
+          className="h-full transition-all duration-700"
+          style={{
+            width: `${pct}%`,
+            background: allDone
+              ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+              : 'linear-gradient(90deg, #C19A6B, #e8c99a)',
+          }}
+        />
+      </div>
+    </motion.button>
   );
 }
 
@@ -222,12 +349,18 @@ function CategoriesView({ onSelect }: { onSelect: (cat: HisnCategory) => void })
 
   return (
     <div className="pb-24 pt-4 px-4 max-w-lg mx-auto" dir="rtl">
-      {/* Page header */}
+      {/* Header */}
       <div className="text-center mb-5">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <GoldStar size={12} opacity={0.4}/>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>الأذكار والأدعية</h1>
-          <GoldStar size={12} opacity={0.4}/>
+        <div className="flex items-center justify-center gap-2 mb-0.5">
+          <svg width="14" height="14" viewBox="0 0 20 20" style={{ opacity: 0.5 }}>
+            <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7" fill="#C19A6B"/>
+          </svg>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            الأذكار والأدعية
+          </h1>
+          <svg width="14" height="14" viewBox="0 0 20 20" style={{ opacity: 0.5 }}>
+            <polygon points="10,1 12,7 19,7 13.5,11 15.5,18 10,14 4.5,18 6.5,11 1,7 8,7" fill="#C19A6B"/>
+          </svg>
         </div>
         <p className="text-[11px] text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
           من حصن المسلم — تتجدد الأذكار تلقائياً كل يوم
@@ -235,89 +368,9 @@ function CategoriesView({ onSelect }: { onSelect: (cat: HisnCategory) => void })
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {HISN_CATEGORIES.map((cat, idx) => {
-          const stored = localStorage.getItem(`azkar_hisn_${todayKey}_${cat.id}`);
-          const prog: Record<number, number> = stored ? JSON.parse(stored) : {};
-          const items = HISN_ITEMS[cat.id] ?? [];
-          const done = items.filter(z => (prog[z.id] ?? 0) >= z.count).length;
-          const allDone = items.length > 0 && done === items.length;
-          const pct = items.length > 0 ? (done / items.length) * 100 : 0;
-          const hasDone = done > 0;
-
-          return (
-            <motion.button
-              key={cat.id}
-              onClick={() => onSelect(cat)}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.012, duration: 0.2 }}
-              className="relative flex flex-col text-right rounded-2xl overflow-hidden hover-elevate"
-              style={{
-                background: allDone
-                  ? 'linear-gradient(145deg, rgba(34,197,94,0.08), rgba(34,197,94,0.03))'
-                  : 'var(--color-card)',
-                border: allDone
-                  ? '1.5px solid rgba(34,197,94,0.35)'
-                  : hasDone
-                  ? '1.5px solid rgba(193,154,107,0.45)'
-                  : '1.5px solid rgba(193,154,107,0.15)',
-                minHeight: 110,
-              }}
-            >
-              {/* Corner decorations */}
-              <div className="absolute top-0 right-0"><CornerPattern/></div>
-              <div className="absolute top-0 left-0"><CornerPattern flip/></div>
-
-              {/* Done overlay badge */}
-              {allDone && (
-                <div className="absolute top-2.5 left-2.5 w-5 h-5 rounded-full flex items-center justify-center bg-green-500 shadow-sm">
-                  <Check className="w-3 h-3 text-white"/>
-                </div>
-              )}
-
-              {/* Card body */}
-              <div className="flex-1 flex flex-col justify-between px-3.5 pt-3 pb-0">
-                {/* Star + count row */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <GoldStar size={11} opacity={allDone ? 0.3 : 0.5}/>
-                  {items.length > 0 && (
-                    <span
-                      className="text-[10px] font-bold"
-                      style={{ color: allDone ? '#22c55e' : '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}
-                    >
-                      {allDone ? 'مكتمل' : `${items.length} ذكر`}
-                    </span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <p
-                  className="font-bold leading-snug text-foreground mb-2"
-                  style={{
-                    fontFamily: '"Tajawal", sans-serif',
-                    fontSize: cat.title.length > 14 ? '0.72rem' : '0.82rem',
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {cat.title}
-                </p>
-              </div>
-
-              {/* Progress bar at bottom */}
-              <div className="w-full h-1 rounded-none overflow-hidden" style={{ background: 'rgba(193,154,107,0.1)' }}>
-                <div
-                  className="h-full transition-all duration-700"
-                  style={{
-                    width: `${pct}%`,
-                    background: allDone
-                      ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                      : 'linear-gradient(90deg, #C19A6B, #a07a4a)',
-                  }}
-                />
-              </div>
-            </motion.button>
-          );
-        })}
+        {HISN_CATEGORIES.map((cat, idx) => (
+          <CategoryCard key={cat.id} cat={cat} idx={idx} onSelect={onSelect} todayKey={todayKey}/>
+        ))}
       </div>
     </div>
   );
