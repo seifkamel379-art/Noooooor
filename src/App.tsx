@@ -27,6 +27,9 @@ import { EgyptianRadio } from "@/pages/EgyptianRadio";
 import { Qibla } from "@/pages/Qibla";
 import { MosquesFinder } from "@/pages/MosquesFinder";
 import { Hadith } from "@/pages/Hadith";
+import { IslamicHistory } from "@/pages/IslamicHistory";
+import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
+import { Sunnah } from "@/pages/Sunnah";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +125,15 @@ function Router() {
       </Route>
       <Route path="/hadith">
         <FullScreenShell><Hadith /></FullScreenShell>
+      </Route>
+      <Route path="/history">
+        <FullScreenShell><IslamicHistory /></FullScreenShell>
+      </Route>
+      <Route path="/quizzes">
+        <FullScreenShell><IslamicQuizzes /></FullScreenShell>
+      </Route>
+      <Route path="/sunnah">
+        <FullScreenShell><Sunnah /></FullScreenShell>
       </Route>
       <Route component={NotFound} />
     </Switch>

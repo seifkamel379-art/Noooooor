@@ -280,8 +280,19 @@ export function Quran() {
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: C.btnBg, border: `1px solid ${C.btnBorder}` }}>
             <svg width="18" height="18" viewBox="0 0 40 40" fill="#C19A6B"><polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14" /></svg>
           </div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>القرآن الكريم</h1>
+          <h1 className="text-2xl font-bold flex-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>القرآن الكريم</h1>
+          <button
+            onClick={() => setShowMoshaf(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+            style={{ fontFamily: '"Tajawal", sans-serif', background: C.btnBg, border: `1px solid ${C.btnBorder}`, color: '#C19A6B' }}
+          >
+            <Download size={13} />
+            تحميل المصحف
+          </button>
         </div>
+        <AnimatePresence>
+          {showMoshaf && <MoshafSheet dark={dark} onClose={() => setShowMoshaf(false)} />}
+        </AnimatePresence>
 
         <div className="relative mb-4">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#C19A6B', opacity: 0.6 }} />
