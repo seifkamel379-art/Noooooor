@@ -244,6 +244,14 @@ export function Tasbih() {
           />
         )}
       </AnimatePresence>
+
+      {/* Dhikr Footer */}
+      <div className="mt-6 pb-6 mx-4 text-center">
+        <div className="h-px mb-4 opacity-20" style={{ background: 'linear-gradient(to left, transparent, currentColor, transparent)' }} />
+        <p className="text-sm leading-loose text-muted-foreground" style={{ fontFamily: '"Amiri", serif' }}>
+          سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ ۝ صحيح مسلم
+        </p>
+      </div>
     </div>
   );
 }

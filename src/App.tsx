@@ -30,6 +30,7 @@ import { Hadith } from "@/pages/Hadith";
 import { IslamicHistory } from "@/pages/IslamicHistory";
 import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
 import { Sunnah } from "@/pages/Sunnah";
+import { IslamicTV } from "@/pages/IslamicTV";
 
 const queryClient = new QueryClient();
 
@@ -134,6 +135,9 @@ function Router() {
       </Route>
       <Route path="/sunnah">
         <FullScreenShell><Sunnah /></FullScreenShell>
+      </Route>
+      <Route path="/tv">
+        <FullScreenShell><IslamicTV /></FullScreenShell>
       </Route>
       <Route component={NotFound} />
     </Switch>

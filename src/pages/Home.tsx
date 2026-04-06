@@ -255,6 +255,14 @@ export function Home() {
 
       {/* Daily Tracker */}
       <HomeTracker />
+
+      {/* Dhikr Footer */}
+      <div className="mt-6 mb-4 mx-4 text-center">
+        <div className="h-px mb-4 opacity-20" style={{ background: 'linear-gradient(to left, transparent, currentColor, transparent)' }} />
+        <p className="text-sm leading-loose text-muted-foreground" style={{ fontFamily: '"Amiri", serif' }}>
+          رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ ۝ البقرة: 201
+        </p>
+      </div>
     </div>
   );
 }

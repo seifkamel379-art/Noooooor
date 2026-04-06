@@ -204,6 +204,12 @@ export function Sunnah() {
                 <SunnahCard key={item.id} item={item} dark={dark} />
               ))}
             </div>
+            <div className="mt-8 mb-4 text-center px-2">
+              <div className="h-px mb-4" style={{ background: `linear-gradient(to left, transparent, rgba(193,154,107,0.3), transparent)` }} />
+              <p className="text-sm leading-loose" style={{ fontFamily: '"Amiri", serif', color: dark ? '#8B6B3D' : '#B8946A' }}>
+                مَنْ يُرِدِ اللَّهُ بِهِ خَيْرًا يُفَقِّهْهُ فِي الدِّينِ ۝ متفق عليه
+              </p>
+            </div>
           </>
         )}
       </div>

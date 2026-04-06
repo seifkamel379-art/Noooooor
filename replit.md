@@ -4,7 +4,7 @@ A cross-platform Islamic companion app built with React, Vite, and Express, supp
 
 ## Features (v2.1+)
 - **القرآن الكريم** — Quran reader with tafsir, word-by-word audio, bookmarks, and Moshaf PDF downloader (8 types)
-- **التاريخ الإسلامي** — 2637 Islamic history events across 5 eras (up to Abbasid Caliphate)
+- **التاريخ الإسلامي** — 4975 Islamic history events across 5 eras (Seerah → Ottoman), lazy-loaded per era with pagination
 - **الاختبارات الإسلامية** — 5820 MCQ questions across 6 Islamic science categories, 3 levels each
 - **سنن النبي ﷺ** — Prophetic Sunnah browser across 5 categories with hadith sources
 - **الأذكار** — Morning/evening and daily adhkar with progress tracking
@@ -13,13 +13,24 @@ A cross-platform Islamic companion app built with React, Vite, and Express, supp
 - **القبلة** — Smart Qibla compass
 - **الصحبة** — Community leaderboard and global dhikr tracker
 - **الإذاعات الإسلامية** — Live Islamic radio (Quran + Sunnah channels)
+- **القنوات الإسلامية** — Live Islamic TV channels (HLS streams) with hls.js support
 
 ## Static Data Strategy (Vercel Optimization)
 All large content is in `public/data/` and lazy-fetched on page visit:
-- `public/data/history.json` — 5.3MB, 2637 history events
+- `public/data/history-seerah.json` — 317KB, 128 events (lazy-loaded per era)
+- `public/data/history-rashidun.json` — 269KB, 126 events
+- `public/data/history-umayyad.json` — 416KB, 223 events
+- `public/data/history-abbasid.json` — 4.6MB, 2160 events
+- `public/data/history-ottoman.json` — 4.8MB, 2338 events
 - `public/data/quizzes.json` — 4.4MB, full quiz data
 - `public/data/sunnah.json` — 40KB, prophetic sunnah
 - `public/data/moshaf.json` — 3.3KB, moshaf PDF links
+
+### Vercel Free Tier Capacity Estimate
+- Bandwidth: 100GB/month
+- Average session bandwidth: ~500KB-1MB (depending on which era is browsed)
+- Estimated capacity: 100,000–200,000 page sessions/month
+- Abbasid/Ottoman eras are the largest files (~4.6-4.8MB each) but only load on demand
 
 ## Project Structure
 

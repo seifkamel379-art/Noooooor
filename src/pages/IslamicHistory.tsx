@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronLeft, BookOpen, Search, X, Calendar } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { ChevronLeft, BookOpen, Search, X, Calendar, ChevronDown } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
-type Era = 'pre' | 'seerah' | 'rashidun' | 'umayyad' | 'abbasid' | 'ottoman';
+type Era = 'seerah' | 'rashidun' | 'umayyad' | 'abbasid' | 'ottoman';
 
 type HistoryItem = {
   id: number;
@@ -13,19 +13,18 @@ type HistoryItem = {
   era: Era;
 };
 
-const ERAS: { id: Era; label: string; sub: string; grad: string }[] = [
-  { id: 'pre',      label: 'ما قبل الهجرة',    sub: 'من الجاهلية حتى فجر الإسلام',             grad: 'linear-gradient(135deg,#4a2040,#2a1030)' },
-  { id: 'seerah',   label: 'السيرة النبوية',     sub: 'من المولد الشريف حتى الوفاة الشريفة',      grad: 'linear-gradient(135deg,#1b4332,#0d2b1e)' },
-  { id: 'rashidun', label: 'الخلفاء الراشدون',  sub: 'من 11 إلى 40 هـ',                          grad: 'linear-gradient(135deg,#1e3a6e,#0f2040)' },
-  { id: 'umayyad',  label: 'الدولة الأموية',     sub: 'من 41 إلى 132 هـ',                         grad: 'linear-gradient(135deg,#6b3a0f,#3d2008)' },
-  { id: 'abbasid',  label: 'الدولة العباسية',    sub: 'من 132 إلى 656 هـ',                        grad: 'linear-gradient(135deg,#3a1a5c,#1e0d30)' },
-  { id: 'ottoman',  label: 'الدولة العثمانية',   sub: 'من 657 إلى 1342 هـ',                       grad: 'linear-gradient(135deg,#0f3d2e,#072218)' },
+const ERAS: { id: Era; label: string; sub: string; grad: string; count: number }[] = [
+  { id: 'seerah',   label: 'السيرة النبوية',    sub: 'من المولد الشريف حتى الوفاة الشريفة',      grad: 'linear-gradient(135deg,#1b4332,#0d2b1e)', count: 128 },
+  { id: 'rashidun', label: 'الخلفاء الراشدون', sub: 'من 11 إلى 40 هـ',                           grad: 'linear-gradient(135deg,#1e3a6e,#0f2040)',  count: 126 },
+  { id: 'umayyad',  label: 'الدولة الأموية',    sub: 'من 41 إلى 132 هـ',                          grad: 'linear-gradient(135deg,#6b3a0f,#3d2008)',  count: 223 },
+  { id: 'abbasid',  label: 'الدولة العباسية',   sub: 'من 132 إلى 656 هـ',                         grad: 'linear-gradient(135deg,#3a1a5c,#1e0d30)',  count: 2160 },
+  { id: 'ottoman',  label: 'الدولة العثمانية',  sub: 'من 657 إلى 1342 هـ',                        grad: 'linear-gradient(135deg,#0f3d2e,#072218)',  count: 2338 },
 ];
 
-/* ── Footer Dhikr ── */
+const PAGE_SIZE = 50;
+
 const DHIKR = 'إِنَّ فِي ذَٰلِكَ لَذِكْرَىٰ لِمَن كَانَ لَهُ قَلْبٌ أَوْ أَلْقَى السَّمْعَ وَهُوَ شَهِيدٌ ۝ ق: 37';
 
-/* ── Event Detail Sheet ── */
 function EventSheet({ item, onClose, dark }: { item: HistoryItem | null; onClose: () => void; dark: boolean }) {
   useEffect(() => {
     if (item) {
@@ -90,7 +89,6 @@ function EventSheet({ item, onClose, dark }: { item: HistoryItem | null; onClose
   );
 }
 
-/* ── HistoryCard (memoized to avoid re-render lag) ── */
 const HistoryCard = ({
   item, dark, cardBg, border, onSelect,
 }: {
@@ -140,27 +138,44 @@ export function IslamicHistory() {
   const dark = theme === 'dark';
 
   const [items, setItems] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedEra, setSelectedEra] = useState<Era>('seerah');
   const [search, setSearch] = useState('');
   const [activeItem, setActiveItem] = useState<HistoryItem | null>(null);
+  const [page, setPage] = useState(1);
+  const loadedEraRef = useRef<Era | null>(null);
 
   useEffect(() => {
-    fetch('/data/history.json')
+    if (loadedEraRef.current === selectedEra) return;
+    setLoading(true);
+    setItems([]);
+    setPage(1);
+    fetch(`/data/history-${selectedEra}.json`)
       .then(r => r.json())
-      .then((d: HistoryItem[]) => { setItems(d); setLoading(false); })
+      .then((d: HistoryItem[]) => {
+        setItems(d);
+        setLoading(false);
+        loadedEraRef.current = selectedEra;
+      })
       .catch(() => setLoading(false));
-  }, []);
+  }, [selectedEra]);
 
-  /* Memoize filtered list to avoid recompute on every render */
   const filtered = useMemo(() => {
-    const eraItems = items.filter(i => i.era === selectedEra);
-    if (!search.trim()) return eraItems;
+    if (!search.trim()) return items;
     const q = search.trim();
-    return eraItems.filter(i => i.title.includes(q) || i.text.includes(q));
-  }, [items, selectedEra, search]);
+    return items.filter(i => i.title.includes(q) || i.text.includes(q));
+  }, [items, search]);
+
+  const visible = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
+  const hasMore = visible.length < filtered.length;
 
   const handleSelect = useCallback((item: HistoryItem) => setActiveItem(item), []);
+
+  const handleEraChange = (era: Era) => {
+    setSelectedEra(era);
+    setSearch('');
+    setPage(1);
+  };
 
   const bg = dark ? '#0f0c07' : '#FDFBF0';
   const cardBg = dark ? '#1a1208' : '#fff';
@@ -171,7 +186,6 @@ export function IslamicHistory() {
   return (
     <div className="min-h-screen pb-36" dir="rtl" style={{ background: bg }}>
 
-      {/* Header */}
       <div className="sticky top-0 z-40 px-4 pt-4 pb-3" style={{ background: bg, borderBottom: `1px solid ${border}` }}>
         <div className="flex items-center gap-3 max-w-lg mx-auto mb-3">
           <button
@@ -192,12 +206,11 @@ export function IslamicHistory() {
           <BookOpen size={22} className="text-[#C19A6B]" />
         </div>
 
-        {/* Search */}
         <div className="relative max-w-lg mx-auto">
           <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C19A6B]/60" />
           <input
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="ابحث في الأحداث..."
             className="w-full pr-9 pl-4 py-2.5 rounded-2xl text-sm outline-none"
             style={{
@@ -212,12 +225,11 @@ export function IslamicHistory() {
 
       <div className="max-w-lg mx-auto px-4">
 
-        {/* Era chips */}
         <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar">
           {ERAS.map(era => (
             <button
               key={era.id}
-              onClick={() => { setSelectedEra(era.id); setSearch(''); }}
+              onClick={() => handleEraChange(era.id)}
               className="flex-shrink-0 px-4 py-2 rounded-2xl text-sm font-bold transition-all"
               style={{
                 fontFamily: '"Tajawal", sans-serif',
@@ -231,7 +243,6 @@ export function IslamicHistory() {
           ))}
         </div>
 
-        {/* Era subtitle */}
         {!loading && (
           <div className="mb-3 px-1">
             <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
@@ -240,7 +251,6 @@ export function IslamicHistory() {
           </div>
         )}
 
-        {/* Loading */}
         {loading && (
           <div className="flex flex-col gap-3 mt-2">
             {[1,2,3,4,5].map(i => (
@@ -249,7 +259,6 @@ export function IslamicHistory() {
           </div>
         )}
 
-        {/* Empty */}
         {!loading && filtered.length === 0 && (
           <div className="text-center py-16 opacity-50">
             <BookOpen size={32} className="text-[#C19A6B] mx-auto mb-3" />
@@ -257,9 +266,8 @@ export function IslamicHistory() {
           </div>
         )}
 
-        {/* Events list */}
         <div className="flex flex-col gap-2.5">
-          {filtered.map(item => (
+          {visible.map(item => (
             <HistoryCard
               key={item.id}
               item={item}
@@ -271,8 +279,23 @@ export function IslamicHistory() {
           ))}
         </div>
 
-        {/* Footer dhikr */}
-        {!loading && (
+        {hasMore && !loading && (
+          <button
+            onClick={() => setPage(p => p + 1)}
+            className="w-full mt-4 py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm"
+            style={{
+              fontFamily: '"Tajawal", sans-serif',
+              background: dark ? 'rgba(193,154,107,0.1)' : 'rgba(193,154,107,0.12)',
+              color: dark ? '#C19A6B' : '#8B6340',
+              border: `1px solid ${border}`,
+            }}
+          >
+            <ChevronDown size={16} />
+            تحميل المزيد ({filtered.length - visible.length} حدث متبقٍ)
+          </button>
+        )}
+
+        {!loading && filtered.length > 0 && (
           <div className="mt-8 mb-4 text-center px-4">
             <div className="h-px mb-4" style={{ background: `linear-gradient(to left, transparent, ${border}, transparent)` }} />
             <p className="text-sm leading-loose" style={{ fontFamily: '"Amiri", serif', color: dark ? '#8B6B3D' : '#B8946A' }}>
@@ -282,7 +305,6 @@ export function IslamicHistory() {
         )}
       </div>
 
-      {/* Sheet */}
       <EventSheet item={activeItem} onClose={() => setActiveItem(null)} dark={dark} />
     </div>
   );

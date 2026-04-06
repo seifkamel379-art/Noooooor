@@ -373,6 +373,15 @@ export function IslamicQuizzes() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {screen === 'categories' && !loading && (
+          <div className="mt-8 mb-4 text-center px-2">
+            <div className="h-px mb-4" style={{ background: `linear-gradient(to left, transparent, rgba(193,154,107,0.3), transparent)` }} />
+            <p className="text-sm leading-loose" style={{ fontFamily: '"Amiri", serif', color: dark ? '#8B6B3D' : '#B8946A' }}>
+              قُلْ هَلْ يَسْتَوِي الَّذِينَ يَعْلَمُونَ وَالَّذِينَ لَا يَعْلَمُونَ ۝ الزمر: 9
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

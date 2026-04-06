@@ -382,6 +382,12 @@ export function Hadith() {
                     المصدر: hadithapi.com
                   </p>
                 </div>
+                <div className="mt-6 mb-4 text-center px-2">
+                  <div className="h-px mb-4 opacity-20" style={{ background: 'linear-gradient(to left, transparent, currentColor, transparent)' }} />
+                  <p className="text-sm leading-loose text-muted-foreground" style={{ fontFamily: '"Amiri", serif' }}>
+                    إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى ۝ متفق عليه
+                  </p>
+                </div>
               </motion.div>
             ) : (
               <motion.div
