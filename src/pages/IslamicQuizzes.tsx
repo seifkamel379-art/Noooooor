@@ -312,8 +312,23 @@ export function IslamicQuizzes() {
           {/* Results */}
           {screen === 'results' && (
             <motion.div key="results" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-              <div className="mb-6 mt-4">
-                <Trophy size={64} className="text-[#C19A6B] mx-auto mb-4" />
+
+              {/* Correct / Wrong stats — above score */}
+              <div className="flex gap-3 mb-5 mt-2">
+                <div className="flex-1 rounded-2xl py-4 flex flex-col items-center gap-1"
+                  style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                  <span className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: '#22c55e' }}>{score}</span>
+                  <span className="text-xs font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: '#22c55e' }}>إجابات صحيحة</span>
+                </div>
+                <div className="flex-1 rounded-2xl py-4 flex flex-col items-center gap-1"
+                  style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <span className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: '#ef4444' }}>{questions.length - score}</span>
+                  <span className="text-xs font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: '#ef4444' }}>إجابات خاطئة</span>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <Trophy size={56} className="text-[#C19A6B] mx-auto mb-3" />
                 <p className="text-3xl font-bold mb-2" style={{ fontFamily: '"Tajawal", sans-serif', color: textPrimary }}>
                   {score} / {questions.length}
                 </p>
@@ -321,11 +336,11 @@ export function IslamicQuizzes() {
                   {score === questions.length ? 'ممتاز! أحسنت' : score >= questions.length * 0.7 ? 'جيد جداً' : score >= questions.length * 0.5 ? 'جيد، استمر في التعلم' : 'لا بأس، حاول مجدداً'}
                 </p>
                 <p className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
-                  أجبت صح على {score} من {questions.length} سؤال
+                  نسبة النجاح: {Math.round((score / questions.length) * 100)}٪
                 </p>
               </div>
 
-              {/* Answer summary */}
+              {/* Answer summary bubbles */}
               <div className="flex justify-center gap-2 flex-wrap mb-8">
                 {answers.map((correct, i) => (
                   <div
