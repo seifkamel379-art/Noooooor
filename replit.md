@@ -56,7 +56,7 @@ pnpm -w run dev
 
 This executes `scripts/dev.sh` which:
 1. Starts the API server on port 3001 via `pnpm --filter @workspace/api-server run dev` (in background)
-2. Starts Vite on `$PORT` (defaults to 19382, mapped externally by Replit)
+2. Starts Vite on `$PORT` (defaults to 5000, the Replit-compatible port)
 
 Vite proxies `/api` requests to `localhost:3001`.
 
@@ -87,10 +87,10 @@ service cloud.firestore {
 
 ## Key Configuration
 
-- **Frontend port (dev)**: 19382 (mapped to external port 80)
+- **Frontend port (dev)**: 5000 (Replit-compatible port)
 - **API server port (dev)**: 3001
 - **Vite proxy**: `/api` → `http://localhost:3001`
-- **Vite host**: `::` (binds to both IPv4 and IPv6)
+- **Vite host**: `0.0.0.0` (binds to all interfaces)
 - **Firebase**: Configured via `VITE_FIREBASE_*` environment variables in `.replit`
 
 ## Database

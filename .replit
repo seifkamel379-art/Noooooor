@@ -23,13 +23,12 @@ runButton = "Project"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 19382
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm -w run dev"
 
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"
@@ -85,6 +84,15 @@ args = "artifacts/api-server: API Server"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "artifacts/mockup-sandbox: Component Preview Server"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
 
 [agent]
 stack = "PNPM_WORKSPACE"

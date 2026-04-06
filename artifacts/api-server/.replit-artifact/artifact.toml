@@ -5,7 +5,7 @@ version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
-localPort = 19382
+localPort = 5000
 name = "API Server"
 paths = ["/"]
 
@@ -20,4 +20,3 @@ args = ["node", "artifacts/api-server/dist/index.cjs"]
 
 [services.production.run.env]
 PORT = "8080"
-
