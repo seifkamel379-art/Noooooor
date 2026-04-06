@@ -9,7 +9,6 @@ type Channel = {
   url: string;
   description: string;
   grad: string;
-  icon: string;
 };
 
 const CHANNELS: Channel[] = [
@@ -19,7 +18,6 @@ const CHANNELS: Channel[] = [
     url: 'https://win.holol.com/live/quran/playlist.m3u8',
     description: 'البث الحي لتلاوة القرآن الكريم على مدار اليوم',
     grad: 'linear-gradient(135deg,#1b4332,#0d2b1e)',
-    icon: '📖',
   },
   {
     id: 2,
@@ -27,31 +25,6 @@ const CHANNELS: Channel[] = [
     url: 'https://win.holol.com/live/sunnah/playlist.m3u8',
     description: 'البث الحي للمحاضرات والدروس من السنة النبوية الشريفة',
     grad: 'linear-gradient(135deg,#3a1a5c,#1e0d30)',
-    icon: '🌙',
-  },
-  {
-    id: 3,
-    name: 'قناة المجد القرآنية',
-    url: 'https://win.holol.com/live/majdquran/playlist.m3u8',
-    description: 'بث مباشر لقناة المجد القرآنية',
-    grad: 'linear-gradient(135deg,#6b3a0f,#3d2008)',
-    icon: '✨',
-  },
-  {
-    id: 4,
-    name: 'قناة مكة المكرمة',
-    url: 'https://win.holol.com/live/makkah/playlist.m3u8',
-    description: 'بث مباشر من المسجد الحرام بمكة المكرمة',
-    grad: 'linear-gradient(135deg,#0f3d2e,#072218)',
-    icon: '🕋',
-  },
-  {
-    id: 5,
-    name: 'قناة المدينة المنورة',
-    url: 'https://win.holol.com/live/madinah/playlist.m3u8',
-    description: 'بث مباشر من المسجد النبوي الشريف',
-    grad: 'linear-gradient(135deg,#1e3a6e,#0f2040)',
-    icon: '🕌',
   },
 ];
 
@@ -84,10 +57,7 @@ function VideoPlayer({
         try {
           const { default: Hls } = await import('hls.js');
           if (Hls.isSupported()) {
-            const hls = new Hls({
-              enableWorker: false,
-              lowLatencyMode: true,
-            });
+            const hls = new Hls({ enableWorker: false, lowLatencyMode: true });
             hlsInstance = hls;
             hls.loadSource(channel.url);
             hls.attachMedia(video);
@@ -128,11 +98,7 @@ function VideoPlayer({
   const bg = dark ? '#0f0c07' : '#0a0a0a';
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: bg }}
-      dir="rtl"
-    >
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: bg }} dir="rtl">
       <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0">
         <button
           onClick={onClose}
@@ -187,10 +153,7 @@ function VideoPlayer({
 
         {status === 'loading' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
-              style={{ background: channel.grad }}
-            >
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: channel.grad }}>
               <Tv size={26} className="text-white" />
             </div>
             <div className="w-8 h-8 border-2 border-[#C19A6B]/30 border-t-[#C19A6B] rounded-full animate-spin mb-3" />
@@ -202,10 +165,7 @@ function VideoPlayer({
 
         {status === 'error' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{ background: 'rgba(239,68,68,0.15)' }}
-            >
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(239,68,68,0.15)' }}>
               <WifiOff size={28} className="text-red-400" />
             </div>
             <p className="font-bold text-white mb-2" style={{ fontFamily: '"Tajawal", sans-serif' }}>
@@ -223,11 +183,7 @@ function VideoPlayer({
                 }
               }}
               className="px-6 py-3 rounded-2xl font-bold text-sm"
-              style={{
-                fontFamily: '"Tajawal", sans-serif',
-                background: 'linear-gradient(135deg,#8B6340,#C19A6B)',
-                color: '#fff',
-              }}
+              style={{ fontFamily: '"Tajawal", sans-serif', background: 'linear-gradient(135deg,#8B6340,#C19A6B)', color: '#fff' }}
             >
               إعادة المحاولة
             </button>
@@ -254,7 +210,7 @@ export function IslamicTV() {
   const textSec = dark ? '#8B6B3D' : '#9E7B4A';
 
   return (
-    <div className="min-h-screen pb-36" dir="rtl" style={{ background: bg }}>
+    <div className="min-h-screen pb-28" dir="rtl" style={{ background: bg }}>
       <div className="sticky top-0 z-40 px-4 pt-4 pb-3" style={{ background: bg, borderBottom: `1px solid ${border}` }}>
         <div className="flex items-center gap-3 max-w-lg mx-auto">
           <button

@@ -215,7 +215,7 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-8">
+    <div className="flex flex-col gap-4 pb-24">
       {userProfile && (
         <div
           className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"

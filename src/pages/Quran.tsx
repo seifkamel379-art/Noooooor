@@ -18,7 +18,7 @@ function MoshafSheet({ dark, onClose }: { dark: boolean; onClose: () => void }) 
   const bg = dark ? '#1a1208' : '#fdfbf0';
   const border = dark ? 'rgba(193,154,107,0.15)' : 'rgba(193,154,107,0.2)';
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" dir="rtl" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center pb-16" dir="rtl" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <motion.div
         initial={{ y: '100%' }}
@@ -37,7 +37,7 @@ function MoshafSheet({ dark, onClose }: { dark: boolean; onClose: () => void }) 
           <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? '#d4b483' : '#5D4037' }}>تحميل نسخة المصحف</p>
           <div className="w-8" />
         </div>
-        <div className="overflow-y-auto flex-1 px-4 py-3 pb-safe" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+        <div className="overflow-y-auto flex-1 px-4 py-3" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           {moshafList.length === 0 && (
             <div className="flex flex-col gap-3">
               {[1,2,3].map(i => <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: dark ? 'rgba(193,154,107,0.08)' : 'rgba(193,154,107,0.1)' }} />)}

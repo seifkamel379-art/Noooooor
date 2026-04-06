@@ -13,25 +13,36 @@ type HistoryItem = {
   era: Era;
 };
 
-const ERAS: { id: Era; label: string; sub: string; grad: string; count: number }[] = [
-  { id: 'seerah',   label: 'السيرة النبوية',    sub: 'من المولد الشريف حتى الوفاة الشريفة',      grad: 'linear-gradient(135deg,#1b4332,#0d2b1e)', count: 128 },
-  { id: 'rashidun', label: 'الخلفاء الراشدون', sub: 'من 11 إلى 40 هـ',                           grad: 'linear-gradient(135deg,#1e3a6e,#0f2040)',  count: 126 },
-  { id: 'umayyad',  label: 'الدولة الأموية',    sub: 'من 41 إلى 132 هـ',                          grad: 'linear-gradient(135deg,#6b3a0f,#3d2008)',  count: 223 },
-  { id: 'abbasid',  label: 'الدولة العباسية',   sub: 'من 132 إلى 656 هـ',                         grad: 'linear-gradient(135deg,#3a1a5c,#1e0d30)',  count: 2160 },
-  { id: 'ottoman',  label: 'الدولة العثمانية',  sub: 'من 657 إلى 1342 هـ',                        grad: 'linear-gradient(135deg,#0f3d2e,#072218)',  count: 2338 },
+const ERA_CONFIG: Record<Era, { chunks: number; total: number }> = {
+  seerah:   { chunks: 1,  total: 142  },
+  rashidun: { chunks: 1,  total: 118  },
+  umayyad:  { chunks: 1,  total: 217  },
+  abbasid:  { chunks: 5,  total: 2160 },
+  ottoman:  { chunks: 7,  total: 3491 },
+};
+
+const ERAS: { id: Era; label: string; sub: string; grad: string }[] = [
+  { id: 'seerah',   label: 'السيرة النبوية',    sub: 'من المولد الشريف حتى الوفاة الشريفة',      grad: 'linear-gradient(135deg,#1b4332,#0d2b1e)' },
+  { id: 'rashidun', label: 'الخلفاء الراشدون', sub: 'من 11 إلى 40 هـ',                           grad: 'linear-gradient(135deg,#1e3a6e,#0f2040)'  },
+  { id: 'umayyad',  label: 'الدولة الأموية',    sub: 'من 41 إلى 132 هـ',                          grad: 'linear-gradient(135deg,#6b3a0f,#3d2008)'  },
+  { id: 'abbasid',  label: 'الدولة العباسية',   sub: 'من 132 إلى 656 هـ',                         grad: 'linear-gradient(135deg,#3a1a5c,#1e0d30)'  },
+  { id: 'ottoman',  label: 'الدولة العثمانية',  sub: 'من 657 إلى 1342 هـ',                        grad: 'linear-gradient(135deg,#0f3d2e,#072218)'  },
 ];
 
 const PAGE_SIZE = 50;
 
 const DHIKR = 'إِنَّ فِي ذَٰلِكَ لَذِكْرَىٰ لِمَن كَانَ لَهُ قَلْبٌ أَوْ أَلْقَى السَّمْعَ وَهُوَ شَهِيدٌ ۝ ق: 37';
 
+function eraUrl(era: Era, chunk?: number): string {
+  const cfg = ERA_CONFIG[era];
+  if (cfg.chunks === 1) return `/data/history-${era}.json`;
+  return `/data/history-${era}-${chunk ?? 1}.json`;
+}
+
 function EventSheet({ item, onClose, dark }: { item: HistoryItem | null; onClose: () => void; dark: boolean }) {
   useEffect(() => {
-    if (item) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (item) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
   }, [item]);
 
@@ -139,18 +150,23 @@ export function IslamicHistory() {
 
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedEra, setSelectedEra] = useState<Era>('seerah');
   const [search, setSearch] = useState('');
   const [activeItem, setActiveItem] = useState<HistoryItem | null>(null);
   const [page, setPage] = useState(1);
+  const [currentChunk, setCurrentChunk] = useState(1);
   const loadedEraRef = useRef<Era | null>(null);
+
+  const cfg = ERA_CONFIG[selectedEra];
 
   useEffect(() => {
     if (loadedEraRef.current === selectedEra) return;
     setLoading(true);
     setItems([]);
     setPage(1);
-    fetch(`/data/history-${selectedEra}.json`)
+    setCurrentChunk(1);
+    fetch(eraUrl(selectedEra, 1))
       .then(r => r.json())
       .then((d: HistoryItem[]) => {
         setItems(d);
@@ -160,6 +176,20 @@ export function IslamicHistory() {
       .catch(() => setLoading(false));
   }, [selectedEra]);
 
+  const loadNextChunk = useCallback(() => {
+    const nextChunk = currentChunk + 1;
+    if (nextChunk > cfg.chunks) return;
+    setLoadingMore(true);
+    fetch(eraUrl(selectedEra, nextChunk))
+      .then(r => r.json())
+      .then((d: HistoryItem[]) => {
+        setItems(prev => [...prev, ...d]);
+        setCurrentChunk(nextChunk);
+        setLoadingMore(false);
+      })
+      .catch(() => setLoadingMore(false));
+  }, [currentChunk, cfg.chunks, selectedEra]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return items;
     const q = search.trim();
@@ -167,11 +197,25 @@ export function IslamicHistory() {
   }, [items, search]);
 
   const visible = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
-  const hasMore = visible.length < filtered.length;
+
+  const hasMoreInMemory = visible.length < filtered.length;
+  const hasMoreChunks = !search.trim() && currentChunk < cfg.chunks;
+  const hasMore = hasMoreInMemory || hasMoreChunks;
+
+  const handleLoadMore = () => {
+    if (hasMoreInMemory) {
+      setPage(p => p + 1);
+    } else if (hasMoreChunks) {
+      loadNextChunk();
+      setPage(p => p + 1);
+    }
+  };
 
   const handleSelect = useCallback((item: HistoryItem) => setActiveItem(item), []);
 
   const handleEraChange = (era: Era) => {
+    if (era === selectedEra) return;
+    loadedEraRef.current = null;
     setSelectedEra(era);
     setSearch('');
     setPage(1);
@@ -183,8 +227,14 @@ export function IslamicHistory() {
   const textPrimary = dark ? '#d4b483' : '#5D4037';
   const textSec = dark ? '#8B6B3D' : '#9E7B4A';
 
+  const remainingCount = (() => {
+    if (hasMoreInMemory) return filtered.length - visible.length;
+    if (hasMoreChunks) return cfg.total - items.length;
+    return 0;
+  })();
+
   return (
-    <div className="min-h-screen pb-36" dir="rtl" style={{ background: bg }}>
+    <div className="min-h-screen pb-28" dir="rtl" style={{ background: bg }}>
 
       <div className="sticky top-0 z-40 px-4 pt-4 pb-3" style={{ background: bg, borderBottom: `1px solid ${border}` }}>
         <div className="flex items-center gap-3 max-w-lg mx-auto mb-3">
@@ -200,7 +250,7 @@ export function IslamicHistory() {
               التاريخ الإسلامي
             </h1>
             <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
-              {loading ? 'جارٍ التحميل...' : `${filtered.length} حدث`}
+              {loading ? 'جارٍ التحميل...' : `${filtered.length} حدث محمّل`}
             </p>
           </div>
           <BookOpen size={22} className="text-[#C19A6B]" />
@@ -244,9 +294,12 @@ export function IslamicHistory() {
         </div>
 
         {!loading && (
-          <div className="mb-3 px-1">
+          <div className="mb-3 px-1 flex items-center justify-between">
             <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
               {ERAS.find(e => e.id === selectedEra)?.sub}
+            </p>
+            <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
+              الإجمالي: {cfg.total.toLocaleString()} حدث
             </p>
           </div>
         )}
@@ -281,17 +334,23 @@ export function IslamicHistory() {
 
         {hasMore && !loading && (
           <button
-            onClick={() => setPage(p => p + 1)}
+            onClick={handleLoadMore}
+            disabled={loadingMore}
             className="w-full mt-4 py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm"
             style={{
               fontFamily: '"Tajawal", sans-serif',
               background: dark ? 'rgba(193,154,107,0.1)' : 'rgba(193,154,107,0.12)',
               color: dark ? '#C19A6B' : '#8B6340',
               border: `1px solid ${border}`,
+              opacity: loadingMore ? 0.7 : 1,
             }}
           >
-            <ChevronDown size={16} />
-            تحميل المزيد ({filtered.length - visible.length} حدث متبقٍ)
+            {loadingMore ? (
+              <div className="w-4 h-4 border-2 border-[#C19A6B]/30 border-t-[#C19A6B] rounded-full animate-spin" />
+            ) : (
+              <ChevronDown size={16} />
+            )}
+            {loadingMore ? 'جارٍ التحميل...' : `تحميل المزيد (${remainingCount.toLocaleString()} حدث متبقٍ)`}
           </button>
         )}
 
