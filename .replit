@@ -107,7 +107,7 @@ VITE_FIREBASE_API_KEY = "AIzaSyDOVE54x_j5fldKYwTRAG9QzdRok_pD074"
 
 [nix]
 channel = "stable-25_05"
-packages = ["zulu17", "zip"]
+packages = ["zulu17", "zip", "killall"]
 
 [[ports]]
 localPort = 19382
