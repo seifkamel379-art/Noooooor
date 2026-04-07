@@ -28,7 +28,8 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "bash scripts/replit-dev.sh"
+waitForPort = 19382
 
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"

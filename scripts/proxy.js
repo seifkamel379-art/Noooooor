@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-// Lightweight reverse proxy: port 19382 → port 5000
 import http from "http";
 
-const TARGET_PORT = 5000;
-const PROXY_PORT = 19382;
+const TARGET_PORT = Number(process.env.PORT ?? 5000);
+const PROXY_PORT = Number(process.env.PROXY_PORT ?? 19382);
 
 const server = http.createServer((req, res) => {
   const options = {
@@ -21,8 +20,10 @@ const server = http.createServer((req, res) => {
 
   proxy.on("error", (err) => {
     console.error("Proxy error:", err.message);
-    res.writeHead(502);
-    res.end("Bad Gateway");
+    if (!res.headersSent) {
+      res.writeHead(502);
+      res.end("Bad Gateway");
+    }
   });
 
   req.pipe(proxy, { end: true });
