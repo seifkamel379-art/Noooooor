@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
   Star, Copy, X, Check, Mail, MessageSquare, Settings2, Pencil, Clock,
-  Lock, Eye, EyeOff, ShieldCheck,
+  Lock, Eye, EyeOff, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -584,6 +584,12 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
     outline: 'none',
   };
 
+  const headerTitle = step === 'confirm-hide'
+    ? 'تنبيه مهم قبل المتابعة'
+    : step === 'email'
+    ? 'أدخل بريدك الإلكتروني'
+    : 'أنشئ كلمة السر';
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center pb-20" dir="rtl" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -606,20 +612,104 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
           </button>
           <div className="text-center">
             <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              {step === 'email' ? 'أدخل بريدك الإلكتروني' : 'أنشئ كلمة السر'}
+              {headerTitle}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              بياناتك وتسبيحاتك لن تُحذف
-            </p>
+            {step !== 'confirm-hide' && (
+              <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                بياناتك وتسبيحاتك لن تُحذف
+              </p>
+            )}
           </div>
           <div className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(193,154,107,0.12)' }}>
-            <ShieldCheck className="w-4 h-4 text-[#C19A6B]" />
+            style={{ background: step === 'confirm-hide' ? 'rgba(245,158,11,0.12)' : 'rgba(193,154,107,0.12)' }}>
+            {step === 'confirm-hide'
+              ? <AlertTriangle className="w-4 h-4 text-amber-500" />
+              : <ShieldCheck className="w-4 h-4 text-[#C19A6B]" />
+            }
           </div>
         </div>
 
         <div className="px-5 py-5 flex flex-col gap-4">
-          {step === 'email' ? (
+
+          {/* ── Step: confirm-hide ── */}
+          {step === 'confirm-hide' && (
+            <>
+              {/* Warning icon */}
+              <div className="flex flex-col items-center text-center gap-3">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.25)' }}
+                >
+                  <TasbihIcon className="text-amber-500" size={30} />
+                </div>
+                <div>
+                  <p className="font-bold text-base text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                    هل أنت ظاهر في ترتيب التسبيح؟
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning box */}
+              <div
+                className="rounded-2xl p-4 flex flex-col gap-2"
+                style={{ background: 'rgba(245,158,11,0.07)', border: '1.5px solid rgba(245,158,11,0.3)' }}
+              >
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p
+                    className="text-sm leading-relaxed text-foreground font-medium"
+                    style={{ fontFamily: '"Tajawal", sans-serif' }}
+                  >
+                    من فضلك، إذا كنت موجوداً في الترتيب الخاص بالتسبيح،{' '}
+                    <span className="text-amber-500 font-bold">أخفِ نفسك أولاً</span>{' '}
+                    قبل التحويل من ضيف إلى إيميل
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5 pr-6">
+                  <p
+                    className="text-xs leading-relaxed text-muted-foreground"
+                    style={{ fontFamily: '"Tajawal", sans-serif' }}
+                  >
+                    لأن التحويل سينشئ حساباً جديداً وستظهر مرتين في الترتيب إذا لم تخفِ نفسك مسبقاً
+                  </p>
+                </div>
+              </div>
+
+              {/* How to hide note */}
+              <div
+                className="rounded-xl px-4 py-3 flex items-start gap-2.5"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <EyeOff className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  اذهب إلى صفحة <span className="text-foreground font-bold">الصحبة</span> → اضغط على رمز العين{' '}
+                  <span className="text-foreground font-bold">لإخفاء نفسك من الترتيب</span>، ثم ارجع وأكمل هنا
+                </p>
+              </div>
+
+              {/* Two action buttons */}
+              <div className="flex flex-col gap-2.5 pt-1">
+                <button
+                  onClick={handleHideAndContinue}
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
+                >
+                  <EyeOff className="w-4 h-4" />
+                  أخفِ نفسي تلقائياً وأكمل التحويل
+                </button>
+                <button
+                  onClick={() => setStep('email')}
+                  className="w-full py-3 rounded-2xl text-sm font-bold text-muted-foreground"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', fontFamily: '"Tajawal", sans-serif' }}
+                >
+                  أنا مش في الترتيب — أكمل مباشرةً
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── Step: email ── */}
+          {step === 'email' && (
             <div className="relative">
               <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C19A6B]/60" />
               <input
@@ -632,7 +722,10 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
                 onKeyDown={e => e.key === 'Enter' && email.trim() && setStep('password')}
               />
             </div>
-          ) : (
+          )}
+
+          {/* ── Step: password ── */}
+          {step === 'password' && (
             <div className="relative">
               <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C19A6B]/60" />
               <input
@@ -653,22 +746,26 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
             </div>
           )}
 
-          {error && (
+          {/* Error message (email/password steps) */}
+          {step !== 'confirm-hide' && error && (
             <div className="rounded-xl px-4 py-2.5 text-sm text-center"
               style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontFamily: '"Tajawal", sans-serif', color: '#f87171' }}>
               {error}
             </div>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading || (step === 'email' ? !email.trim() : !password)}
-            className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
-            style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
-          >
-            {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-            {loading ? 'جارٍ إنشاء الحساب...' : step === 'email' ? 'التالي →' : 'إنشاء الحساب →'}
-          </button>
+          {/* Submit button (email/password steps) */}
+          {step !== 'confirm-hide' && (
+            <button
+              onClick={handleSubmit}
+              disabled={loading || (step === 'email' ? !email.trim() : !password)}
+              className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+              style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
+            >
+              {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+              {loading ? 'جارٍ إنشاء الحساب...' : step === 'email' ? 'التالي →' : 'إنشاء الحساب →'}
+            </button>
+          )}
 
           {step === 'password' && (
             <button onClick={() => setStep('email')} className="text-center text-sm text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
@@ -799,27 +896,38 @@ export function MoreMenu() {
       {userProfile && !userProfile.email && (
         <button
           onClick={() => setShowGuestUpgrade(true)}
-          className="w-full mb-4 rounded-2xl p-3.5 flex items-center gap-3 transition-all active:scale-[0.99]"
+          className="w-full mb-4 rounded-2xl overflow-hidden transition-all active:scale-[0.98]"
           style={{
-            background: 'linear-gradient(135deg,rgba(193,154,107,0.15),rgba(193,154,107,0.05))',
-            border: '1.5px solid rgba(193,154,107,0.4)',
+            background: 'linear-gradient(135deg, rgba(193,154,107,0.18) 0%, rgba(193,154,107,0.06) 100%)',
+            border: '1.5px solid rgba(193,154,107,0.45)',
+            boxShadow: '0 4px 20px rgba(193,154,107,0.1)',
           }}
         >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)' }}
-          >
-            <Mail className="w-5 h-5 text-black" />
+          {/* Top accent line */}
+          <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(193,154,107,0.6), transparent)' }} />
+
+          <div className="p-4 flex items-center gap-3.5">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)', boxShadow: '0 4px 12px rgba(193,154,107,0.4)' }}
+            >
+              <Mail className="w-5.5 h-5.5 text-black" size={22} />
+            </div>
+            <div className="flex-1 text-right">
+              <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>
+                احفظ حسابك بالبريد الإلكتروني
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                بياناتك وتسبيحاتك لن تُحذف — تحويل آمن ١٠٠٪
+              </p>
+            </div>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(193,154,107,0.2)' }}
+            >
+              <ChevronLeft className="w-4 h-4" style={{ color: '#C19A6B' }} />
+            </div>
           </div>
-          <div className="flex-1 text-right">
-            <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>
-              سجّل دخولك بالإيميل
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              احفظ حسابك وبياناتك — لن تُحذف أي معلومة
-            </p>
-          </div>
-          <ChevronLeft className="w-4 h-4 text-[#C19A6B]/60 flex-shrink-0" />
         </button>
       )}
 
