@@ -62,7 +62,7 @@ This is a pnpm monorepo workspace.
 
 The "Start application" workflow runs:
 ```
-pnpm -w run dev
+npm run dev
 ```
 
 This executes `scripts/dev.sh` which:
@@ -70,6 +70,10 @@ This executes `scripts/dev.sh` which:
 2. Starts Vite on `$PORT` (defaults to 5000, the Replit-compatible port)
 
 Vite proxies `/api` requests to `localhost:3001`.
+
+The "artifacts/api-server: API Server" workflow runs a proxy (port 19382 → 5000) managed by Replit's artifact system to expose the app on external port 80.
+
+**Important**: The "Start application" workflow is configured without `waitForPort` because Vite's on-demand TypeScript compilation makes the first HTTP response take 6+ seconds, which exceeds the workflow manager's health check timeout. The workflow runs correctly once started.
 
 ## Firebase
 

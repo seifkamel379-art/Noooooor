@@ -28,7 +28,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm -w run dev"
+args = "npm run dev"
 
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"
