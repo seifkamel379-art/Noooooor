@@ -29,7 +29,6 @@ outputType = "webview"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
-waitForPort = 19382
 
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"
