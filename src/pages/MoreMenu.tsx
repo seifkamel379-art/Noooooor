@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
   Star, Copy, X, Check, Mail, MessageSquare, Settings2, Pencil, Clock,
-  Lock, Eye, EyeOff, ShieldCheck, AlertTriangle,
+  Lock, Eye, EyeOff, ShieldCheck,
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -502,24 +502,12 @@ function mapAuthError(code: string): string {
 }
 
 function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  /* If the guest is currently visible in the leaderboard they MUST hide themselves first */
-  const isCurrentlyPublic = localStorage.getItem('sohba_is_public') === 'false' ? false
-    : (() => { try { return JSON.parse(localStorage.getItem('sohba_is_public') ?? 'false'); } catch { return false; } })();
-
-  const [step, setStep]         = useState<'confirm-hide' | 'email' | 'password'>(
-    isCurrentlyPublic ? 'confirm-hide' : 'email',
-  );
+  const [step, setStep]         = useState<'email' | 'password'>('email');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
-
-  const handleHideAndContinue = () => {
-    localStorage.setItem('sohba_is_public', 'false');
-    window.dispatchEvent(new CustomEvent('noor-leaderboard-reset'));
-    setStep('email');
-  };
 
   const handleSubmit = async () => {
     if (step === 'email') { if (email.trim()) setStep('password'); return; }
@@ -530,19 +518,17 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
       const raw  = localStorage.getItem('user_profile');
       const profile = raw ? JSON.parse(raw) : null;
 
-      /* Step 1: Capture old leaderboard ID and hide entry BEFORE creating new account.
-         Using hideLeaderboardEntry (isPublic: false) ensures the old entry disappears
-         from the ranking immediately, even if the subsequent delete call fails. */
+      /* Hide old leaderboard entry BEFORE creating new account */
       const oldLeaderboardId = profile ? legacyLeaderboardId(profile) : null;
       if (oldLeaderboardId) {
         await hideLeaderboardEntry(oldLeaderboardId);
       }
 
-      /* Step 2: Create the Firebase email account */
+      /* Create the Firebase email account */
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const uid  = cred.user.uid;
 
-      /* Step 3: Update local profile identity */
+      /* Update local profile identity */
       if (profile) {
         profile.uid           = uid;
         profile.email         = email.trim();
@@ -552,14 +538,11 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
         localStorage.setItem('user_profile', JSON.stringify(profile));
       }
 
-      /* Step 4: Disable leaderboard participation so the new account doesn't
-         auto-sync on next Sohba mount. User must re-join manually. */
+      /* Disable leaderboard participation — user must re-join manually */
       localStorage.setItem('sohba_is_public', 'false');
-      /* Notify any mounted Sohba instance to update its in-memory state too
-         (StorageEvent doesn't fire for same-tab changes, so we use a custom event). */
       window.dispatchEvent(new CustomEvent('noor-leaderboard-reset'));
 
-      /* Step 5: Delete the old Firestore document (cleanup after hiding) */
+      /* Delete the old Firestore document */
       if (oldLeaderboardId && oldLeaderboardId !== uid) {
         await deleteLeaderboardEntry(oldLeaderboardId);
       }
@@ -584,12 +567,6 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
     outline: 'none',
   };
 
-  const headerTitle = step === 'confirm-hide'
-    ? 'تنبيه مهم قبل المتابعة'
-    : step === 'email'
-    ? 'أدخل بريدك الإلكتروني'
-    : 'أنشئ كلمة السر';
-
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center pb-20" dir="rtl" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -612,100 +589,55 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
           </button>
           <div className="text-center">
             <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              {headerTitle}
+              {step === 'email' ? 'ربط البريد الإلكتروني' : 'أنشئ كلمة السر'}
             </p>
-            {step !== 'confirm-hide' && (
-              <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                بياناتك وتسبيحاتك لن تُحذف
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              بياناتك وتسبيحاتك لن تُحذف
+            </p>
           </div>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: step === 'confirm-hide' ? 'rgba(245,158,11,0.12)' : 'rgba(193,154,107,0.12)' }}>
-            {step === 'confirm-hide'
-              ? <AlertTriangle className="w-4 h-4 text-amber-500" />
-              : <ShieldCheck className="w-4 h-4 text-[#C19A6B]" />
-            }
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(193,154,107,0.12)' }}
+          >
+            <ShieldCheck className="w-4 h-4 text-[#C19A6B]" />
           </div>
         </div>
 
         <div className="px-5 py-5 flex flex-col gap-4">
 
-          {/* ── Step: confirm-hide ── */}
-          {step === 'confirm-hide' && (
-            <>
-              {/* Warning icon */}
-              <div className="flex flex-col items-center text-center gap-3">
+          {/* ── Prominent leaderboard warning — always visible on email step ── */}
+          {step === 'email' && (
+            <div
+              className="rounded-2xl p-4"
+              style={{
+                background: 'linear-gradient(135deg, rgba(193,154,107,0.18), rgba(193,154,107,0.08))',
+                border: '2px solid rgba(193,154,107,0.55)',
+                boxShadow: '0 4px 16px rgba(193,154,107,0.2)',
+              }}
+            >
+              <div className="flex items-start gap-3">
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.25)' }}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: 'linear-gradient(135deg, #C19A6B, #8B6340)' }}
                 >
-                  <TasbihIcon className="text-amber-500" size={30} />
+                  <TasbihIcon className="text-white" size={20} />
                 </div>
-                <div>
-                  <p className="font-bold text-base text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    هل أنت ظاهر في ترتيب التسبيح؟
-                  </p>
-                </div>
-              </div>
-
-              {/* Warning box */}
-              <div
-                className="rounded-2xl p-4 flex flex-col gap-2"
-                style={{ background: 'rgba(245,158,11,0.07)', border: '1.5px solid rgba(245,158,11,0.3)' }}
-              >
-                <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
                   <p
-                    className="text-sm leading-relaxed text-foreground font-medium"
-                    style={{ fontFamily: '"Tajawal", sans-serif' }}
+                    className="font-bold text-sm leading-relaxed"
+                    style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--foreground)' }}
                   >
-                    من فضلك، إذا كنت موجوداً في الترتيب الخاص بالتسبيح،{' '}
-                    <span className="text-amber-500 font-bold">أخفِ نفسك أولاً</span>{' '}
-                    قبل التحويل من ضيف إلى إيميل
+                    من فضلك اخفِ نفسك من الترتيب الخاص بالتسبيح
                   </p>
-                </div>
-                <div className="flex items-start gap-2.5 pr-6">
                   <p
-                    className="text-xs leading-relaxed text-muted-foreground"
-                    style={{ fontFamily: '"Tajawal", sans-serif' }}
+                    className="text-xs leading-relaxed mt-1.5"
+                    style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}
                   >
-                    لأن التحويل سينشئ حساباً جديداً وستظهر مرتين في الترتيب إذا لم تخفِ نفسك مسبقاً
+                    حتى لا تظهر مرتين في الترتيب — التحويل سيُنشئ حساباً جديداً فأخفِ دخولك القديم أولاً من صفحة الصحبة
                   </p>
                 </div>
               </div>
-
-              {/* How to hide note */}
-              <div
-                className="rounded-xl px-4 py-3 flex items-start gap-2.5"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                <EyeOff className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                  اذهب إلى صفحة <span className="text-foreground font-bold">الصحبة</span> → اضغط على رمز العين{' '}
-                  <span className="text-foreground font-bold">لإخفاء نفسك من الترتيب</span>، ثم ارجع وأكمل هنا
-                </p>
-              </div>
-
-              {/* Two action buttons */}
-              <div className="flex flex-col gap-2.5 pt-1">
-                <button
-                  onClick={handleHideAndContinue}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
-                >
-                  <EyeOff className="w-4 h-4" />
-                  أخفِ نفسي تلقائياً وأكمل التحويل
-                </button>
-                <button
-                  onClick={() => setStep('email')}
-                  className="w-full py-3 rounded-2xl text-sm font-bold text-muted-foreground"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', fontFamily: '"Tajawal", sans-serif' }}
-                >
-                  أنا مش في الترتيب — أكمل مباشرةً
-                </button>
-              </div>
-            </>
+            </div>
           )}
 
           {/* ── Step: email ── */}
@@ -746,26 +678,24 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
             </div>
           )}
 
-          {/* Error message (email/password steps) */}
-          {step !== 'confirm-hide' && error && (
+          {/* Error message */}
+          {error && (
             <div className="rounded-xl px-4 py-2.5 text-sm text-center"
               style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontFamily: '"Tajawal", sans-serif', color: '#f87171' }}>
               {error}
             </div>
           )}
 
-          {/* Submit button (email/password steps) */}
-          {step !== 'confirm-hide' && (
-            <button
-              onClick={handleSubmit}
-              disabled={loading || (step === 'email' ? !email.trim() : !password)}
-              className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
-              style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
-            >
-              {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-              {loading ? 'جارٍ إنشاء الحساب...' : step === 'email' ? 'التالي →' : 'إنشاء الحساب →'}
-            </button>
-          )}
+          {/* Submit button */}
+          <button
+            onClick={handleSubmit}
+            disabled={loading || (step === 'email' ? !email.trim() : !password)}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+            style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
+          >
+            {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+            {loading ? 'جارٍ إنشاء الحساب...' : step === 'email' ? 'التالي →' : 'إنشاء الحساب →'}
+          </button>
 
           {step === 'password' && (
             <button onClick={() => setStep('email')} className="text-center text-sm text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
@@ -898,34 +828,30 @@ export function MoreMenu() {
           onClick={() => setShowGuestUpgrade(true)}
           className="w-full mb-4 rounded-2xl overflow-hidden transition-all active:scale-[0.98]"
           style={{
-            background: 'linear-gradient(135deg, rgba(193,154,107,0.18) 0%, rgba(193,154,107,0.06) 100%)',
-            border: '1.5px solid rgba(193,154,107,0.45)',
-            boxShadow: '0 4px 20px rgba(193,154,107,0.1)',
+            background: 'linear-gradient(135deg, #8B6340 0%, #C19A6B 50%, #9a7048 100%)',
+            boxShadow: '0 6px 24px rgba(193,154,107,0.45)',
           }}
         >
-          {/* Top accent line */}
-          <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(193,154,107,0.6), transparent)' }} />
-
           <div className="p-4 flex items-center gap-3.5">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)', boxShadow: '0 4px 12px rgba(193,154,107,0.4)' }}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 flex-shrink-0"
+              style={{ background: 'rgba(0,0,0,0.25)' }}
             >
-              <Mail className="w-5.5 h-5.5 text-black" size={22} />
+              <Mail className="text-white" size={22} />
             </div>
             <div className="flex-1 text-right">
-              <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>
+              <p className="font-bold text-sm text-white" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                 احفظ حسابك بالبريد الإلكتروني
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <p className="text-xs mt-0.5 leading-relaxed text-white/80" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                 بياناتك وتسبيحاتك لن تُحذف — تحويل آمن ١٠٠٪
               </p>
             </div>
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(193,154,107,0.2)' }}
+              style={{ background: 'rgba(0,0,0,0.2)' }}
             >
-              <ChevronLeft className="w-4 h-4" style={{ color: '#C19A6B' }} />
+              <ChevronLeft className="w-4 h-4 text-white" />
             </div>
           </div>
         </button>

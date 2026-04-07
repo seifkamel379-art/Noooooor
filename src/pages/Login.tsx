@@ -3,7 +3,7 @@ import { EGYPT_GOVERNORATES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, Mail, Lock, Eye, EyeOff, ChevronRight,
-  UserCircle2, LogIn, UserPlus, Sparkles,
+  UserCircle2, LogIn, UserPlus,
 } from 'lucide-react';
 import {
   createUserWithEmailAndPassword,
@@ -182,15 +182,6 @@ function computeLeaderboardId(uid: string, isGuest: boolean, name: string, govId
   return btoa(encodeURIComponent(`${name}-${govId}`)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
 }
 
-/* ── Decorative Islamic Star ── */
-function IslamicStar({ size = 60, opacity = 0.12 }: { size?: number; opacity?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ opacity }}>
-      <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35"
-        fill="#C19A6B" />
-    </svg>
-  );
-}
 
 export function Login({ onComplete }: LoginProps) {
   const [step, setStep]           = useState<Step>('welcome');
@@ -302,7 +293,7 @@ export function Login({ onComplete }: LoginProps) {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-5 overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #07090f 0%, #0c1018 50%, #06080d 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #1c1007 0%, #251508 50%, #1a0d05 100%)' }}
       dir="rtl"
     >
       {/* Background decorations */}
@@ -310,29 +301,17 @@ export function Login({ onComplete }: LoginProps) {
         {/* Top gold glow */}
         <div
           className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(193,154,107,0.09) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          style={{ background: 'radial-gradient(ellipse, rgba(193,154,107,0.12) 0%, transparent 70%)', filter: 'blur(40px)' }}
         />
-        {/* Bottom right glow */}
+        {/* Bottom warm glow */}
         <div
           className="absolute bottom-0 right-0 w-72 h-72 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(193,154,107,0.06) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          style={{ background: 'radial-gradient(circle, rgba(193,154,107,0.08) 0%, transparent 70%)', filter: 'blur(40px)' }}
         />
-        {/* Decorative stars */}
-        <div className="absolute top-8 right-6">
-          <IslamicStar size={45} opacity={0.08} />
-        </div>
-        <div className="absolute bottom-24 left-4">
-          <IslamicStar size={38} opacity={0.06} />
-        </div>
-        <div className="absolute top-1/3 left-2">
-          <IslamicStar size={28} opacity={0.05} />
-        </div>
-        {/* Grid pattern overlay */}
+        {/* Left warm accent */}
         <div
-          className="absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(0deg, #C19A6B 0px, transparent 1px, transparent 60px), repeating-linear-gradient(90deg, #C19A6B 0px, transparent 1px, transparent 60px)',
-          }}
+          className="absolute top-1/2 -left-20 w-48 h-64 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(139,99,64,0.1) 0%, transparent 70%)', filter: 'blur(30px)' }}
         />
       </div>
 
@@ -393,23 +372,22 @@ export function Login({ onComplete }: LoginProps) {
                 onClick={() => { clearError(); setStep('signup-email'); }}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97]"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(193,154,107,0.18) 0%, rgba(193,154,107,0.06) 100%)',
-                  border: '1.5px solid rgba(193,154,107,0.45)',
-                  boxShadow: '0 4px 24px rgba(193,154,107,0.1)',
+                  background: 'linear-gradient(135deg, #8B6340 0%, #C19A6B 50%, #9a7048 100%)',
+                  boxShadow: '0 6px 24px rgba(193,154,107,0.35)',
                 }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #C19A6B, #8B6340)', boxShadow: '0 4px 12px rgba(193,154,107,0.4)' }}
+                  style={{ background: 'rgba(0,0,0,0.22)' }}
                 >
-                  <UserPlus className="w-5.5 h-5.5 text-black" size={22} />
+                  <UserPlus size={22} className="text-white" />
                 </div>
                 <div className="text-right flex-1">
                   <p className="font-bold text-white text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>إنشاء حساب جديد</p>
-                  <p className="text-white/35 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>سجّل ببريدك الإلكتروني واحفظ بياناتك</p>
+                  <p className="text-white/75 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>سجّل ببريدك الإلكتروني واحفظ بياناتك</p>
                 </div>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(193,154,107,0.15)' }}>
-                  <ChevronRight className="w-4 h-4" style={{ color: '#C19A6B' }} />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.18)' }}>
+                  <ChevronRight className="w-4 h-4 text-white" />
                 </div>
               </button>
 
@@ -418,22 +396,22 @@ export function Login({ onComplete }: LoginProps) {
                 onClick={() => { clearError(); setStep('login-email'); }}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97]"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1.5px solid rgba(255,255,255,0.09)',
+                  background: 'rgba(193,154,107,0.1)',
+                  border: '1.5px solid rgba(193,154,107,0.3)',
                 }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.12)' }}
+                  style={{ background: 'rgba(193,154,107,0.18)', border: '1.5px solid rgba(193,154,107,0.3)' }}
                 >
-                  <LogIn className="w-5 h-5 text-white/70" />
+                  <LogIn className="w-5 h-5" style={{ color: '#C19A6B' }} />
                 </div>
                 <div className="text-right flex-1">
                   <p className="font-bold text-white text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>تسجيل الدخول</p>
-                  <p className="text-white/35 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>ادخل على حسابك الموجود</p>
+                  <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>ادخل على حسابك الموجود</p>
                 </div>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                  <ChevronRight className="w-4 h-4 text-white/25" />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(193,154,107,0.12)' }}>
+                  <ChevronRight className="w-4 h-4" style={{ color: '#C19A6B' }} />
                 </div>
               </button>
 
@@ -442,22 +420,22 @@ export function Login({ onComplete }: LoginProps) {
                 onClick={() => { clearError(); setStep('guest-name'); }}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97]"
                 style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1.5px solid rgba(255,255,255,0.07)',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1.5px solid rgba(255,255,255,0.09)',
                 }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.09)' }}
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.1)' }}
                 >
-                  <UserCircle2 className="w-5 h-5 text-white/50" />
+                  <UserCircle2 className="w-5 h-5 text-white/55" />
                 </div>
                 <div className="text-right flex-1">
-                  <p className="font-bold text-white/80 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>دخول كضيف</p>
+                  <p className="font-bold text-white/75 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>دخول كضيف</p>
                   <p className="text-white/30 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>بالاسم والمحافظة — بدون حساب</p>
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  <ChevronRight className="w-4 h-4 text-white/20" />
+                  <ChevronRight className="w-4 h-4 text-white/25" />
                 </div>
               </button>
 
@@ -721,19 +699,17 @@ export function Login({ onComplete }: LoginProps) {
 
         </AnimatePresence>
 
-        {/* Bottom sparkle hint */}
+        {/* Bottom hint */}
         {step === 'welcome' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="flex items-center justify-center gap-2 mt-5"
+            className="flex items-center justify-center mt-5"
           >
-            <Sparkles className="w-3 h-3" style={{ color: 'rgba(193,154,107,0.4)' }} />
-            <p className="text-white/18 text-[11px]" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-              تطبيق إسلامي شامل — مجاناً للأبد
+            <p className="text-white/25 text-[11px]" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              تطبيق نور - تطبيق إسلامي شامل
             </p>
-            <Sparkles className="w-3 h-3" style={{ color: 'rgba(193,154,107,0.4)' }} />
           </motion.div>
         )}
       </div>
