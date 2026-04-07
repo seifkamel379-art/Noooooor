@@ -172,6 +172,12 @@ export async function fetchUserEntry(userId: string): Promise<LeaderboardEntry |
   return snap.exists() ? (snap.data() as LeaderboardEntry) : null;
 }
 
+export async function hideLeaderboardEntry(userId: string): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'sohbaLeaderboard', userId), { isPublic: false });
+  } catch { /* entry might not exist yet — safe to ignore */ }
+}
+
 export async function deleteLeaderboardEntry(userId: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'sohbaLeaderboard', userId));

@@ -701,6 +701,15 @@ export function Sohba() {
   const [welcomeSeen, setWelcomeSeen] = useLocalStorage<boolean>('sohba_welcome_seen', false);
   const [isPublic, setIsPublic] = useLocalStorage<boolean>('sohba_is_public', false);
 
+  /* When a guest upgrades to email, MoreMenu dispatches this event to force-hide
+     the user from the leaderboard even if Sohba is currently mounted
+     (StorageEvent doesn't fire for same-tab localStorage changes). */
+  useEffect(() => {
+    const handle = () => setIsPublic(false);
+    window.addEventListener('noor-leaderboard-reset', handle);
+    return () => window.removeEventListener('noor-leaderboard-reset', handle);
+  }, [setIsPublic]);
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [showConfirmSync, setShowConfirmSync] = useState(false);
   const [showScoringInfo, setShowScoringInfo] = useState(false);

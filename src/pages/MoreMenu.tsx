@@ -9,7 +9,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut, auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { deleteLeaderboardEntry } from '@/lib/firestore';
+import { deleteLeaderboardEntry, hideLeaderboardEntry } from '@/lib/firestore';
 
 /* Compute the old-style leaderboard key for migration (must match Sohba.tsx logic) */
 function legacyLeaderboardId(profile: { leaderboardId?: string; name?: string; governorateId?: string }): string {
@@ -515,28 +515,43 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
     setLoading(true);
     setError('');
     try {
+      const raw  = localStorage.getItem('user_profile');
+      const profile = raw ? JSON.parse(raw) : null;
+
+      /* Step 1: Capture old leaderboard ID and hide entry BEFORE creating new account.
+         Using hideLeaderboardEntry (isPublic: false) ensures the old entry disappears
+         from the ranking immediately, even if the subsequent delete call fails. */
+      const oldLeaderboardId = profile ? legacyLeaderboardId(profile) : null;
+      if (oldLeaderboardId) {
+        await hideLeaderboardEntry(oldLeaderboardId);
+      }
+
+      /* Step 2: Create the Firebase email account */
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const uid  = cred.user.uid;
-      const raw  = localStorage.getItem('user_profile');
-      if (raw) {
-        const profile = JSON.parse(raw);
-        /* Compute old leaderboard ID before changing identity */
-        const oldLeaderboardId = legacyLeaderboardId(profile);
-        /* Update identity: name becomes email prefix, uid → Firebase uid, not a guest */
+
+      /* Step 3: Update local profile identity */
+      if (profile) {
         profile.uid           = uid;
         profile.email         = email.trim();
         profile.name          = email.split('@')[0];
         profile.isGuest       = false;
-        profile.leaderboardId = uid; /* Use Firebase uid as stable key going forward */
+        profile.leaderboardId = uid;
         localStorage.setItem('user_profile', JSON.stringify(profile));
-        /* Hide from leaderboard to avoid duplicates during migration.
-           User can re-join manually from the Sohba page after upgrade. */
-        localStorage.setItem('sohba_is_public', 'false');
-        /* Remove old leaderboard entry */
-        if (oldLeaderboardId && oldLeaderboardId !== uid) {
-          await deleteLeaderboardEntry(oldLeaderboardId);
-        }
       }
+
+      /* Step 4: Disable leaderboard participation so the new account doesn't
+         auto-sync on next Sohba mount. User must re-join manually. */
+      localStorage.setItem('sohba_is_public', 'false');
+      /* Notify any mounted Sohba instance to update its in-memory state too
+         (StorageEvent doesn't fire for same-tab changes, so we use a custom event). */
+      window.dispatchEvent(new CustomEvent('noor-leaderboard-reset'));
+
+      /* Step 5: Delete the old Firestore document (cleanup after hiding) */
+      if (oldLeaderboardId && oldLeaderboardId !== uid) {
+        await deleteLeaderboardEntry(oldLeaderboardId);
+      }
+
       onDone();
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
