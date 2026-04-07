@@ -529,7 +529,10 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
         profile.isGuest       = false;
         profile.leaderboardId = uid; /* Use Firebase uid as stable key going forward */
         localStorage.setItem('user_profile', JSON.stringify(profile));
-        /* Migrate leaderboard: remove old entry so no duplicates */
+        /* Hide from leaderboard to avoid duplicates during migration.
+           User can re-join manually from the Sohba page after upgrade. */
+        localStorage.setItem('sohba_is_public', 'false');
+        /* Remove old leaderboard entry */
         if (oldLeaderboardId && oldLeaderboardId !== uid) {
           await deleteLeaderboardEntry(oldLeaderboardId);
         }
