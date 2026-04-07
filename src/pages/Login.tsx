@@ -186,6 +186,12 @@ function mapFirebaseError(code: string): string {
   }
 }
 
+/* ── Compute a stable leaderboard key ── */
+function computeLeaderboardId(uid: string, isGuest: boolean, name: string, govId: string): string {
+  if (!isGuest && uid) return uid;
+  return btoa(encodeURIComponent(`${name}-${govId}`)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+}
+
 export function Login({ onComplete }: LoginProps) {
   const [step, setStep]           = useState<Step>('welcome');
   const [email, setEmail]         = useState('');
@@ -195,25 +201,29 @@ export function Login({ onComplete }: LoginProps) {
   const [govId, setGovId]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+  /* uid set after successful signIn so city step can save profile without re-creating the account */
+  const [loginUid, setLoginUid]   = useState<string | null>(null);
 
   const clearError = () => setError('');
 
-  const saveProfile = (uid: string, displayName: string, userEmail: string | null, govId: string, isGuest: boolean) => {
-    const gov = EGYPT_GOVERNORATES.find(g => g.id === govId);
+  const saveProfile = (uid: string, displayName: string, userEmail: string | null, selectedGovId: string, isGuest: boolean) => {
+    const gov = EGYPT_GOVERNORATES.find(g => g.id === selectedGovId);
     if (!gov) return;
     const existing = (() => {
       try { return JSON.parse(localStorage.getItem('user_profile') ?? ''); } catch { return null; }
     })();
+    const leaderboardId = computeLeaderboardId(uid, isGuest, displayName.trim(), selectedGovId);
     const profile = {
       uid,
       name: displayName.trim(),
       email: userEmail ?? '',
-      governorateId: govId,
+      governorateId: selectedGovId,
       governorateName: gov.name,
       lat: gov.lat,
       lng: gov.lng,
       photo: existing?.photo || '',
       isGuest,
+      leaderboardId,
     };
     localStorage.setItem('user_profile', JSON.stringify(profile));
     onComplete();
@@ -222,6 +232,14 @@ export function Login({ onComplete }: LoginProps) {
   /* ── Email Signup ── */
   const handleSignupCity = async (selectedGov: string) => {
     if (!selectedGov) return;
+
+    /* Returning user after logout: Firebase account already exists, just rebuild profile */
+    if (loginUid) {
+      const displayName = email.split('@')[0];
+      saveProfile(loginUid, displayName, email.trim(), selectedGov, false);
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -248,11 +266,18 @@ export function Login({ onComplete }: LoginProps) {
         try { return JSON.parse(localStorage.getItem('user_profile') ?? ''); } catch { return null; }
       })();
       if (existing?.uid === uid) {
+        /* Same device, same account — just refresh flags */
         existing.isGuest = false;
         existing.email   = email.trim();
+        if (!existing.leaderboardId) {
+          existing.leaderboardId = uid;
+        }
         localStorage.setItem('user_profile', JSON.stringify(existing));
         onComplete();
       } else {
+        /* Profile missing (after logout) or belongs to a different user —
+           keep local data (tasbeeh, quran…) but rebuild the identity via city picker */
+        setLoginUid(uid);
         setLoading(false);
         setStep('signup-city');
       }
@@ -429,12 +454,20 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Signup: City ─── */}
           {step === 'signup-city' && (
             <motion.div key="signup-city" {...slide} className="flex flex-col gap-3">
-              <button onClick={() => { clearError(); setStep('signup-password'); }} className="flex items-center gap-1.5 text-white/40 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <button
+                onClick={() => { clearError(); setStep(loginUid ? 'login-password' : 'signup-password'); }}
+                className="flex items-center gap-1.5 text-white/40 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif' }}
+              >
                 <ChevronLeft className="w-4 h-4" style={{ transform: 'rotate(180deg)' }} /> رجوع
               </button>
               <div className="rounded-2xl px-4 py-3.5" style={CARD}>
-                <p className="text-white font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>اختر محافظتك</p>
-                <p className="text-white/35 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>لتحديد مواقيت الصلاة بدقة</p>
+                <p className="text-white font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  {loginUid ? 'مرحباً من جديد! اختر محافظتك' : 'اختر محافظتك'}
+                </p>
+                <p className="text-white/35 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                  {loginUid ? 'لاستعادة حسابك وضبط مواقيت الصلاة' : 'لتحديد مواقيت الصلاة بدقة'}
+                </p>
               </div>
               <CityPicker govId={govId} onSelect={setGovId} />
               {error && <ErrorBadge msg={error} />}
@@ -445,7 +478,12 @@ export function Login({ onComplete }: LoginProps) {
                 style={BTN_GOLD}
               >
                 {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-                {loading ? 'جارٍ إنشاء الحساب...' : `إنشاء الحساب — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name ?? 'اختر محافظة'}`}
+                {loading
+                  ? (loginUid ? 'جارٍ استعادة الحساب...' : 'جارٍ إنشاء الحساب...')
+                  : loginUid
+                    ? `دخول — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name ?? 'اختر محافظة'}`
+                    : `إنشاء الحساب — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name ?? 'اختر محافظة'}`
+                }
               </button>
             </motion.div>
           )}

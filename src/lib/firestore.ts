@@ -171,3 +171,9 @@ export async function fetchUserEntry(userId: string): Promise<LeaderboardEntry |
   const snap = await getDoc(doc(db, 'sohbaLeaderboard', userId));
   return snap.exists() ? (snap.data() as LeaderboardEntry) : null;
 }
+
+export async function deleteLeaderboardEntry(userId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'sohbaLeaderboard', userId));
+  } catch { /* ignore */ }
+}

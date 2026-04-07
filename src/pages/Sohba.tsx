@@ -688,7 +688,7 @@ function ScoringInfoModal({ onClose, dark }: { onClose: () => void; dark: boolea
 
 /* ─── Main Page ───────────────────────────────────────── */
 export function Sohba() {
-  const [profile] = useLocalStorage<{ name: string; governorateId: string; governorateName?: string } | null>('user_profile', null);
+  const [profile] = useLocalStorage<{ name: string; governorateId: string; governorateName?: string; leaderboardId?: string; isGuest?: boolean } | null>('user_profile', null);
   const [tasbeehTotals] = useLocalStorage<Record<string, number>>('tasbih_totals', {});
   const tasbeehTotal = Object.values(tasbeehTotals).reduce((a, b) => a + b, 0);
   const [quranCompletions] = useLocalStorage<number>('quran_completions', 0);
@@ -723,7 +723,8 @@ export function Sohba() {
   const earnedBadges = BADGES.filter(b => b.check(stats)).map(b => b.id);
   const totalUnlocked = earnedBadges.length;
 
-  const userId = profile ? getUserId(profile) : null;
+  /* Use stable leaderboardId when available; fall back to name-based hash for legacy profiles */
+  const userId = profile ? (profile.leaderboardId || getUserId(profile)) : null;
 
   useEffect(() => {
     if (welcomeSeen) return undefined;

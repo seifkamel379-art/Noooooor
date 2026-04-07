@@ -9,6 +9,15 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut, auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { deleteLeaderboardEntry } from '@/lib/firestore';
+
+/* Compute the old-style leaderboard key for migration (must match Sohba.tsx logic) */
+function legacyLeaderboardId(profile: { leaderboardId?: string; name?: string; governorateId?: string }): string {
+  if (profile.leaderboardId) return profile.leaderboardId;
+  return btoa(encodeURIComponent(`${profile.name ?? ''}-${profile.governorateId ?? ''}`))
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 32);
+}
 import {
   IslamicStarIcon,
   HeadphonesIcon,
@@ -511,10 +520,19 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
       const raw  = localStorage.getItem('user_profile');
       if (raw) {
         const profile = JSON.parse(raw);
-        profile.uid     = uid;
-        profile.email   = email.trim();
-        profile.isGuest = false;
+        /* Compute old leaderboard ID before changing identity */
+        const oldLeaderboardId = legacyLeaderboardId(profile);
+        /* Update identity: name becomes email prefix, uid → Firebase uid, not a guest */
+        profile.uid           = uid;
+        profile.email         = email.trim();
+        profile.name          = email.split('@')[0];
+        profile.isGuest       = false;
+        profile.leaderboardId = uid; /* Use Firebase uid as stable key going forward */
         localStorage.setItem('user_profile', JSON.stringify(profile));
+        /* Migrate leaderboard: remove old entry so no duplicates */
+        if (oldLeaderboardId && oldLeaderboardId !== uid) {
+          await deleteLeaderboardEntry(oldLeaderboardId);
+        }
       }
       onDone();
     } catch (e: unknown) {
@@ -747,8 +765,8 @@ export function MoreMenu() {
         </div>
       )}
 
-      {/* Guest upgrade banner */}
-      {userProfile?.isGuest && (
+      {/* Upgrade banner: show for any user who hasn't linked an email yet */}
+      {userProfile && !userProfile.email && (
         <button
           onClick={() => setShowGuestUpgrade(true)}
           className="w-full mb-4 rounded-2xl p-3.5 flex items-center gap-3 transition-all active:scale-[0.99]"
