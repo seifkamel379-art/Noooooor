@@ -3,10 +3,12 @@ import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
   Star, Copy, X, Check, Mail, MessageSquare, Settings2, Pencil, Clock,
+  Lock, Eye, EyeOff, ShieldCheck,
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
-import { firebaseSignOut } from '@/lib/firebase';
+import { firebaseSignOut, auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import {
   IslamicStarIcon,
   HeadphonesIcon,
@@ -479,11 +481,164 @@ function FeatureChip({ Icon, text }: { Icon: ComponentType<{ className?: string;
   );
 }
 
+/* ── Guest Upgrade Sheet ─────────────────────────────────── */
+function mapAuthError(code: string): string {
+  switch (code) {
+    case 'auth/email-already-in-use': return 'هذا البريد مستخدم بالفعل، جرّب تسجيل الدخول';
+    case 'auth/invalid-email':        return 'البريد الإلكتروني غير صحيح';
+    case 'auth/weak-password':        return 'كلمة السر ضعيفة (٦ أحرف على الأقل)';
+    case 'auth/network-request-failed': return 'تحقق من الاتصال بالإنترنت';
+    default:                          return 'حدث خطأ، حاول مرة أخرى';
+  }
+}
+
+function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [step, setStep]         = useState<'email' | 'password'>('email');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+
+  const handleSubmit = async () => {
+    if (step === 'email') { if (email.trim()) setStep('password'); return; }
+    if (!password || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const uid  = cred.user.uid;
+      const raw  = localStorage.getItem('user_profile');
+      if (raw) {
+        const profile = JSON.parse(raw);
+        profile.uid     = uid;
+        profile.email   = email.trim();
+        profile.isGuest = false;
+        localStorage.setItem('user_profile', JSON.stringify(profile));
+      }
+      onDone();
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code ?? '';
+      setError(mapAuthError(code));
+      setLoading(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    background: 'var(--secondary)',
+    border: '1.5px solid var(--border)',
+    fontFamily: '"Tajawal", sans-serif',
+    color: 'var(--foreground)',
+    fontSize: '1rem',
+    width: '100%',
+    borderRadius: '0.75rem',
+    padding: '0.875rem 2.75rem 0.875rem 1rem',
+    outline: 'none',
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center pb-20" dir="rtl" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="relative w-full max-w-lg bg-card rounded-t-3xl shadow-2xl border border-border/50"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-2 bg-border/60" />
+
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div className="text-center">
+            <p className="font-bold text-base" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              {step === 'email' ? 'أدخل بريدك الإلكتروني' : 'أنشئ كلمة السر'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              بياناتك وتسبيحاتك لن تُحذف
+            </p>
+          </div>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(193,154,107,0.12)' }}>
+            <ShieldCheck className="w-4 h-4 text-[#C19A6B]" />
+          </div>
+        </div>
+
+        <div className="px-5 py-5 flex flex-col gap-4">
+          {step === 'email' ? (
+            <div className="relative">
+              <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C19A6B]/60" />
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                placeholder="البريد الإلكتروني..."
+                autoFocus
+                style={inputStyle}
+                onKeyDown={e => e.key === 'Enter' && email.trim() && setStep('password')}
+              />
+            </div>
+          ) : (
+            <div className="relative">
+              <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C19A6B]/60" />
+              <input
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={e => { setPassword(e.target.value); setError(''); }}
+                placeholder="كلمة السر (٦ أحرف على الأقل)..."
+                autoFocus
+                style={{ ...inputStyle, paddingLeft: '2.75rem' }}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              />
+              <button
+                onClick={() => setShowPass(p => !p)}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
+              >
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-xl px-4 py-2.5 text-sm text-center"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontFamily: '"Tajawal", sans-serif', color: '#f87171' }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading || (step === 'email' ? !email.trim() : !password)}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+            style={{ background: 'linear-gradient(135deg,#C19A6B,#d4a97c)', color: '#000', fontFamily: '"Tajawal", sans-serif', boxShadow: '0 4px 16px rgba(193,154,107,0.3)' }}
+          >
+            {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+            {loading ? 'جارٍ إنشاء الحساب...' : step === 'email' ? 'التالي →' : 'إنشاء الحساب →'}
+          </button>
+
+          {step === 'password' && (
+            <button onClick={() => setStep('email')} className="text-center text-sm text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              ← تغيير البريد الإلكتروني
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export function MoreMenu() {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);
+  const [showGuestUpgrade, setShowGuestUpgrade] = useState(false);
   const [profileVersion, setProfileVersion] = useState(0);
 
   const toggleTheme = () => {
@@ -536,6 +691,12 @@ export function MoreMenu() {
         {showShareSheet && (
           <ShareChooserSheet onClose={() => setShowShareSheet(false)} />
         )}
+        {showGuestUpgrade && (
+          <GuestUpgradeSheet
+            onClose={() => setShowGuestUpgrade(false)}
+            onDone={() => { setShowGuestUpgrade(false); setProfileVersion(v => v + 1); }}
+          />
+        )}
         {showEditNameDialog && userProfile && (
           <EditNameDialog
             currentName={userProfile.name ?? ''}
@@ -549,7 +710,7 @@ export function MoreMenu() {
 
       {/* User profile card */}
       {userProfile && (
-        <div className="mb-5 bg-card border border-border rounded-2xl p-4 flex items-center justify-between shadow-sm">
+        <div className="mb-3 bg-card border border-border rounded-2xl p-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             {userProfile.photo ? (
               <img src={userProfile.photo} alt={userProfile.name} className="w-10 h-10 rounded-full border-2 border-primary/30" referrerPolicy="no-referrer" />
@@ -584,6 +745,34 @@ export function MoreMenu() {
             <LogOut className="w-4 h-4" />
           </button>
         </div>
+      )}
+
+      {/* Guest upgrade banner */}
+      {userProfile?.isGuest && (
+        <button
+          onClick={() => setShowGuestUpgrade(true)}
+          className="w-full mb-4 rounded-2xl p-3.5 flex items-center gap-3 transition-all active:scale-[0.99]"
+          style={{
+            background: 'linear-gradient(135deg,rgba(193,154,107,0.15),rgba(193,154,107,0.05))',
+            border: '1.5px solid rgba(193,154,107,0.4)',
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)' }}
+          >
+            <Mail className="w-5 h-5 text-black" />
+          </div>
+          <div className="flex-1 text-right">
+            <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>
+              سجّل دخولك بالإيميل
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              احفظ حسابك وبياناتك — لن تُحذف أي معلومة
+            </p>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-[#C19A6B]/60 flex-shrink-0" />
+        </button>
       )}
 
       <div className="space-y-2.5">
