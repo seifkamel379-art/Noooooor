@@ -11,15 +11,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-if (process.env.NODE_ENV === "production") {
-  /* Use process.cwd() so this works in both ESM and CJS (esbuild) contexts.
-     The build script places the frontend at <workspace-root>/dist/public
-     and runs the server from the workspace root. */
-  const staticDir = path.resolve(process.cwd(), "dist", "public");
-  app.use(express.static(staticDir));
-  app.get("/{*path}", (_req, res) => {
-    res.sendFile(path.join(staticDir, "index.html"));
-  });
-}
+/* Serve the frontend static build.
+   In development the Vite dev server runs on a separate port, so we serve
+   the pre-built dist/public here as a fallback.  In production the built
+   bundle is the canonical frontend. */
+const staticDir = path.resolve(process.cwd(), "dist", "public");
+app.use(express.static(staticDir));
+app.get("/{*path}", (_req, res) => {
+  res.sendFile(path.join(staticDir, "index.html"));
+});
 
 export default app;

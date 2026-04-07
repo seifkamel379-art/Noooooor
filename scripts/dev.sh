@@ -1,17 +1,32 @@
 #!/bin/bash
 export BASE_PATH=/
 
-trap 'kill $(jobs -p) 2>/dev/null' EXIT
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-export PORT="${PORT:-5000}"
+MAIN_PORT="${PORT:-19382}"
 API_SERVER_PORT="${API_SERVER_PORT:-3001}"
+VITE_PORT=5000
 
-echo "Vite port: $PORT"
-echo "API server port: $API_SERVER_PORT"
+echo "Main port: $MAIN_PORT"
+echo "API server dev port: $API_SERVER_PORT"
+echo "Vite port: $VITE_PORT"
 
-(PORT=$API_SERVER_PORT pnpm --filter @workspace/api-server run dev) &
+cleanup() {
+  echo "Shutting down..."
+  kill $(jobs -p) 2>/dev/null
+  wait
+  exit 0
+}
+trap cleanup SIGTERM SIGINT
 
-"$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
+echo "Starting API server (dev) on port $API_SERVER_PORT..."
+(cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development "$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx" ./src/index.ts 2>&1) &
+
+echo "Starting Vite dev server on port $VITE_PORT..."
+(PORT=$VITE_PORT "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts" 2>&1) &
+
+echo "Starting production server on port $MAIN_PORT (serves static + API)..."
+PORT=$MAIN_PORT node "$ROOT_DIR/artifacts/api-server/dist/index.cjs" &
+
+wait
