@@ -28,7 +28,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash scripts/dev.sh"
+args = "npm run dev"
 waitForPort = 19382
 
 [[workflows.workflow]]
