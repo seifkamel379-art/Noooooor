@@ -5,12 +5,12 @@ version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
-localPort = 5000
+localPort = 19382
 name = "API Server"
 paths = ["/"]
 
 [services.development]
-run = "pnpm -w run dev"
+run = "node /home/runner/workspace/scripts/proxy.js"
 
 [services.production]
 build = "npm run build && pnpm --filter @workspace/api-server run build"

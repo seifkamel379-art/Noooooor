@@ -6,8 +6,8 @@ trap 'kill $(jobs -p) 2>/dev/null' EXIT
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-export PORT="${PORT:-19382}"
-API_SERVER_PORT=3001
+export PORT="${PORT:-5000}"
+API_SERVER_PORT="${API_SERVER_PORT:-3001}"
 
 echo "Vite port: $PORT"
 echo "API server port: $API_SERVER_PORT"
