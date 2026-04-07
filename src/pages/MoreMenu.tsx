@@ -627,13 +627,13 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
                     className="font-bold text-sm leading-relaxed"
                     style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--foreground)' }}
                   >
-                    من فضلك اخفِ نفسك من الترتيب الخاص بالتسبيح
+                    من فضلك اخفِ نفسك من الترتيب في صفحة التسبيح
                   </p>
                   <p
                     className="text-xs leading-relaxed mt-1.5"
                     style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}
                   >
-                    حتى لا تظهر مرتين في الترتيب — التحويل سيُنشئ حساباً جديداً فأخفِ دخولك القديم أولاً من صفحة الصحبة
+                    حتى لا تظهر مرتين في الترتيب — التحويل سيُنشئ حساباً جديداً فأخفِ دخولك القديم أولاً من صفحة التسبيح
                   </p>
                 </div>
               </div>

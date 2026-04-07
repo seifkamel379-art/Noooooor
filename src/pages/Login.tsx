@@ -45,13 +45,13 @@ function InputField({
     <div
       className="relative w-full rounded-2xl transition-all duration-200"
       style={{
-        background: focused ? 'rgba(193,154,107,0.08)' : 'rgba(255,255,255,0.05)',
-        border: focused ? '1.5px solid rgba(193,154,107,0.55)' : '1.5px solid rgba(255,255,255,0.1)',
-        boxShadow: focused ? '0 0 0 3px rgba(193,154,107,0.1)' : 'none',
+        background: focused ? '#fff' : 'rgba(255,255,255,0.8)',
+        border: focused ? '1.5px solid #C19A6B' : '1.5px solid rgba(139,99,64,0.25)',
+        boxShadow: focused ? '0 0 0 3px rgba(193,154,107,0.15)' : '0 1px 4px rgba(93,48,16,0.08)',
       }}
     >
       {icon && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: focused ? '#C19A6B' : 'rgba(255,255,255,0.3)' }}>
+        <div className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: focused ? '#C19A6B' : 'rgba(139,99,64,0.45)' }}>
           {icon}
         </div>
       )}
@@ -61,10 +61,11 @@ function InputField({
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full bg-transparent outline-none py-4 text-white placeholder-white/25"
+        className="w-full bg-transparent outline-none py-4"
         style={{
           fontFamily: '"Tajawal", sans-serif',
           fontSize: '1rem',
+          color: '#3D2007',
           paddingRight: icon ? '3rem' : '1.25rem',
           paddingLeft: trailing ? '3rem' : '1.25rem',
         }}
@@ -91,7 +92,7 @@ function CityPicker({
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.07)' }}
+      style={{ background: 'rgba(255,255,255,0.65)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 8px rgba(93,48,16,0.06)' }}
     >
       <div className="overflow-y-auto" style={{ maxHeight: '44vh' }}>
         <div className="grid grid-cols-3 gap-2 p-3">
@@ -105,17 +106,17 @@ function CityPicker({
                 className="relative flex flex-col items-center gap-1.5 rounded-xl p-2 pt-2.5 transition-all duration-200"
                 style={{
                   background: selected
-                    ? 'linear-gradient(135deg,rgba(193,154,107,0.22),rgba(193,154,107,0.08))'
-                    : 'rgba(255,255,255,0.04)',
+                    ? 'linear-gradient(135deg,rgba(193,154,107,0.28),rgba(193,154,107,0.1))'
+                    : 'rgba(255,255,255,0.6)',
                   border: selected
-                    ? '1.5px solid rgba(193,154,107,0.65)'
-                    : '1.5px solid rgba(255,255,255,0.07)',
-                  boxShadow: selected ? '0 0 14px rgba(193,154,107,0.18)' : 'none',
+                    ? '1.5px solid rgba(193,154,107,0.7)'
+                    : '1.5px solid rgba(139,99,64,0.12)',
+                  boxShadow: selected ? '0 0 12px rgba(193,154,107,0.2)' : 'none',
                 }}
               >
                 <div
                   className="w-11 h-8 rounded-md overflow-hidden flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                  style={{ background: 'rgba(139,99,64,0.08)' }}
                 >
                   <img
                     src={gov.flag}
@@ -128,7 +129,7 @@ function CityPicker({
                   className="text-[10px] font-bold leading-tight text-center"
                   style={{
                     fontFamily: '"Tajawal", sans-serif',
-                    color: selected ? '#C19A6B' : 'rgba(255,255,255,0.55)',
+                    color: selected ? '#8B6340' : '#7A4F28',
                   }}
                 >
                   {gov.name}
@@ -138,7 +139,7 @@ function CityPicker({
                     className="absolute top-1 left-1 w-4 h-4 rounded-full flex items-center justify-center"
                     style={{ background: '#C19A6B' }}
                   >
-                    <Check className="w-2.5 h-2.5 text-black" />
+                    <Check className="w-2.5 h-2.5 text-white" />
                   </div>
                 )}
               </motion.button>
@@ -293,25 +294,18 @@ export function Login({ onComplete }: LoginProps) {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-5 overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #1c1007 0%, #251508 50%, #1a0d05 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #F8EDD8 0%, #EAD9B5 50%, #F5ECD0 100%)' }}
       dir="rtl"
     >
-      {/* Background decorations */}
+      {/* Subtle texture overlay */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Top gold glow */}
         <div
-          className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(193,154,107,0.12) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          className="absolute -top-20 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full"
+          style={{ background: 'radial-gradient(ellipse, rgba(193,154,107,0.18) 0%, transparent 70%)', filter: 'blur(50px)' }}
         />
-        {/* Bottom warm glow */}
         <div
-          className="absolute bottom-0 right-0 w-72 h-72 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(193,154,107,0.08) 0%, transparent 70%)', filter: 'blur(40px)' }}
-        />
-        {/* Left warm accent */}
-        <div
-          className="absolute top-1/2 -left-20 w-48 h-64 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(139,99,64,0.1) 0%, transparent 70%)', filter: 'blur(30px)' }}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] rounded-full"
+          style={{ background: 'radial-gradient(ellipse, rgba(139,99,64,0.12) 0%, transparent 70%)', filter: 'blur(40px)' }}
         />
       </div>
 
@@ -354,8 +348,8 @@ export function Login({ onComplete }: LoginProps) {
             نُور
           </h1>
           <p
-            className="text-white/25 text-xs tracking-[0.25em] mt-0.5"
-            style={{ fontFamily: '"Tajawal", sans-serif' }}
+            className="text-xs tracking-[0.25em] mt-0.5"
+            style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
           >
             رفيقك الإسلامي الشامل
           </p>
@@ -420,26 +414,26 @@ export function Login({ onComplete }: LoginProps) {
                 onClick={() => { clearError(); setStep('guest-name'); }}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97]"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1.5px solid rgba(255,255,255,0.09)',
+                  background: 'rgba(255,255,255,0.5)',
+                  border: '1.5px solid rgba(139,99,64,0.18)',
                 }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.1)' }}
+                  style={{ background: 'rgba(139,99,64,0.1)', border: '1.5px solid rgba(139,99,64,0.15)' }}
                 >
-                  <UserCircle2 className="w-5 h-5 text-white/55" />
+                  <UserCircle2 className="w-5 h-5" style={{ color: '#9B7043' }} />
                 </div>
                 <div className="text-right flex-1">
-                  <p className="font-bold text-white/75 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>دخول كضيف</p>
-                  <p className="text-white/30 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>بالاسم والمحافظة — بدون حساب</p>
+                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#5D3010' }}>دخول كضيف</p>
+                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>بالاسم والمحافظة — بدون حساب</p>
                 </div>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  <ChevronRight className="w-4 h-4 text-white/25" />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,99,64,0.08)' }}>
+                  <ChevronRight className="w-4 h-4" style={{ color: '#9B7043' }} />
                 </div>
               </button>
 
-              <p className="text-center text-white/20 text-[11px] mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <p className="text-center text-[11px] mt-1" style={{ fontFamily: '"Tajawal", sans-serif', color: 'rgba(93,48,16,0.35)' }}>
                 يمكنك تغيير هذه المعلومات لاحقاً من صفحة المزيد
               </p>
             </motion.div>
@@ -450,18 +444,18 @@ export function Login({ onComplete }: LoginProps) {
             <motion.div key="signup-email" {...slide} className="flex flex-col gap-4">
               <button
                 onClick={() => { clearError(); setStep('welcome'); }}
-                className="flex items-center gap-1.5 text-white/35 text-sm"
-                style={{ fontFamily: '"Tajawal", sans-serif' }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
               >
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
                   style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)' }}>
-                  <UserPlus className="w-5 h-5 text-black" />
+                  <UserPlus className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-white text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>إنشاء حساب جديد</h2>
-                <p className="text-white/30 text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>أدخل بريدك الإلكتروني للمتابعة</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>إنشاء حساب جديد</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل بريدك الإلكتروني للمتابعة</p>
                 <InputField
                   type="email"
                   value={email}
@@ -487,16 +481,16 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Signup: Password ─── */}
           {step === 'signup-password' && (
             <motion.div key="signup-password" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('signup-email'); }} className="flex items-center gap-1.5 text-white/35 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <button onClick={() => { clearError(); setStep('signup-email'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.3),rgba(193,154,107,0.1))', border: '1px solid rgba(193,154,107,0.3)' }}>
-                  <Lock className="w-5 h-5 text-[#C19A6B]" />
+                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.4),rgba(193,154,107,0.15))', border: '1.5px solid rgba(193,154,107,0.45)' }}>
+                  <Lock className="w-5 h-5 text-[#8B6340]" />
                 </div>
-                <h2 className="text-white text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>أنشئ كلمة السر</h2>
-                <p className="text-white/30 text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>كلمة سر خاصة بتطبيق نُور (٦ أحرف على الأقل)</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>أنشئ كلمة السر</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>كلمة سر خاصة بتطبيق نُور (٦ أحرف على الأقل)</p>
                 <InputField
                   type={showPass ? 'text' : 'password'}
                   value={password}
@@ -505,7 +499,7 @@ export function Login({ onComplete }: LoginProps) {
                   autoFocus
                   icon={<Lock className="w-4 h-4" />}
                   trailing={
-                    <button onClick={() => setShowPass(p => !p)} className="text-white/30 p-1">
+                    <button onClick={() => setShowPass(p => !p)} className="p-1" style={{ color: '#9B7043' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   }
@@ -529,16 +523,16 @@ export function Login({ onComplete }: LoginProps) {
             <motion.div key="signup-city" {...slide} className="flex flex-col gap-3">
               <button
                 onClick={() => { clearError(); setStep(loginUid ? 'login-password' : 'signup-password'); }}
-                className="flex items-center gap-1.5 text-white/35 text-sm"
-                style={{ fontFamily: '"Tajawal", sans-serif' }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
               >
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-white font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
+                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>
                   {loginUid ? 'مرحباً من جديد! اختر محافظتك' : 'اختر محافظتك'}
                 </p>
-                <p className="text-white/30 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
                   {loginUid ? 'لاستعادة حسابك وضبط مواقيت الصلاة' : 'لتحديد مواقيت الصلاة بدقة'}
                 </p>
               </div>
@@ -564,16 +558,16 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Login: Email ─── */}
           {step === 'login-email' && (
             <motion.div key="login-email" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('welcome'); }} className="flex items-center gap-1.5 text-white/35 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <button onClick={() => { clearError(); setStep('welcome'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <LogIn className="w-5 h-5 text-white/60" />
+                  style={{ background: 'rgba(193,154,107,0.15)', border: '1.5px solid rgba(193,154,107,0.35)' }}>
+                  <LogIn className="w-5 h-5" style={{ color: '#8B6340' }} />
                 </div>
-                <h2 className="text-white text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>تسجيل الدخول</h2>
-                <p className="text-white/30 text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>أدخل بريدك الإلكتروني</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>تسجيل الدخول</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل بريدك الإلكتروني</p>
                 <InputField
                   type="email"
                   value={email}
@@ -599,16 +593,16 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Login: Password ─── */}
           {step === 'login-password' && (
             <motion.div key="login-password" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('login-email'); }} className="flex items-center gap-1.5 text-white/35 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <button onClick={() => { clearError(); setStep('login-email'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <Lock className="w-5 h-5 text-white/60" />
+                  style={{ background: 'rgba(193,154,107,0.15)', border: '1.5px solid rgba(193,154,107,0.35)' }}>
+                  <Lock className="w-5 h-5" style={{ color: '#8B6340' }} />
                 </div>
-                <h2 className="text-white text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>أدخل كلمة السر</h2>
-                <p className="text-white/30 text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>{email}</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>أدخل كلمة السر</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>{email}</p>
                 <InputField
                   type={showPass ? 'text' : 'password'}
                   value={password}
@@ -617,7 +611,7 @@ export function Login({ onComplete }: LoginProps) {
                   autoFocus
                   icon={<Lock className="w-4 h-4" />}
                   trailing={
-                    <button onClick={() => setShowPass(p => !p)} className="text-white/30 p-1">
+                    <button onClick={() => setShowPass(p => !p)} className="p-1" style={{ color: '#9B7043' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   }
@@ -640,16 +634,16 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Guest: Name ─── */}
           {step === 'guest-name' && (
             <motion.div key="guest-name" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('welcome'); }} className="flex items-center gap-1.5 text-white/35 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <button onClick={() => { clearError(); setStep('welcome'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
+              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}>
-                  <UserCircle2 className="w-5 h-5 text-white/50" />
+                  style={{ background: 'rgba(139,99,64,0.12)', border: '1.5px solid rgba(139,99,64,0.2)' }}>
+                  <UserCircle2 className="w-5 h-5" style={{ color: '#9B7043' }} />
                 </div>
-                <h2 className="text-white text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>دخول كضيف</h2>
-                <p className="text-white/30 text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif' }}>أدخل اسمك ليظهر في التطبيق</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>دخول كضيف</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل اسمك ليظهر في التطبيق</p>
                 <InputField
                   value={name}
                   onChange={setName}
@@ -673,12 +667,12 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Guest: City ─── */}
           {step === 'guest-city' && (
             <motion.div key="guest-city" {...slide} className="flex flex-col gap-3">
-              <button onClick={() => { clearError(); setStep('guest-name'); }} className="flex items-center gap-1.5 text-white/35 text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              <button onClick={() => { clearError(); setStep('guest-name'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-white font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>أهلاً {name}، اختر محافظتك</p>
-                <p className="text-white/30 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>لتحديد مواقيت الصلاة بدقة</p>
+              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
+                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>أهلاً {name}، اختر محافظتك</p>
+                <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لتحديد مواقيت الصلاة بدقة</p>
               </div>
               <CityPicker govId={govId} onSelect={setGovId} />
               <button
@@ -686,10 +680,11 @@ export function Login({ onComplete }: LoginProps) {
                 disabled={!govId}
                 className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
                 style={govId ? BTN_GOLD : {
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.25)',
+                  background: 'rgba(139,99,64,0.12)',
+                  color: 'rgba(93,48,16,0.4)',
                   fontFamily: '"Tajawal", sans-serif',
                   fontWeight: 700,
+                  border: '1.5px solid rgba(139,99,64,0.15)',
                 }}
               >
                 {govId ? `دخول كضيف — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name}` : 'اختر محافظتك أولاً'}
@@ -707,7 +702,7 @@ export function Login({ onComplete }: LoginProps) {
             transition={{ delay: 0.5 }}
             className="flex items-center justify-center mt-5"
           >
-            <p className="text-white/25 text-[11px]" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            <p className="text-[11px]" style={{ fontFamily: '"Tajawal", sans-serif', color: 'rgba(93,48,16,0.4)' }}>
               تطبيق نور - تطبيق إسلامي شامل
             </p>
           </motion.div>
