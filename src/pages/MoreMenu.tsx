@@ -502,12 +502,24 @@ function mapAuthError(code: string): string {
 }
 
 function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [step, setStep]         = useState<'email' | 'password'>('email');
+  /* If the guest is currently visible in the leaderboard they MUST hide themselves first */
+  const isCurrentlyPublic = localStorage.getItem('sohba_is_public') === 'false' ? false
+    : (() => { try { return JSON.parse(localStorage.getItem('sohba_is_public') ?? 'false'); } catch { return false; } })();
+
+  const [step, setStep]         = useState<'confirm-hide' | 'email' | 'password'>(
+    isCurrentlyPublic ? 'confirm-hide' : 'email',
+  );
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+
+  const handleHideAndContinue = () => {
+    localStorage.setItem('sohba_is_public', 'false');
+    window.dispatchEvent(new CustomEvent('noor-leaderboard-reset'));
+    setStep('email');
+  };
 
   const handleSubmit = async () => {
     if (step === 'email') { if (email.trim()) setStep('password'); return; }
