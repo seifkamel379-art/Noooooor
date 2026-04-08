@@ -28,6 +28,7 @@ import { Qibla } from "@/pages/Qibla";
 import { MosquesFinder } from "@/pages/MosquesFinder";
 import { Hadith } from "@/pages/Hadith";
 import { IslamicHistory } from "@/pages/IslamicHistory";
+import { ProphetStories } from "@/pages/ProphetStories";
 import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
 import { Sunnah } from "@/pages/Sunnah";
 import { IslamicTV } from "@/pages/IslamicTV";
@@ -129,6 +130,9 @@ function Router() {
       </Route>
       <Route path="/history">
         <FullScreenShell><IslamicHistory /></FullScreenShell>
+      </Route>
+      <Route path="/prophets">
+        <FullScreenShell><ProphetStories /></FullScreenShell>
       </Route>
       <Route path="/quizzes">
         <FullScreenShell><IslamicQuizzes /></FullScreenShell>

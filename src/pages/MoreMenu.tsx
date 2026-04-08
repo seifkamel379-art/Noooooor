@@ -747,6 +747,7 @@ export function MoreMenu() {
   const MENU_ITEMS = [
     { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',                grad: 'linear-gradient(145deg, #2d6a4f, #1b4332)' },
     { Icon: ScrollIcon,        label: 'التاريخ الإسلامي',   path: '/history',      desc: 'من السيرة النبوية حتى الدولة العثمانية',         grad: 'linear-gradient(145deg, #6b3a0f, #3d2008)' },
+    { Icon: IslamicStarIcon,   label: 'قصص الأنبياء',       path: '/prophets',     desc: 'قصص الأنبياء لابن كثير • تحقيق د. مصطفى عبد الواحد', grad: 'linear-gradient(145deg, #1b4332, #0d2b1e)' },
     { Icon: DuaHandsIcon,      label: 'سنن النبي ﷺ',        path: '/sunnah',       desc: 'اقتداءً بهدي المصطفى في يومك',                  grad: 'linear-gradient(145deg, #1b4332, #0d2b1e)' },
     { Icon: QuranBookIcon,     label: 'الاختبارات الإسلامية', path: '/quizzes',    desc: '5820 سؤال في 6 تخصصات شرعية',                   grad: 'linear-gradient(145deg, #3a1a5c, #1e0d30)' },
     { Icon: QiblaCompassIcon,  label: 'تحديد القبلة',        path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة',              grad: 'linear-gradient(145deg, #1e4d7b, #0f2d4d)' },
