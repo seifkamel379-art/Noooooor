@@ -4,13 +4,14 @@ export BASE_PATH=/
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 API_SERVER_PORT="${API_SERVER_PORT:-3001}"
-VITE_PORT=3000
-EXTERNAL_PORT="${PORT:-19382}"
+
+# If Replit sets PORT (artifact context), use it for Vite directly.
+# Otherwise fall back to 3000 for local dev.
+VITE_PORT="${PORT:-3000}"
 
 echo "Root dir: $ROOT_DIR"
 echo "API server dev port: $API_SERVER_PORT"
 echo "Vite port: $VITE_PORT"
-echo "External port: $EXTERNAL_PORT"
 
 cleanup() {
   echo "Shutting down..."
@@ -25,10 +26,5 @@ echo "Starting API server (dev) on port $API_SERVER_PORT..."
 
 echo "Starting Vite dev server on port $VITE_PORT..."
 (cd "$ROOT_DIR" && VITE_PORT=$VITE_PORT pnpm exec vite --config "$ROOT_DIR/vite.config.ts") &
-
-if [ "$EXTERNAL_PORT" != "$VITE_PORT" ]; then
-  echo "Starting proxy: port $EXTERNAL_PORT -> $VITE_PORT..."
-  PORT=$VITE_PORT PROXY_PORT=$EXTERNAL_PORT node "$ROOT_DIR/scripts/proxy.js" &
-fi
 
 wait
