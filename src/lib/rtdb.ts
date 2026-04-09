@@ -60,6 +60,17 @@ function collectLocalData(): Record<string, unknown> {
   }
   if (Object.keys(dailyTasbih).length) data['tasbih_daily'] = dailyTasbih;
 
+  // المتتبع اليومي — الصلوات والورد القرآني (آخر 4 أيام)
+  const dailyTracker: Record<string, unknown> = {};
+  for (let i = 0; i < 4; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const val = localStorage.getItem(`daily_tracker_${dk}`);
+    if (val) { try { dailyTracker[dk] = JSON.parse(val); } catch { /* ignore */ } }
+  }
+  if (Object.keys(dailyTracker).length) data['daily_tracker'] = dailyTracker;
+
   // أذكار حصن المسلم (اليوم وآخر 3 أيام)
   const azkarData: Record<string, Record<string, Record<number, number>>> = {};
   for (let i = 0; i < 4; i++) {
@@ -128,6 +139,29 @@ function applyToLocalStorage(data: Record<string, unknown>) {
       const key = `tasbih_daily_${dk}`;
       const local = Number(localStorage.getItem(key) ?? '0');
       if ((v ?? 0) > local) localStorage.setItem(key, String(v));
+    }
+  }
+
+  // المتتبع اليومي — الصلوات والورد القرآني
+  if (data['daily_tracker'] && typeof data['daily_tracker'] === 'object') {
+    const remote = data['daily_tracker'] as Record<string, {
+      prayers?: Record<string, boolean>;
+      quranWird?: boolean;
+    }>;
+    for (const [dk, remoteState] of Object.entries(remote)) {
+      const key = `daily_tracker_${dk}`;
+      let local: { prayers?: Record<string, boolean>; quranWird?: boolean } = {};
+      try { local = JSON.parse(localStorage.getItem(key) ?? '{}'); } catch { /* ignore */ }
+      // ادمج الصلوات: لو أي صلاة تمت في أي جهاز → اعتبرها تمت
+      const mergedPrayers: Record<string, boolean> = { ...(local.prayers ?? {}) };
+      for (const [pk, pv] of Object.entries(remoteState.prayers ?? {})) {
+        if (pv) mergedPrayers[pk] = true;
+      }
+      const merged = {
+        prayers: mergedPrayers,
+        quranWird: (local.quranWird ?? false) || (remoteState.quranWird ?? false),
+      };
+      localStorage.setItem(key, JSON.stringify(merged));
     }
   }
 
@@ -280,6 +314,17 @@ export function queueTasbihSync(
     tasbih_totals: totals,
     tasbih_counts: counts,
     [`tasbih_daily/${today}`]: dailyVal,
+  });
+}
+
+/** احفظ حالة المتتبع اليومي (الصلوات + الورد) في قائمة الانتظار */
+export function queueDailyTrackerSync(
+  uid: string,
+  dateKey: string,
+  state: { prayers: Record<string, boolean>; quranWird: boolean },
+) {
+  queueRTDBUpdate(uid, {
+    [`daily_tracker/${dateKey}`]: state,
   });
 }
 

@@ -5,6 +5,7 @@ import { HISN_ITEMS } from '@/lib/hisnData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Link } from 'wouter';
+import { queueDailyTrackerSync, getCurrentUid } from '@/lib/rtdb';
 
 /* IDs for أذكار الصباح والمساء (category 27 in hisnData) */
 const MORNING_EVENING_CATEGORY_ID = 27;
@@ -446,12 +447,22 @@ export function HomeTracker() {
   const progressPct = Math.round((doneTasks / 8) * 100);
 
   const togglePrayer = (key: PrayerKey) => {
-    setState(prev => ({ ...prev, prayers: { ...prev.prayers, [key]: !prev.prayers[key] } }));
+    setState(prev => {
+      const next = { ...prev, prayers: { ...prev.prayers, [key]: !prev.prayers[key] } };
+      const uid = getCurrentUid();
+      if (uid) queueDailyTrackerSync(uid, currentDateKey, next);
+      return next;
+    });
     if ('vibrate' in navigator) navigator.vibrate(10);
   };
 
   const toggleQuranWird = () => {
-    setState(prev => ({ ...prev, quranWird: !prev.quranWird }));
+    setState(prev => {
+      const next = { ...prev, quranWird: !prev.quranWird };
+      const uid = getCurrentUid();
+      if (uid) queueDailyTrackerSync(uid, currentDateKey, next);
+      return next;
+    });
     if ('vibrate' in navigator) navigator.vibrate(10);
   };
 
