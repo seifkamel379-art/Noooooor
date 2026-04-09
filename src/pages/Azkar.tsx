@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { getTodayKey, cn } from '@/lib/utils';
 import { HISN_CATEGORIES, HISN_ITEMS, type HisnCategory } from '@/lib/hisnData';
+import { queueAzkarSync, getCurrentUid } from '@/lib/rtdb';
 
 /* ── Ornament ────────────────────────────────────*/
 function IslamicOrnament() {
@@ -86,7 +87,11 @@ function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () =>
     setProgress(prev => {
       const cur = prev[id] ?? 0;
       if (cur >= max) return prev;
-      return { ...prev, [id]: cur + 1 };
+      const next = { ...prev, [id]: cur + 1 };
+      // مزامنة مؤجلة مع RTDB
+      const uid = getCurrentUid();
+      if (uid) queueAzkarSync(uid, category.id, next);
+      return next;
     });
     if ('vibrate' in navigator) navigator.vibrate(10);
   };
@@ -96,7 +101,12 @@ function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () =>
       <AnimatePresence>
         {showReset && (
           <ResetDialog
-            onConfirm={() => { setProgress({}); setShowReset(false); }}
+            onConfirm={() => {
+              setProgress({});
+              setShowReset(false);
+              const uid = getCurrentUid();
+              if (uid) queueAzkarSync(uid, category.id, {});
+            }}
             onCancel={() => setShowReset(false)}
           />
         )}

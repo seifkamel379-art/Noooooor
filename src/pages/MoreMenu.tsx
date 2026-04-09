@@ -8,16 +8,9 @@ import {
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut, auth } from '@/lib/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { deleteLeaderboardEntry, hideLeaderboardEntry } from '@/lib/firestore';
-
-/* Compute the old-style leaderboard key for migration (must match Sohba.tsx logic) */
-function legacyLeaderboardId(profile: { leaderboardId?: string; name?: string; governorateId?: string }): string {
-  if (profile.leaderboardId) return profile.leaderboardId;
-  return btoa(encodeURIComponent(`${profile.name ?? ''}-${profile.governorateId ?? ''}`))
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .slice(0, 32);
-}
+import { linkWithCredential, EmailAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
+import { deleteLeaderboardEntry } from '@/lib/firestore';
+import { initUserSync, queueProfileSync } from '@/lib/rtdb';
 import {
   IslamicStarIcon,
   HeadphonesIcon,
@@ -515,37 +508,52 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
     setLoading(true);
     setError('');
     try {
-      const raw  = localStorage.getItem('user_profile');
+      const raw     = localStorage.getItem('user_profile');
       const profile = raw ? JSON.parse(raw) : null;
+      const oldLeaderboardId: string | null = profile?.leaderboardId ?? null;
 
-      /* Hide old leaderboard entry BEFORE creating new account */
-      const oldLeaderboardId = profile ? legacyLeaderboardId(profile) : null;
-      if (oldLeaderboardId) {
-        await hideLeaderboardEntry(oldLeaderboardId);
+      let uid: string;
+
+      if (auth.currentUser?.isAnonymous) {
+        /* ── الحالة الجديدة: ربط الإيميل بحساب الضيف الأنونيموس
+               → نفس الـ UID، مفيش تكرار في الليدربورد */
+        const credential = EmailAuthProvider.credential(email.trim(), password);
+        try {
+          const linked = await linkWithCredential(auth.currentUser, credential);
+          uid = linked.user.uid;
+        } catch (linkErr: unknown) {
+          const code = (linkErr as { code?: string })?.code ?? '';
+          if (code === 'auth/email-already-in-use' || code === 'auth/credential-already-in-use') {
+            throw linkErr; // أظهر رسالة الخطأ للمستخدم
+          }
+          throw linkErr;
+        }
+      } else {
+        /* ── حالة قديمة: لا يوجد مستخدم anonymous حالي */
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        uid = cred.user.uid;
+
+        /* احذف الـ entry القديم لو كان UID مختلف */
+        if (oldLeaderboardId && oldLeaderboardId !== uid) {
+          deleteLeaderboardEntry(oldLeaderboardId).catch(() => {});
+        }
       }
 
-      /* Create the Firebase email account */
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      const uid  = cred.user.uid;
-
-      /* Update local profile identity */
+      /* حدّث الـ profile المحلي */
       if (profile) {
         profile.uid           = uid;
         profile.email         = email.trim();
-        profile.name          = email.split('@')[0];
         profile.isGuest       = false;
         profile.leaderboardId = uid;
         localStorage.setItem('user_profile', JSON.stringify(profile));
       }
 
-      /* Disable leaderboard participation — user must re-join manually */
-      localStorage.setItem('sohba_is_public', 'false');
-      window.dispatchEvent(new CustomEvent('noor-leaderboard-reset'));
+      /* ابدأ المزامنة مع RTDB بالـ uid الجديد */
+      await initUserSync(uid);
+      queueProfileSync(uid);
 
-      /* Delete the old Firestore document */
-      if (oldLeaderboardId && oldLeaderboardId !== uid) {
-        await deleteLeaderboardEntry(oldLeaderboardId);
-      }
+      /* أطلق حدث التحديث */
+      window.dispatchEvent(new CustomEvent('noor-profile-updated'));
 
       onDone();
     } catch (e: unknown) {
@@ -605,14 +613,13 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
 
         <div className="px-5 py-5 flex flex-col gap-4">
 
-          {/* ── Prominent leaderboard warning — always visible on email step ── */}
+          {/* ── مزايا التحويل — تطمين المستخدم ── */}
           {step === 'email' && (
             <div
               className="rounded-2xl p-4"
               style={{
-                background: 'linear-gradient(135deg, rgba(193,154,107,0.18), rgba(193,154,107,0.08))',
-                border: '2px solid rgba(193,154,107,0.55)',
-                boxShadow: '0 4px 16px rgba(193,154,107,0.2)',
+                background: 'linear-gradient(135deg, rgba(193,154,107,0.14), rgba(193,154,107,0.06))',
+                border: '1.5px solid rgba(193,154,107,0.35)',
               }}
             >
               <div className="flex items-start gap-3">
@@ -620,20 +627,20 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                   style={{ background: 'linear-gradient(135deg, #C19A6B, #8B6340)' }}
                 >
-                  <TasbihIcon className="text-white" size={20} />
+                  <ShieldCheck className="text-white w-5 h-5" />
                 </div>
                 <div className="flex-1">
                   <p
                     className="font-bold text-sm leading-relaxed"
                     style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--foreground)' }}
                   >
-                    من فضلك اخفِ نفسك من الترتيب في صفحة التسبيح
+                    التحويل آمن ١٠٠٪ — بياناتك لن تُحذف
                   </p>
                   <p
                     className="text-xs leading-relaxed mt-1.5"
                     style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}
                   >
-                    حتى لا تظهر مرتين في الترتيب — التحويل سيُنشئ حساباً جديداً فأخفِ دخولك القديم أولاً من صفحة التسبيح
+                    تسبيحاتك وأذكارك محفوظة • ستبقى في نفس مكانك في الترتيب
                   </p>
                 </div>
               </div>

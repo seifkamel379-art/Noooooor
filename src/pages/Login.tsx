@@ -8,8 +8,13 @@ import {
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInAnonymously,
+  linkWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { initUserSync, queueProfileSync } from '@/lib/rtdb';
+import { deleteLeaderboardEntry } from '@/lib/firestore';
 
 interface LoginProps {
   onComplete: () => void;
@@ -19,7 +24,7 @@ type Step =
   | 'welcome'
   | 'signup-email' | 'signup-password' | 'signup-city'
   | 'login-email'  | 'login-password'
-  | 'guest-name'   | 'guest-city';
+  | 'guest-city';
 
 function InputField({
   type = 'text',
@@ -178,62 +183,133 @@ function mapFirebaseError(code: string): string {
   }
 }
 
-function computeLeaderboardId(uid: string, isGuest: boolean, name: string, govId: string): string {
-  if (!isGuest && uid) return uid;
-  return btoa(encodeURIComponent(`${name}-${govId}`)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
-}
+/** حفظ profile في localStorage وتهيئة المزامنة */
+async function saveProfileAndSync(
+  uid: string,
+  displayName: string,
+  userEmail: string | null,
+  selectedGovId: string,
+  isGuest: boolean,
+  existingPhoto?: string,
+) {
+  const gov = EGYPT_GOVERNORATES.find(g => g.id === selectedGovId);
+  if (!gov) return;
 
+  const profile = {
+    uid,
+    name: displayName.trim(),
+    email: userEmail ?? '',
+    governorateId: selectedGovId,
+    governorateName: gov.name,
+    lat: gov.lat,
+    lng: gov.lng,
+    photo: existingPhoto || '',
+    isGuest,
+    leaderboardId: uid,
+  };
+  localStorage.setItem('user_profile', JSON.stringify(profile));
+
+  // تهيئة المزامنة مع Firebase Realtime Database
+  await initUserSync(uid);
+  queueProfileSync(uid);
+}
 
 export function Login({ onComplete }: LoginProps) {
   const [step, setStep]           = useState<Step>('welcome');
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [showPass, setShowPass]   = useState(false);
-  const [name, setName]           = useState('');
   const [govId, setGovId]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+  // uid المستخدم بعد تسجيل الدخول بالبريد (لو عاوز يختار محافظة)
   const [loginUid, setLoginUid]   = useState<string | null>(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  // uid المستخدم الضيف الأنونيموس (لحظة اختيار المحافظة)
+  const [guestUid, setGuestUid]   = useState<string | null>(null);
 
   const clearError = () => setError('');
 
-  const saveProfile = (uid: string, displayName: string, userEmail: string | null, selectedGovId: string, isGuest: boolean) => {
-    const gov = EGYPT_GOVERNORATES.find(g => g.id === selectedGovId);
-    if (!gov) return;
-    const existing = (() => {
-      try { return JSON.parse(localStorage.getItem('user_profile') ?? ''); } catch { return null; }
-    })();
-    const leaderboardId = computeLeaderboardId(uid, isGuest, displayName.trim(), selectedGovId);
-    const profile = {
-      uid,
-      name: displayName.trim(),
-      email: userEmail ?? '',
-      governorateId: selectedGovId,
-      governorateName: gov.name,
-      lat: gov.lat,
-      lng: gov.lng,
-      photo: existing?.photo || '',
-      isGuest,
-      leaderboardId,
-    };
-    localStorage.setItem('user_profile', JSON.stringify(profile));
+  /* ── تسجيل كضيف — Anonymous Firebase Auth ───────────────── */
+  const handleGuestStart = async () => {
+    clearError();
+    setLoading(true);
+    try {
+      // لو في مستخدم anonymous حالي استخدمه، وإلا أنشئ واحد جديد
+      let uid: string;
+      if (auth.currentUser?.isAnonymous) {
+        uid = auth.currentUser.uid;
+      } else {
+        const cred = await signInAnonymously(auth);
+        uid = cred.user.uid;
+      }
+      setGuestUid(uid);
+      setStep('guest-city');
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code ?? '';
+      setError(mapFirebaseError(code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ── اختيار محافظة الضيف ─────────────────────────────────── */
+  const handleGuestCity = async (selectedGov: string) => {
+    if (!selectedGov || !guestUid) return;
+    const displayName = `ضيف`;
+    await saveProfileAndSync(guestUid, displayName, null, selectedGov, true);
     onComplete();
   };
 
+  /* ── إنشاء حساب جديد بالبريد ─────────────────────────────── */
   const handleSignupCity = async (selectedGov: string) => {
     if (!selectedGov) return;
+
+    // لو المستخدم بالفعل دخل بالبريد ومحتاج يختار محافظة فقط
     if (loginUid) {
-      const displayName = email.split('@')[0];
-      saveProfile(loginUid, displayName, email.trim(), selectedGov, false);
+      const displayName = loginEmail.split('@')[0];
+      await saveProfileAndSync(loginUid, displayName, loginEmail, selectedGov, false);
+      onComplete();
       return;
     }
+
     setLoading(true);
     setError('');
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      const uid = cred.user.uid;
+      let uid: string;
+
+      // لو في مستخدم anonymous حالي، ربط الإيميل بحسابه (يحافظ على نفس UID)
+      if (auth.currentUser?.isAnonymous) {
+        const credential = EmailAuthProvider.credential(email.trim(), password);
+        try {
+          const linked = await linkWithCredential(auth.currentUser, credential);
+          uid = linked.user.uid;
+          // امسح أي entry قديم في الـ leaderboard بالـ uid القديم للضيف
+          const oldProfile = (() => {
+            try { return JSON.parse(localStorage.getItem('user_profile') ?? ''); } catch { return null; }
+          })();
+          if (oldProfile?.leaderboardId && oldProfile.leaderboardId !== uid) {
+            deleteLeaderboardEntry(oldProfile.leaderboardId).catch(() => {});
+          }
+        } catch (linkError: unknown) {
+          const code = (linkError as { code?: string })?.code ?? '';
+          if (code === 'auth/email-already-in-use' || code === 'auth/credential-already-in-use') {
+            // البريد موجود بالفعل — سجّل دخول عادي
+            const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+            uid = cred.user.uid;
+          } else {
+            throw linkError;
+          }
+        }
+      } else {
+        // مفيش مستخدم anonymous — أنشئ حساب جديد
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        uid = cred.user.uid;
+      }
+
       const displayName = email.split('@')[0];
-      saveProfile(uid, displayName, email.trim(), selectedGov, false);
+      await saveProfileAndSync(uid, displayName, email.trim(), selectedGov, false);
+      onComplete();
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
       setError(mapFirebaseError(code));
@@ -241,6 +317,7 @@ export function Login({ onComplete }: LoginProps) {
     }
   };
 
+  /* ── تسجيل الدخول ────────────────────────────────────────── */
   const handleLogin = async () => {
     if (!email.trim() || !password) return;
     setLoading(true);
@@ -254,11 +331,14 @@ export function Login({ onComplete }: LoginProps) {
       if (existing?.uid === uid) {
         existing.isGuest = false;
         existing.email   = email.trim();
-        if (!existing.leaderboardId) existing.leaderboardId = uid;
+        existing.leaderboardId = uid;
         localStorage.setItem('user_profile', JSON.stringify(existing));
+        await initUserSync(uid);
         onComplete();
       } else {
+        // مستخدم جديد على هذا الجهاز — محتاج يختار محافظة
         setLoginUid(uid);
+        setLoginEmail(email.trim());
         setLoading(false);
         setStep('signup-city');
       }
@@ -267,12 +347,6 @@ export function Login({ onComplete }: LoginProps) {
       setError(mapFirebaseError(code));
       setLoading(false);
     }
-  };
-
-  const handleGuestCity = (selectedGov: string) => {
-    if (!selectedGov) return;
-    const uid = crypto.randomUUID();
-    saveProfile(uid, name, null, selectedGov, true);
   };
 
   const slide = {
@@ -319,12 +393,10 @@ export function Login({ onComplete }: LoginProps) {
           className="text-center mb-8"
         >
           <div className="relative mx-auto mb-3 w-24 h-24">
-            {/* Outer glow ring */}
             <div
               className="absolute -inset-2 rounded-[30px] opacity-30"
               style={{ background: 'radial-gradient(circle, #C19A6B, transparent)', filter: 'blur(12px)' }}
             />
-            {/* Gold border ring */}
             <div
               className="absolute -inset-0.5 rounded-[26px]"
               style={{ background: 'linear-gradient(135deg, rgba(193,154,107,0.6), rgba(193,154,107,0.1), rgba(193,154,107,0.4))' }}
@@ -401,18 +473,19 @@ export function Login({ onComplete }: LoginProps) {
                   <LogIn className="w-5 h-5" style={{ color: '#C19A6B' }} />
                 </div>
                 <div className="text-right flex-1">
-                  <p className="font-bold text-white text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>تسجيل الدخول</p>
-                  <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>ادخل على حسابك الموجود</p>
+                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#5D3010' }}>تسجيل الدخول</p>
+                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>ادخل على حسابك الموجود</p>
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(193,154,107,0.12)' }}>
                   <ChevronRight className="w-4 h-4" style={{ color: '#C19A6B' }} />
                 </div>
               </button>
 
-              {/* دخول كضيف */}
+              {/* دخول كضيف — Anonymous Firebase Auth */}
               <button
-                onClick={() => { clearError(); setStep('guest-name'); }}
-                className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97]"
+                onClick={handleGuestStart}
+                disabled={loading}
+                className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97] disabled:opacity-70"
                 style={{
                   background: 'rgba(255,255,255,0.5)',
                   border: '1.5px solid rgba(139,99,64,0.18)',
@@ -422,16 +495,22 @@ export function Login({ onComplete }: LoginProps) {
                   className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(139,99,64,0.1)', border: '1.5px solid rgba(139,99,64,0.15)' }}
                 >
-                  <UserCircle2 className="w-5 h-5" style={{ color: '#9B7043' }} />
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-[#9B7043]/30 border-t-[#9B7043] rounded-full animate-spin" />
+                  ) : (
+                    <UserCircle2 className="w-5 h-5" style={{ color: '#9B7043' }} />
+                  )}
                 </div>
                 <div className="text-right flex-1">
                   <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#5D3010' }}>دخول كضيف</p>
-                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>بالاسم والمحافظة — بدون حساب</p>
+                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>بياناتك محفوظة أونلاين تلقائياً</p>
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,99,64,0.08)' }}>
                   <ChevronRight className="w-4 h-4" style={{ color: '#9B7043' }} />
                 </div>
               </button>
+
+              {error && <ErrorBadge msg={error} />}
 
               <p className="text-center text-[11px] mt-1" style={{ fontFamily: '"Tajawal", sans-serif', color: 'rgba(93,48,16,0.35)' }}>
                 يمكنك تغيير هذه المعلومات لاحقاً من صفحة المزيد
@@ -518,7 +597,7 @@ export function Login({ onComplete }: LoginProps) {
             </motion.div>
           )}
 
-          {/* ─── Signup: City ─── */}
+          {/* ─── Signup/Login: City ─── */}
           {step === 'signup-city' && (
             <motion.div key="signup-city" {...slide} className="flex flex-col gap-3">
               <button
@@ -532,25 +611,44 @@ export function Login({ onComplete }: LoginProps) {
                 <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>
                   {loginUid ? 'مرحباً من جديد! اختر محافظتك' : 'اختر محافظتك'}
                 </p>
-                <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
-                  {loginUid ? 'لاستعادة حسابك وضبط مواقيت الصلاة' : 'لتحديد مواقيت الصلاة بدقة'}
-                </p>
+                <p className="text-xs mt-0.5 mb-3" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>للحصول على أوقات الصلاة الدقيقة</p>
+                <CityPicker govId={govId} onSelect={setGovId} />
               </div>
-              <CityPicker govId={govId} onSelect={setGovId} />
               {error && <ErrorBadge msg={error} />}
               <button
-                onClick={() => !loading && govId && handleSignupCity(govId)}
+                onClick={() => handleSignupCity(govId)}
                 disabled={!govId || loading}
                 className="w-full py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                 style={BTN_GOLD}
               >
-                {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-                {loading
-                  ? (loginUid ? 'جارٍ استعادة الحساب...' : 'جارٍ إنشاء الحساب...')
-                  : loginUid
-                    ? `دخول — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name ?? 'اختر محافظة'}`
-                    : `إنشاء الحساب — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name ?? 'اختر محافظة'}`
-                }
+                {loading && <div className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />}
+                {loading ? 'جارٍ إنشاء الحساب...' : 'إنهاء وبدء التطبيق ←'}
+              </button>
+            </motion.div>
+          )}
+
+          {/* ─── Guest: City ─── */}
+          {step === 'guest-city' && (
+            <motion.div key="guest-city" {...slide} className="flex flex-col gap-3">
+              <button
+                onClick={() => { clearError(); setStep('welcome'); }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
+              >
+                <ChevronRight className="w-4 h-4" /> رجوع
+              </button>
+              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
+                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>اختر محافظتك</p>
+                <p className="text-xs mt-0.5 mb-3" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لأوقات الصلاة الدقيقة • بياناتك محفوظة في السحاب</p>
+                <CityPicker govId={govId} onSelect={setGovId} />
+              </div>
+              <button
+                onClick={() => handleGuestCity(govId)}
+                disabled={!govId}
+                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
+                style={BTN_GOLD}
+              >
+                ابدأ التطبيق ←
               </button>
             </motion.div>
           )}
@@ -563,8 +661,8 @@ export function Login({ onComplete }: LoginProps) {
               </button>
               <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'rgba(193,154,107,0.15)', border: '1.5px solid rgba(193,154,107,0.35)' }}>
-                  <LogIn className="w-5 h-5" style={{ color: '#8B6340' }} />
+                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.35),rgba(139,99,64,0.2))', border: '1.5px solid rgba(193,154,107,0.4)' }}>
+                  <LogIn className="w-5 h-5 text-[#8B6340]" />
                 </div>
                 <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>تسجيل الدخول</h2>
                 <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل بريدك الإلكتروني</p>
@@ -598,11 +696,11 @@ export function Login({ onComplete }: LoginProps) {
               </button>
               <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'rgba(193,154,107,0.15)', border: '1.5px solid rgba(193,154,107,0.35)' }}>
-                  <Lock className="w-5 h-5" style={{ color: '#8B6340' }} />
+                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.4),rgba(193,154,107,0.15))', border: '1.5px solid rgba(193,154,107,0.45)' }}>
+                  <Lock className="w-5 h-5 text-[#8B6340]" />
                 </div>
-                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>أدخل كلمة السر</h2>
-                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>{email}</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>كلمة السر</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل كلمة سرك للمتابعة</p>
                 <InputField
                   type={showPass ? 'text' : 'password'}
                   value={password}
@@ -625,88 +723,13 @@ export function Login({ onComplete }: LoginProps) {
                 className="w-full py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                 style={BTN_GOLD}
               >
-                {loading && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-                {loading ? 'جارٍ الدخول...' : 'دخول ←'}
-              </button>
-            </motion.div>
-          )}
-
-          {/* ─── Guest: Name ─── */}
-          {step === 'guest-name' && (
-            <motion.div key="guest-name" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('welcome'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
-                <ChevronRight className="w-4 h-4" /> رجوع
-              </button>
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'rgba(139,99,64,0.12)', border: '1.5px solid rgba(139,99,64,0.2)' }}>
-                  <UserCircle2 className="w-5 h-5" style={{ color: '#9B7043' }} />
-                </div>
-                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>دخول كضيف</h2>
-                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل اسمك ليظهر في التطبيق</p>
-                <InputField
-                  value={name}
-                  onChange={setName}
-                  placeholder="اكتب اسمك هنا..."
-                  autoFocus
-                  icon={<UserCircle2 className="w-4 h-4" />}
-                  onEnter={() => name.trim() && setStep('guest-city')}
-                />
-              </div>
-              <button
-                onClick={() => name.trim() && setStep('guest-city')}
-                disabled={!name.trim()}
-                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
-                style={BTN_GOLD}
-              >
-                التالي ←
-              </button>
-            </motion.div>
-          )}
-
-          {/* ─── Guest: City ─── */}
-          {step === 'guest-city' && (
-            <motion.div key="guest-city" {...slide} className="flex flex-col gap-3">
-              <button onClick={() => { clearError(); setStep('guest-name'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
-                <ChevronRight className="w-4 h-4" /> رجوع
-              </button>
-              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
-                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>أهلاً {name}، اختر محافظتك</p>
-                <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لتحديد مواقيت الصلاة بدقة</p>
-              </div>
-              <CityPicker govId={govId} onSelect={setGovId} />
-              <button
-                onClick={() => govId && handleGuestCity(govId)}
-                disabled={!govId}
-                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
-                style={govId ? BTN_GOLD : {
-                  background: 'rgba(139,99,64,0.12)',
-                  color: 'rgba(93,48,16,0.4)',
-                  fontFamily: '"Tajawal", sans-serif',
-                  fontWeight: 700,
-                  border: '1.5px solid rgba(139,99,64,0.15)',
-                }}
-              >
-                {govId ? `دخول كضيف — ${EGYPT_GOVERNORATES.find(g => g.id === govId)?.name}` : 'اختر محافظتك أولاً'}
+                {loading && <div className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />}
+                {loading ? 'جارٍ تسجيل الدخول...' : 'دخول ←'}
               </button>
             </motion.div>
           )}
 
         </AnimatePresence>
-
-        {/* Bottom hint */}
-        {step === 'welcome' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="flex items-center justify-center mt-5"
-          >
-            <p className="text-[11px]" style={{ fontFamily: '"Tajawal", sans-serif', color: 'rgba(93,48,16,0.4)' }}>
-              تطبيق نور - تطبيق إسلامي شامل
-            </p>
-          </motion.div>
-        )}
       </div>
     </div>
   );

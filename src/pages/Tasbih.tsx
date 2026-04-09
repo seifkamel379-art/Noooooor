@@ -1,9 +1,10 @@
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { TASBIH_TYPES } from '@/lib/constants';
 import { incrementGlobalCounter, recordTasbeehPress } from '@/lib/firestore';
+import { queueTasbihSync, flushRTDB, getCurrentUid } from '@/lib/rtdb';
 import { BarChart2 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function getTodayKey() {
   const d = new Date();
@@ -70,7 +71,6 @@ function ResetConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; on
         transition={{ duration: 0.2 }}
         className="relative bg-card border border-border rounded-3xl p-6 w-full max-w-xs shadow-2xl text-center"
       >
-        {/* Islamic star ornament */}
         <svg width="32" height="32" viewBox="0 0 40 40" className="mx-auto mb-3 text-primary opacity-60">
           <polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14" fill="currentColor"/>
         </svg>
@@ -111,26 +111,54 @@ export function Tasbih() {
   const controls = useAnimation();
   const [isPressing, setIsPressing] = useState(false);
 
+  // نستخدم ref لتجنب إعادة تشغيل المزامنة في كل render
+  const totalsRef = useRef(totals);
+  const countsRef = useRef(counts);
+  useEffect(() => { totalsRef.current = totals; }, [totals]);
+  useEffect(() => { countsRef.current = counts; }, [counts]);
+
   const currentType = TASBIH_TYPES[typeIndex];
   const count = counts[currentType.id] ?? 0;
   const total = totals[currentType.id] ?? 0;
 
+  // إرسال فوري عند إخفاء الصفحة (يتم تلقائياً في rtdb.ts، هذا للتأكد)
+  useEffect(() => {
+    return () => {
+      const uid = getCurrentUid();
+      if (uid) flushRTDB();
+    };
+  }, []);
+
   const handleTap = () => {
     if ('vibrate' in navigator) navigator.vibrate(15);
     controls.start({ scale: [1, 0.94, 1], transition: { duration: 0.18 } });
-    setCounts(prev => ({ ...prev, [currentType.id]: (prev[currentType.id] ?? 0) + 1 }));
-    setTotals(prev => ({ ...prev, [currentType.id]: (prev[currentType.id] ?? 0) + 1 }));
+
+    const newCounts = { ...countsRef.current, [currentType.id]: (countsRef.current[currentType.id] ?? 0) + 1 };
+    const newTotals = { ...totalsRef.current, [currentType.id]: (totalsRef.current[currentType.id] ?? 0) + 1 };
+
+    setCounts(newCounts);
+    setTotals(newTotals);
+
     const dailyKey = `tasbih_daily_${getTodayKey()}`;
     const currentDaily = parseInt(localStorage.getItem(dailyKey) ?? '0', 10);
     localStorage.setItem(dailyKey, String(currentDaily + 1));
+
+    // مزامنة مؤجلة (كل 10 ثواني) — لا نرسل في كل ضغطة
+    const uid = getCurrentUid();
+    if (uid) queueTasbihSync(uid, newTotals, newCounts);
+
     incrementGlobalCounter(1).catch(() => {});
-    recordTasbeehPress().catch(() => {}); // يسجّل الضغطة لحساب الذاكرين الآن
+    recordTasbeehPress().catch(() => {});
   };
 
   const handleResetConfirm = () => {
-    setCounts(prev => ({ ...prev, [currentType.id]: 0 }));
+    const newCounts = { ...countsRef.current, [currentType.id]: 0 };
+    setCounts(newCounts);
     setShowResetDialog(false);
     if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
+    // مزامنة بعد التصفير
+    const uid = getCurrentUid();
+    if (uid) queueTasbihSync(uid, totalsRef.current, newCounts);
   };
 
   return (
@@ -142,7 +170,6 @@ export function Tasbih() {
           <button onClick={() => setShowStats(!showStats)} className="p-2 bg-secondary text-primary rounded-full">
             <BarChart2 className="w-5 h-5" />
           </button>
-          {/* Reset button - Islamic style */}
           <button
             onClick={() => setShowResetDialog(true)}
             className="p-2 rounded-full transition-colors"
