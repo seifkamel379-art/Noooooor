@@ -56,29 +56,31 @@ This is a pnpm monorepo workspace.
 - `lib/api-zod` — Generated Zod schemas from OpenAPI spec
 
 ### `scripts/`
-- `dev.sh` — starts production server (port 19382), Vite dev server (port 5000), and dev API server (port 3001)
+- `replit-dev.sh` — starts the dev API server (port 3001) then launches the Replit artifact router
+- `dev.sh` — alternative simple dev mode using Vite dev server (port 5000) + dev API server (port 3001)
 - `start.js` — Node.js alternative launcher for the dev stack
-- `proxy.js` — legacy HTTP proxy script
+- `proxy.js` — HTTP proxy helper (port forwarding)
 
 ## Development
 
 The "Start application" workflow runs:
 ```
-bash scripts/dev.sh
+bash scripts/replit-dev.sh
 ```
 
-This executes `scripts/dev.sh` which starts three services:
-1. **Production API server** on port 19382 (serves built frontend + API routes) — this is the primary port exposed via the Replit port mapping
-2. **Vite dev server** on port 5000 — for hot reload during development  
-3. **Dev API server** on port 3001 — tsx live-reload API server for development
+This starts:
+1. **Dev API server** on port 3001 — tsx live-reload Express server for backend development
+2. **Replit artifact router** — reads `artifact.toml` configs and starts services, listens on port 8000 locally
+3. **Production api-server** on port 19382 (started by the artifact router) — serves built frontend + API routes
 
-The workflow uses `waitForPort: 19382` which matches the `.replit` ports mapping (`localPort=19382 → externalPort=80`).
+The workflow uses `waitForPort: 19382` which is the production api-server port (registered in `.replit` ports mapping `localPort=19382 → externalPort=80`).
 
 **Port Architecture**:
 - External port 80 → Replit proxy → `localhost:19382` (production server serves both frontend + API)
-- `localhost:5000` — Vite dev server (hot reload for frontend development)
 - `localhost:3001` — Dev API server (tsx live-reload for backend development)
-- Vite config proxies `/api` requests to `localhost:3001` for dev mode
+- `localhost:8000` — Artifact router (internal routing)
+
+**Important**: After making frontend code changes, rebuild with `pnpm exec vite build --config vite.config.ts` to update `dist/public/`. The production api-server serves the built static files.
 
 ## Firebase
 

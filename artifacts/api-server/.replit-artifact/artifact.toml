@@ -12,6 +12,10 @@ paths = ["/"]
 [services.development]
 run = "node /home/runner/workspace/scripts/proxy.js"
 
+[services.development.env]
+PORT = "4999"
+PROXY_PORT = "19382"
+
 [services.production]
 build = "npm run build && pnpm --filter @workspace/api-server run build"
 
