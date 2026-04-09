@@ -33,6 +33,11 @@ import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
 import { Sunnah } from "@/pages/Sunnah";
 import { IslamicTV } from "@/pages/IslamicTV";
 
+import { onAuthStateChanged } from "firebase/auth";
+import { get, ref } from "firebase/database";
+import { auth, rtdb } from "@/lib/firebase";
+import { initUserSync, clearSyncState } from "@/lib/rtdb";
+
 const queryClient = new QueryClient();
 
 function GlobalBackground() {
@@ -168,18 +173,10 @@ function App() {
     if (theme === '"dark"') {
       document.documentElement.classList.add('dark');
     }
-    const profile = localStorage.getItem('user_profile');
-    setIsLoggedIn(!!profile);
   }, []);
 
   const handleLoginComplete = useCallback(() => {
     setIsLoggedIn(true);
-  }, []);
-
-  useEffect(() => {
-    const handleLogout = () => setIsLoggedIn(false);
-    window.addEventListener('app-logout', handleLogout);
-    return () => window.removeEventListener('app-logout', handleLogout);
   }, []);
 
   useEffect(() => {
@@ -188,6 +185,37 @@ function App() {
     if (theme === '"dark"') {
       document.documentElement.classList.add('dark');
     }
+  }, []);
+
+  // Firebase Auth state observer — source of truth for login state
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const profileSnap = await get(ref(rtdb, `users/${user.uid}/profile`));
+          if (profileSnap.exists()) {
+            await initUserSync(user.uid);
+            setIsLoggedIn(true);
+          } else {
+            // authenticated but no profile yet (incomplete registration)
+            setIsLoggedIn(false);
+          }
+        } catch {
+          setIsLoggedIn(false);
+        }
+      } else {
+        clearSyncState();
+        setIsLoggedIn(false);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // listen for logout events from MoreMenu
+  useEffect(() => {
+    const handleLogout = () => setIsLoggedIn(false);
+    window.addEventListener('app-logout', handleLogout);
+    return () => window.removeEventListener('app-logout', handleLogout);
   }, []);
 
   return (

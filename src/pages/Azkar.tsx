@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Check, RotateCcw, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import type { ReactNode } from 'react';
 import { getTodayKey, cn } from '@/lib/utils';
 import { HISN_CATEGORIES, HISN_ITEMS, type HisnCategory } from '@/lib/hisnData';
-import { queueAzkarSync, getCurrentUid } from '@/lib/rtdb';
+import { queueAzkarSync, getCacheValue, getCurrentUid } from '@/lib/rtdb';
+import { auth } from '@/lib/firebase';
 
 /* ── Ornament ────────────────────────────────────*/
 function IslamicOrnament() {
@@ -74,8 +75,8 @@ function ResetDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
 /* ── Items view ──────────────────────────────────*/
 function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () => void }) {
   const todayKey = getTodayKey();
-  const [progress, setProgress] = useLocalStorage<Record<number, number>>(
-    `azkar_hisn_${todayKey}_${category.id}`, {}
+  const [progress, setProgress] = useState<Record<number, number>>(() =>
+    getCacheValue<Record<number, number>>(`azkar/${todayKey}/${category.id}`, {})
   );
   const [showReset, setShowReset] = useState(false);
 
@@ -88,8 +89,7 @@ function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () =>
       const cur = prev[id] ?? 0;
       if (cur >= max) return prev;
       const next = { ...prev, [id]: cur + 1 };
-      // مزامنة مؤجلة مع RTDB
-      const uid = getCurrentUid();
+      const uid = auth.currentUser?.uid ?? getCurrentUid();
       if (uid) queueAzkarSync(uid, category.id, next);
       return next;
     });
@@ -104,7 +104,7 @@ function ItemsView({ category, onBack }: { category: HisnCategory; onBack: () =>
             onConfirm={() => {
               setProgress({});
               setShowReset(false);
-              const uid = getCurrentUid();
+              const uid = auth.currentUser?.uid ?? getCurrentUid();
               if (uid) queueAzkarSync(uid, category.id, {});
             }}
             onCancel={() => setShowReset(false)}
@@ -249,8 +249,8 @@ function CategoryCard({
   onSelect: (c: HisnCategory) => void;
   todayKey: string;
 }) {
-  const stored = localStorage.getItem(`azkar_hisn_${todayKey}_${cat.id}`);
-  const prog: Record<number, number> = stored ? JSON.parse(stored) : {};
+  // Read azkar progress from RTDB cache
+  const prog = getCacheValue<Record<number, number>>(`azkar/${todayKey}/${cat.id}`, {});
   const items = HISN_ITEMS[cat.id] ?? [];
   const done = items.filter(z => (prog[z.id] ?? 0) >= z.count).length;
   const allDone = items.length > 0 && done === items.length;

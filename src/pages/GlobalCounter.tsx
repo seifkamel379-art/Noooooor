@@ -9,23 +9,13 @@ import {
   fetchLeaderboard,
   type LeaderboardEntry,
 } from '@/lib/firestore';
+import { getCacheValue, getProfileCache } from '@/lib/rtdb';
+import { auth } from '@/lib/firebase';
 
 const VISIBILITY_KEY = 'noor_leaderboard_visible';
 
 function ensureUid(): string | null {
-  try {
-    const raw = localStorage.getItem('user_profile');
-    if (!raw) return null;
-    const profile = JSON.parse(raw);
-    if (profile.uid) return profile.uid;
-    const uid =
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    profile.uid = uid;
-    localStorage.setItem('user_profile', JSON.stringify(profile));
-    return uid;
-  } catch { return null; }
+  return auth.currentUser?.uid ?? null;
 }
 
 function formatBigNumber(n: number): string {
@@ -86,8 +76,8 @@ function useDarkMode() {
 
 function getLocalTasbeehCount(): number {
   try {
-    const raw = localStorage.getItem('tasbih_totals');
-    const totals: Record<string, number> = raw ? JSON.parse(raw) : {};
+    const { getCacheValue } = await import('@/lib/rtdb');
+    const totals = getCacheValue<Record<string, number>>('tasbih_totals', {});
     return Object.values(totals).reduce((a, b) => a + b, 0);
   } catch { return 0; }
 }

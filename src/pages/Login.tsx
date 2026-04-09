@@ -3,18 +3,17 @@ import { EGYPT_GOVERNORATES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, Mail, Lock, Eye, EyeOff, ChevronRight,
-  UserCircle2, LogIn, UserPlus,
+  LogIn, UserPlus,
 } from 'lucide-react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInAnonymously,
-  linkWithCredential,
-  EmailAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { initUserSync, queueProfileSync } from '@/lib/rtdb';
-import { deleteLeaderboardEntry } from '@/lib/firestore';
+import { get, ref } from 'firebase/database';
+import { auth, googleProvider, rtdb } from '@/lib/firebase';
+import { initUserSync, saveProfileToRTDB, type UserProfile } from '@/lib/rtdb';
+import { EGYPT_GOVERNORATES as GOVS } from '@/lib/constants';
 
 interface LoginProps {
   onComplete: () => void;
@@ -24,7 +23,19 @@ type Step =
   | 'welcome'
   | 'signup-email' | 'signup-password' | 'signup-city'
   | 'login-email'  | 'login-password'
-  | 'guest-city';
+  | 'city-picker';
+
+/* ── Google logo SVG ──────────────────────────────────────── */
+function GoogleLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <path d="M44.5 20H24v8.5h11.8C34.7 33.9 29.9 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.8 20-21 0-1.4-.2-2.7-.5-4z" fill="#FFC107"/>
+      <path d="M6.3 14.7l7 5.1C15.1 16.6 19.2 14 24 14c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3c-7.6 0-14.2 4.3-17.7 10.7z" fill="#FF3D00"/>
+      <path d="M24 45c5.8 0 10.7-1.9 14.6-5.2l-6.7-5.7C29.9 35.8 27.1 37 24 37c-5.8 0-10.7-3.7-12.5-8.8l-7 5.4C8.2 40.7 15.5 45 24 45z" fill="#4CAF50"/>
+      <path d="M44.5 20H24v8.5h11.8c-.9 2.8-2.8 5.1-5.3 6.6l6.7 5.7C41.5 37.4 45 31.3 45 24c0-1.4-.2-2.7-.5-4z" fill="#1976D2"/>
+    </svg>
+  );
+}
 
 function InputField({
   type = 'text',
@@ -179,39 +190,37 @@ function mapFirebaseError(code: string): string {
     case 'auth/invalid-credential':       return 'البريد الإلكتروني أو كلمة السر غير صحيحة';
     case 'auth/too-many-requests':        return 'محاولات كثيرة، حاول مرة أخرى لاحقاً';
     case 'auth/network-request-failed':   return 'تحقق من اتصال الإنترنت وحاول مجدداً';
+    case 'auth/popup-closed-by-user':     return 'تم إغلاق نافذة الدخول';
+    case 'auth/cancelled-popup-request':  return 'تم إلغاء الطلب';
     default:                              return 'حدث خطأ، حاول مرة أخرى';
   }
 }
 
-/** حفظ profile في localStorage وتهيئة المزامنة */
-async function saveProfileAndSync(
+/** احفظ بيانات المستخدم في RTDB بعد المصادقة */
+async function finalizeUserProfile(
   uid: string,
   displayName: string,
-  userEmail: string | null,
+  userEmail: string,
+  photo: string,
   selectedGovId: string,
-  isGuest: boolean,
-  existingPhoto?: string,
-) {
-  const gov = EGYPT_GOVERNORATES.find(g => g.id === selectedGovId);
-  if (!gov) return;
+): Promise<void> {
+  const gov = GOVS.find(g => g.id === selectedGovId);
+  if (!gov) throw new Error('Governorate not found');
 
-  const profile = {
+  const profile: UserProfile = {
     uid,
-    name: displayName.trim(),
-    email: userEmail ?? '',
+    name: displayName.trim() || userEmail.split('@')[0],
+    email: userEmail,
+    photo,
     governorateId: selectedGovId,
     governorateName: gov.name,
     lat: gov.lat,
     lng: gov.lng,
-    photo: existingPhoto || '',
-    isGuest,
-    leaderboardId: uid,
+    joinedAt: Date.now(),
   };
-  localStorage.setItem('user_profile', JSON.stringify(profile));
 
-  // تهيئة المزامنة مع Firebase Realtime Database
   await initUserSync(uid);
-  queueProfileSync(uid);
+  await saveProfileToRTDB(uid, profile);
 }
 
 export function Login({ onComplete }: LoginProps) {
@@ -222,93 +231,60 @@ export function Login({ onComplete }: LoginProps) {
   const [govId, setGovId]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
-  // uid المستخدم بعد تسجيل الدخول بالبريد (لو عاوز يختار محافظة)
-  const [loginUid, setLoginUid]   = useState<string | null>(null);
-  const [loginEmail, setLoginEmail] = useState('');
-  // uid المستخدم الضيف الأنونيموس (لحظة اختيار المحافظة)
-  const [guestUid, setGuestUid]   = useState<string | null>(null);
+
+  // after auth, hold uid+name+email+photo while user picks city
+  const [pendingUid, setPendingUid]       = useState('');
+  const [pendingName, setPendingName]     = useState('');
+  const [pendingEmail, setPendingEmail]   = useState('');
+  const [pendingPhoto, setPendingPhoto]   = useState('');
 
   const clearError = () => setError('');
 
-  /* ── تسجيل كضيف — Anonymous Firebase Auth ───────────────── */
-  const handleGuestStart = async () => {
+  /* ── Helper: check if user already has a profile in RTDB ── */
+  async function checkExistingProfile(uid: string): Promise<boolean> {
+    try {
+      const snap = await get(ref(rtdb, `users/${uid}/profile`));
+      return snap.exists();
+    } catch { return false; }
+  }
+
+  /* ── Google Sign-In ─────────────────────────────────────── */
+  const handleGoogleSignIn = async () => {
     clearError();
     setLoading(true);
     try {
-      // لو في مستخدم anonymous حالي استخدمه، وإلا أنشئ واحد جديد
-      let uid: string;
-      if (auth.currentUser?.isAnonymous) {
-        uid = auth.currentUser.uid;
+      const result = await signInWithPopup(auth, googleProvider);
+      const user   = result.user;
+      const hasProfile = await checkExistingProfile(user.uid);
+
+      if (hasProfile) {
+        // returning user — load and go
+        await initUserSync(user.uid);
+        onComplete();
       } else {
-        const cred = await signInAnonymously(auth);
-        uid = cred.user.uid;
+        // new Google user — pick city
+        setPendingUid(user.uid);
+        setPendingName(user.displayName ?? '');
+        setPendingEmail(user.email ?? '');
+        setPendingPhoto(user.photoURL ?? '');
+        setLoading(false);
+        setStep('city-picker');
       }
-      setGuestUid(uid);
-      setStep('guest-city');
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
       setError(mapFirebaseError(code));
-    } finally {
       setLoading(false);
     }
   };
 
-  /* ── اختيار محافظة الضيف ─────────────────────────────────── */
-  const handleGuestCity = async (selectedGov: string) => {
-    if (!selectedGov || !guestUid) return;
-    const displayName = `ضيف`;
-    await saveProfileAndSync(guestUid, displayName, null, selectedGov, true);
-    onComplete();
-  };
-
-  /* ── إنشاء حساب جديد بالبريد ─────────────────────────────── */
+  /* ── Email Signup ─────────────────────────────────────────── */
   const handleSignupCity = async (selectedGov: string) => {
     if (!selectedGov) return;
-
-    // لو المستخدم بالفعل دخل بالبريد ومحتاج يختار محافظة فقط
-    if (loginUid) {
-      const displayName = loginEmail.split('@')[0];
-      await saveProfileAndSync(loginUid, displayName, loginEmail, selectedGov, false);
-      onComplete();
-      return;
-    }
-
     setLoading(true);
     setError('');
     try {
-      let uid: string;
-
-      // لو في مستخدم anonymous حالي، ربط الإيميل بحسابه (يحافظ على نفس UID)
-      if (auth.currentUser?.isAnonymous) {
-        const credential = EmailAuthProvider.credential(email.trim(), password);
-        try {
-          const linked = await linkWithCredential(auth.currentUser, credential);
-          uid = linked.user.uid;
-          // امسح أي entry قديم في الـ leaderboard بالـ uid القديم للضيف
-          const oldProfile = (() => {
-            try { return JSON.parse(localStorage.getItem('user_profile') ?? ''); } catch { return null; }
-          })();
-          if (oldProfile?.leaderboardId && oldProfile.leaderboardId !== uid) {
-            deleteLeaderboardEntry(oldProfile.leaderboardId).catch(() => {});
-          }
-        } catch (linkError: unknown) {
-          const code = (linkError as { code?: string })?.code ?? '';
-          if (code === 'auth/email-already-in-use' || code === 'auth/credential-already-in-use') {
-            // البريد موجود بالفعل — سجّل دخول عادي
-            const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-            uid = cred.user.uid;
-          } else {
-            throw linkError;
-          }
-        }
-      } else {
-        // مفيش مستخدم anonymous — أنشئ حساب جديد
-        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        uid = cred.user.uid;
-      }
-
-      const displayName = email.split('@')[0];
-      await saveProfileAndSync(uid, displayName, email.trim(), selectedGov, false);
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await finalizeUserProfile(cred.user.uid, email.split('@')[0], email.trim(), '', selectedGov);
       onComplete();
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
@@ -317,7 +293,22 @@ export function Login({ onComplete }: LoginProps) {
     }
   };
 
-  /* ── تسجيل الدخول ────────────────────────────────────────── */
+  /* ── City picker for Google / returning login ─────────────── */
+  const handleCityPicker = async (selectedGov: string) => {
+    if (!selectedGov || !pendingUid) return;
+    setLoading(true);
+    setError('');
+    try {
+      await finalizeUserProfile(pendingUid, pendingName, pendingEmail, pendingPhoto, selectedGov);
+      onComplete();
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code ?? '';
+      setError(mapFirebaseError(code));
+      setLoading(false);
+    }
+  };
+
+  /* ── Email Login ─────────────────────────────────────────── */
   const handleLogin = async () => {
     if (!email.trim() || !password) return;
     setLoading(true);
@@ -325,22 +316,19 @@ export function Login({ onComplete }: LoginProps) {
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
       const uid  = cred.user.uid;
-      const existing = (() => {
-        try { return JSON.parse(localStorage.getItem('user_profile') ?? ''); } catch { return null; }
-      })();
-      if (existing?.uid === uid) {
-        existing.isGuest = false;
-        existing.email   = email.trim();
-        existing.leaderboardId = uid;
-        localStorage.setItem('user_profile', JSON.stringify(existing));
+
+      const hasProfile = await checkExistingProfile(uid);
+      if (hasProfile) {
         await initUserSync(uid);
         onComplete();
       } else {
-        // مستخدم جديد على هذا الجهاز — محتاج يختار محافظة
-        setLoginUid(uid);
-        setLoginEmail(email.trim());
+        // first login on this device — pick city
+        setPendingUid(uid);
+        setPendingName(email.split('@')[0]);
+        setPendingEmail(email.trim());
+        setPendingPhoto('');
         setLoading(false);
-        setStep('signup-city');
+        setStep('city-picker');
       }
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
@@ -352,7 +340,7 @@ export function Login({ onComplete }: LoginProps) {
   const slide = {
     initial: { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -16 },
+    exit:    { opacity: 0, y: -16 },
     transition: { duration: 0.26 },
   };
 
@@ -481,29 +469,29 @@ export function Login({ onComplete }: LoginProps) {
                 </div>
               </button>
 
-              {/* دخول كضيف — Anonymous Firebase Auth */}
+              {/* دخول بـ Google */}
               <button
-                onClick={handleGuestStart}
+                onClick={handleGoogleSignIn}
                 disabled={loading}
                 className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97] disabled:opacity-70"
                 style={{
-                  background: 'rgba(255,255,255,0.5)',
+                  background: 'rgba(255,255,255,0.7)',
                   border: '1.5px solid rgba(139,99,64,0.18)',
                 }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(139,99,64,0.1)', border: '1.5px solid rgba(139,99,64,0.15)' }}
+                  style={{ background: 'rgba(255,255,255,0.9)', border: '1.5px solid rgba(139,99,64,0.15)' }}
                 >
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-[#9B7043]/30 border-t-[#9B7043] rounded-full animate-spin" />
                   ) : (
-                    <UserCircle2 className="w-5 h-5" style={{ color: '#9B7043' }} />
+                    <GoogleLogo size={22} />
                   )}
                 </div>
                 <div className="text-right flex-1">
-                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#5D3010' }}>دخول كضيف</p>
-                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>بياناتك محفوظة أونلاين تلقائياً</p>
+                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#5D3010' }}>الدخول بـ Google</p>
+                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>سريع وآمن بحسابك في جوجل</p>
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,99,64,0.08)' }}>
                   <ChevronRight className="w-4 h-4" style={{ color: '#9B7043' }} />
@@ -560,29 +548,33 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Signup: Password ─── */}
           {step === 'signup-password' && (
             <motion.div key="signup-password" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('signup-email'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
+              <button
+                onClick={() => { clearError(); setStep('signup-email'); }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
+              >
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
               <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.4),rgba(193,154,107,0.15))', border: '1.5px solid rgba(193,154,107,0.45)' }}>
-                  <Lock className="w-5 h-5 text-[#8B6340]" />
+                  style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)' }}>
+                  <Lock className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>أنشئ كلمة السر</h2>
-                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>كلمة سر خاصة بتطبيق نُور (٦ أحرف على الأقل)</p>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>كلمة السر</h2>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>اختر كلمة سر قوية لحسابك</p>
                 <InputField
                   type={showPass ? 'text' : 'password'}
                   value={password}
                   onChange={v => { setPassword(v); clearError(); }}
-                  placeholder="كلمة السر..."
+                  placeholder="كلمة السر (٦ أحرف على الأقل)..."
                   autoFocus
                   icon={<Lock className="w-4 h-4" />}
+                  onEnter={() => password.length >= 6 && setStep('signup-city')}
                   trailing={
-                    <button onClick={() => setShowPass(p => !p)} className="p-1" style={{ color: '#9B7043' }}>
+                    <button type="button" onClick={() => setShowPass(s => !s)} style={{ color: '#9B7043' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   }
-                  onEnter={() => password.length >= 6 && setStep('signup-city')}
                 />
                 {error && <div className="mt-3"><ErrorBadge msg={error} /></div>}
               </div>
@@ -597,39 +589,34 @@ export function Login({ onComplete }: LoginProps) {
             </motion.div>
           )}
 
-          {/* ─── Signup/Login: City ─── */}
+          {/* ─── Signup: City ─── */}
           {step === 'signup-city' && (
-            <motion.div key="signup-city" {...slide} className="flex flex-col gap-3">
+            <motion.div key="signup-city" {...slide} className="flex flex-col gap-4">
               <button
-                onClick={() => { clearError(); setStep(loginUid ? 'login-password' : 'signup-password'); }}
+                onClick={() => { clearError(); setStep('signup-password'); }}
                 className="flex items-center gap-1.5 text-sm"
                 style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
               >
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
-                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>
-                  {loginUid ? 'مرحباً من جديد! اختر محافظتك' : 'اختر محافظتك'}
-                </p>
-                <p className="text-xs mt-0.5 mb-3" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>للحصول على أوقات الصلاة الدقيقة</p>
-                <CityPicker govId={govId} onSelect={setGovId} />
+              <div>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>اختر محافظتك</h2>
+                <p className="text-xs text-center mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لضبط مواقيت الصلاة بدقة</p>
+                <CityPicker govId={govId} onSelect={id => { setGovId(id); handleSignupCity(id); }} />
               </div>
+              {loading && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <div className="w-5 h-5 border-2 border-[#C19A6B]/30 border-t-[#C19A6B] rounded-full animate-spin" />
+                  <span className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>جاري الحفظ...</span>
+                </div>
+              )}
               {error && <ErrorBadge msg={error} />}
-              <button
-                onClick={() => handleSignupCity(govId)}
-                disabled={!govId || loading}
-                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-2"
-                style={BTN_GOLD}
-              >
-                {loading && <div className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />}
-                {loading ? 'جارٍ إنشاء الحساب...' : 'إنهاء وبدء التطبيق ←'}
-              </button>
             </motion.div>
           )}
 
-          {/* ─── Guest: City ─── */}
-          {step === 'guest-city' && (
-            <motion.div key="guest-city" {...slide} className="flex flex-col gap-3">
+          {/* ─── Login: Email ─── */}
+          {step === 'login-email' && (
+            <motion.div key="login-email" {...slide} className="flex flex-col gap-4">
               <button
                 onClick={() => { clearError(); setStep('welcome'); }}
                 className="flex items-center gap-1.5 text-sm"
@@ -637,32 +624,10 @@ export function Login({ onComplete }: LoginProps) {
               >
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
-              <div className="rounded-2xl px-4 py-3.5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
-                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>اختر محافظتك</p>
-                <p className="text-xs mt-0.5 mb-3" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لأوقات الصلاة الدقيقة • بياناتك محفوظة في السحاب</p>
-                <CityPicker govId={govId} onSelect={setGovId} />
-              </div>
-              <button
-                onClick={() => handleGuestCity(govId)}
-                disabled={!govId}
-                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
-                style={BTN_GOLD}
-              >
-                ابدأ التطبيق ←
-              </button>
-            </motion.div>
-          )}
-
-          {/* ─── Login: Email ─── */}
-          {step === 'login-email' && (
-            <motion.div key="login-email" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('welcome'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
-                <ChevronRight className="w-4 h-4" /> رجوع
-              </button>
               <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.35),rgba(139,99,64,0.2))', border: '1.5px solid rgba(193,154,107,0.4)' }}>
-                  <LogIn className="w-5 h-5 text-[#8B6340]" />
+                  style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)' }}>
+                  <LogIn className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>تسجيل الدخول</h2>
                 <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل بريدك الإلكتروني</p>
@@ -691,16 +656,20 @@ export function Login({ onComplete }: LoginProps) {
           {/* ─── Login: Password ─── */}
           {step === 'login-password' && (
             <motion.div key="login-password" {...slide} className="flex flex-col gap-4">
-              <button onClick={() => { clearError(); setStep('login-email'); }} className="flex items-center gap-1.5 text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>
+              <button
+                onClick={() => { clearError(); setStep('login-email'); }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
+              >
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
               <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 12px rgba(93,48,16,0.08)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg,rgba(193,154,107,0.4),rgba(193,154,107,0.15))', border: '1.5px solid rgba(193,154,107,0.45)' }}>
-                  <Lock className="w-5 h-5 text-[#8B6340]" />
+                  style={{ background: 'linear-gradient(135deg,#C19A6B,#8B6340)' }}>
+                  <Lock className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>كلمة السر</h2>
-                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل كلمة سرك للمتابعة</p>
+                <p className="text-xs text-center mb-5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>أدخل كلمة سر حسابك</p>
                 <InputField
                   type={showPass ? 'text' : 'password'}
                   value={password}
@@ -708,24 +677,48 @@ export function Login({ onComplete }: LoginProps) {
                   placeholder="كلمة السر..."
                   autoFocus
                   icon={<Lock className="w-4 h-4" />}
+                  onEnter={handleLogin}
                   trailing={
-                    <button onClick={() => setShowPass(p => !p)} className="p-1" style={{ color: '#9B7043' }}>
+                    <button type="button" onClick={() => setShowPass(s => !s)} style={{ color: '#9B7043' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   }
-                  onEnter={handleLogin}
                 />
                 {error && <div className="mt-3"><ErrorBadge msg={error} /></div>}
               </div>
               <button
                 onClick={handleLogin}
-                disabled={!password || loading}
-                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                disabled={loading || !password}
+                className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
                 style={BTN_GOLD}
               >
-                {loading && <div className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />}
-                {loading ? 'جارٍ تسجيل الدخول...' : 'دخول ←'}
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[#1a0e00]/30 border-t-[#1a0e00] rounded-full animate-spin" />
+                    <span>جاري الدخول...</span>
+                  </div>
+                ) : (
+                  'دخول ←'
+                )}
               </button>
+            </motion.div>
+          )}
+
+          {/* ─── City Picker (Google / login new device) ─── */}
+          {step === 'city-picker' && (
+            <motion.div key="city-picker" {...slide} className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>اختر محافظتك</h2>
+                <p className="text-xs text-center mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لضبط مواقيت الصلاة بدقة</p>
+                <CityPicker govId={govId} onSelect={id => { setGovId(id); handleCityPicker(id); }} />
+              </div>
+              {loading && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <div className="w-5 h-5 border-2 border-[#C19A6B]/30 border-t-[#C19A6B] rounded-full animate-spin" />
+                  <span className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>جاري الحفظ...</span>
+                </div>
+              )}
+              {error && <ErrorBadge msg={error} />}
             </motion.div>
           )}
 

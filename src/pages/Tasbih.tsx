@@ -1,15 +1,10 @@
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { TASBIH_TYPES } from '@/lib/constants';
 import { incrementGlobalCounter, recordTasbeehPress } from '@/lib/firestore';
-import { queueTasbihSync, flushRTDB, getCurrentUid } from '@/lib/rtdb';
+import { queueTasbihSync, flushRTDB, getCacheValue, getCurrentUid, todayKey } from '@/lib/rtdb';
+import { auth } from '@/lib/firebase';
 import { BarChart2 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
-
-function getTodayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 const BEAD_COUNT = 33;
 
@@ -102,32 +97,50 @@ function ResetConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; on
 }
 
 export function Tasbih() {
-  const [typeIndex, setTypeIndex] = useLocalStorage('tasbih_type_idx', 0);
-  const [totals, setTotals] = useLocalStorage<Record<string, number>>('tasbih_totals', {});
-  const [counts, setCounts] = useLocalStorage<Record<string, number>>('tasbih_counts', {});
+  // Initialize from RTDB cache
+  const [typeIndex, setTypeIndex] = useState<number>(() =>
+    getCacheValue<number>('tasbih_type_idx', 0)
+  );
+  const [totals, setTotals] = useState<Record<string, number>>(() =>
+    getCacheValue<Record<string, number>>('tasbih_totals', {})
+  );
+  const [counts, setCounts] = useState<Record<string, number>>(() =>
+    getCacheValue<Record<string, number>>('tasbih_counts', {})
+  );
+  const [dailyCount, setDailyCount] = useState<number>(() =>
+    getCacheValue<number>(`tasbih_daily/${todayKey()}`, 0)
+  );
   const [showStats, setShowStats] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
   const controls = useAnimation();
   const [isPressing, setIsPressing] = useState(false);
 
-  // نستخدم ref لتجنب إعادة تشغيل المزامنة في كل render
-  const totalsRef = useRef(totals);
-  const countsRef = useRef(counts);
-  useEffect(() => { totalsRef.current = totals; }, [totals]);
-  useEffect(() => { countsRef.current = counts; }, [counts]);
+  const totalsRef  = useRef(totals);
+  const countsRef  = useRef(counts);
+  const dailyRef   = useRef(dailyCount);
+  useEffect(() => { totalsRef.current  = totals;     }, [totals]);
+  useEffect(() => { countsRef.current  = counts;     }, [counts]);
+  useEffect(() => { dailyRef.current   = dailyCount; }, [dailyCount]);
 
   const currentType = TASBIH_TYPES[typeIndex];
   const count = counts[currentType.id] ?? 0;
   const total = totals[currentType.id] ?? 0;
 
-  // إرسال فوري عند إخفاء الصفحة (يتم تلقائياً في rtdb.ts، هذا للتأكد)
+  // Flush on unmount
   useEffect(() => {
     return () => {
-      const uid = getCurrentUid();
-      if (uid) flushRTDB();
+      if (getCurrentUid()) flushRTDB();
     };
   }, []);
+
+  const handleTypeChange = (idx: number) => {
+    setTypeIndex(idx);
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      queueTasbihSync(uid, totalsRef.current, countsRef.current, dailyRef.current);
+    }
+  };
 
   const handleTap = () => {
     if ('vibrate' in navigator) navigator.vibrate(15);
@@ -135,17 +148,15 @@ export function Tasbih() {
 
     const newCounts = { ...countsRef.current, [currentType.id]: (countsRef.current[currentType.id] ?? 0) + 1 };
     const newTotals = { ...totalsRef.current, [currentType.id]: (totalsRef.current[currentType.id] ?? 0) + 1 };
+    const newDaily  = dailyRef.current + 1;
 
     setCounts(newCounts);
     setTotals(newTotals);
+    setDailyCount(newDaily);
 
-    const dailyKey = `tasbih_daily_${getTodayKey()}`;
-    const currentDaily = parseInt(localStorage.getItem(dailyKey) ?? '0', 10);
-    localStorage.setItem(dailyKey, String(currentDaily + 1));
-
-    // مزامنة مؤجلة (كل 10 ثواني) — لا نرسل في كل ضغطة
-    const uid = getCurrentUid();
-    if (uid) queueTasbihSync(uid, newTotals, newCounts);
+    // debounced write to RTDB (10s)
+    const uid = auth.currentUser?.uid;
+    if (uid) queueTasbihSync(uid, newTotals, newCounts, newDaily);
 
     incrementGlobalCounter(1).catch(() => {});
     recordTasbeehPress().catch(() => {});
@@ -156,9 +167,8 @@ export function Tasbih() {
     setCounts(newCounts);
     setShowResetDialog(false);
     if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
-    // مزامنة بعد التصفير
-    const uid = getCurrentUid();
-    if (uid) queueTasbihSync(uid, totalsRef.current, newCounts);
+    const uid = auth.currentUser?.uid;
+    if (uid) queueTasbihSync(uid, totalsRef.current, newCounts, dailyRef.current);
   };
 
   return (
@@ -209,7 +219,7 @@ export function Tasbih() {
         {TASBIH_TYPES.map((t, idx) => (
           <button
             key={t.id}
-            onClick={() => setTypeIndex(idx)}
+            onClick={() => handleTypeChange(idx)}
             className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
               typeIndex === idx
                 ? 'bg-primary text-primary-foreground border-primary'
