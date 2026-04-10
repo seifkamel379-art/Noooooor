@@ -65,22 +65,22 @@ This is a pnpm monorepo workspace.
 
 The "Start application" workflow runs:
 ```
-bash scripts/replit-dev.sh
+node scripts/start.js
 ```
 
-This starts:
+This starts all three services in parallel:
 1. **Dev API server** on port 3001 — tsx live-reload Express server for backend development
-2. **Replit artifact router** — reads `artifact.toml` configs and starts services, listens on port 8000 locally
-3. **Production api-server** on port 19382 (started by the artifact router) — serves built frontend + API routes
-
-The workflow uses `waitForPort: 19382` which is the production api-server port (registered in `.replit` ports mapping `localPort=19382 → externalPort=80`).
+2. **Vite dev server** on port 5000 — React frontend with hot module replacement
+3. **Production api-server** on port 19382 — serves built frontend + API, used for workflow health check
 
 **Port Architecture**:
 - External port 80 → Replit proxy → `localhost:19382` (production server serves both frontend + API)
+- `localhost:5000` — Vite dev server (React frontend with HMR)
 - `localhost:3001` — Dev API server (tsx live-reload for backend development)
-- `localhost:8000` — Artifact router (internal routing)
 
-**Important**: After making frontend code changes, rebuild with `pnpm exec vite build --config vite.config.ts` to update `dist/public/`. The production api-server serves the built static files.
+**Important**: After making frontend code changes, rebuild with `pnpm exec vite build --config vite.config.ts` to update `dist/public/`. The production api-server (port 19382) serves the built static files.
+
+**After making backend changes**: Rebuild with `pnpm --filter @workspace/api-server run build` to update `artifacts/api-server/dist/index.cjs`.
 
 ## Firebase
 

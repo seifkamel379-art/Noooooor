@@ -13,7 +13,7 @@ paths = ["/"]
 run = "node /home/runner/workspace/scripts/proxy.js"
 
 [services.development.env]
-PORT = "4999"
+PORT = "3000"
 PROXY_PORT = "19382"
 
 [services.production]
