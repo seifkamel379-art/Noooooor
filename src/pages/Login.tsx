@@ -12,7 +12,7 @@ import {
   getRedirectResult,
 } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
-import { auth, googleProvider, facebookProvider, rtdb } from '@/lib/firebase';
+import { auth, googleProvider, rtdb } from '@/lib/firebase';
 import { initUserSync, saveProfileToRTDB, type UserProfile } from '@/lib/rtdb';
 import { EGYPT_GOVERNORATES as GOVS } from '@/lib/constants';
 
@@ -38,15 +38,6 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-/* ── Facebook logo SVG ────────────────────────────────────── */
-function FacebookLogo({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <circle cx="24" cy="24" r="24" fill="#fff"/>
-      <path d="M32 12h-4c-2.2 0-4 1.8-4 4v3h-4v5h4v12h5V24h4l1-5h-5v-3c0-.6.4-1 1-1h4v-4z" fill="#1877F2"/>
-    </svg>
-  );
-}
 
 function InputField({
   type = 'text',
@@ -299,20 +290,6 @@ export function Login({ onComplete }: LoginProps) {
     }
   };
 
-  /* ── Facebook Sign-In (redirect) ────────────────────────── */
-  const handleFacebookSignIn = async () => {
-    clearError();
-    setLoading(true);
-    try {
-      await signInWithRedirect(auth, facebookProvider);
-      // الصفحة ستنتقل تلقائيًا، والنتيجة تُعالَج في useEffect أعلاه
-    } catch (e: unknown) {
-      const code = (e as { code?: string })?.code ?? '';
-      setError(mapFirebaseError(code));
-      setLoading(false);
-    }
-  };
-
   /* ── Email Signup ─────────────────────────────────────────── */
   const handleSignupCity = async (selectedGov: string) => {
     if (!selectedGov) return;
@@ -531,35 +508,6 @@ export function Login({ onComplete }: LoginProps) {
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,99,64,0.08)' }}>
                   <ChevronRight className="w-4 h-4" style={{ color: '#9B7043' }} />
-                </div>
-              </button>
-
-              {/* دخول بـ Facebook */}
-              <button
-                onClick={handleFacebookSignIn}
-                disabled={loading}
-                className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97] disabled:opacity-70"
-                style={{
-                  background: 'rgba(24,119,242,0.08)',
-                  border: '1.5px solid rgba(24,119,242,0.25)',
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: '#1877F2', border: '1.5px solid rgba(24,119,242,0.3)' }}
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <FacebookLogo size={22} />
-                  )}
-                </div>
-                <div className="text-right flex-1">
-                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#1877F2' }}>الدخول بـ Facebook</p>
-                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#1877F2', opacity: 0.7 }}>سريع وآمن بحسابك في فيسبوك</p>
-                </div>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(24,119,242,0.1)' }}>
-                  <ChevronRight className="w-4 h-4" style={{ color: '#1877F2' }} />
                 </div>
               </button>
 

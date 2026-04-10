@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, signOut, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
+import { getAuth, signOut, GoogleAuthProvider } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -40,7 +40,6 @@ export const auth = getAuth(app);
 export const db   = getFirestore(app);
 export const rtdb = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
-export const facebookProvider = new FacebookAuthProvider();
 
 /* ─── Sign Out ───────────────────────────────────────────── */
 export async function firebaseSignOut(): Promise<void> {
