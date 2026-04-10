@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase';
 import { BarChart2 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 const BEAD_COUNT = 33;
 
@@ -97,6 +98,11 @@ function ResetConfirmDialog({ onConfirm, onCancel }: { onConfirm: () => void; on
 }
 
 export function Tasbih() {
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
+  const dark = theme === 'dark';
+
+  const border = dark ? 'rgba(193,154,107,0.15)' : 'rgba(193,154,107,0.2)';
+
   // Initialize from RTDB cache
   const [typeIndex, setTypeIndex] = useState<number>(() =>
     getCacheValue<number>('tasbih_type_idx', 0)
@@ -215,30 +221,22 @@ export function Tasbih() {
       )}
 
       {/* Dhikr type selector */}
-      <div
-        className="flex overflow-x-auto"
-        style={{ gap: '8px', padding: '4px 0 4px 0', marginBottom: '12px', marginTop: '6px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
+      <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar" style={{ marginBottom: '4px' }}>
         {TASBIH_TYPES.map((t, idx) => {
           const isActive = typeIndex === idx;
           return (
             <button
               key={t.id}
               onClick={() => handleTypeChange(idx)}
+              className="flex-shrink-0 px-4 py-2 rounded-2xl text-sm font-bold transition-all"
               style={{
-                flexShrink: 0,
-                height: '32px',
-                padding: '0 12px',
-                borderRadius: '10px',
-                fontSize: '12px',
-                fontWeight: 700,
                 fontFamily: '"Tajawal", sans-serif',
-                border: isActive ? '1.5px solid #C19A6B' : '1.5px solid rgba(139,99,64,0.25)',
-                background: isActive ? '#C19A6B' : 'rgba(255,255,255,0.6)',
-                color: isActive ? '#1a0e00' : '#7A4F28',
+                background: isActive
+                  ? 'linear-gradient(135deg, #C19A6B, #a07a4a)'
+                  : (dark ? 'rgba(193,154,107,0.08)' : 'rgba(193,154,107,0.1)'),
+                color: isActive ? '#fff' : (dark ? '#C19A6B' : '#8B6B3D'),
+                border: isActive ? 'none' : `1px solid ${border}`,
                 whiteSpace: 'nowrap',
-                transition: 'none',
-                lineHeight: '32px',
               }}
             >
               {t.label}
