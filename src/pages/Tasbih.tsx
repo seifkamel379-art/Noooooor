@@ -242,9 +242,9 @@ export function Tasbih() {
               onClick={() => handleTypeChange(idx)}
               style={{
                 flexShrink: 0,
-                padding: '8px 16px',
-                borderRadius: '16px',
-                fontSize: '14px',
+                padding: '5px 12px',
+                borderRadius: '12px',
+                fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: '"Tajawal", sans-serif',
                 whiteSpace: 'nowrap',
