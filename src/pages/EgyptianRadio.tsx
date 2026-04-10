@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from 'wouter';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 /* ─── Vintage woodgrain background pattern ───────────────── */
@@ -354,7 +354,7 @@ export function EgyptianRadio() {
   const [status,   setStatus]     = useState<Status>('idle');
   const audioRef                  = useRef<HTMLAudioElement | null>(null);
   const retryTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [theme]                   = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme]                   = useUserSetting<'light' | 'dark'>('theme', 'light');
   const isDark                    = theme === 'dark';
 
   useEffect(() => {

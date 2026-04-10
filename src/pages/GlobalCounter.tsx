@@ -9,7 +9,7 @@ import {
   fetchLeaderboard,
   type LeaderboardEntry,
 } from '@/lib/firestore';
-import { getCacheValue, getProfileCache } from '@/lib/rtdb';
+import { getCacheValue, getProfileCache, getSettingCache, queueSettingSync, getCurrentUid } from '@/lib/rtdb';
 import { auth } from '@/lib/firebase';
 
 const VISIBILITY_KEY = 'noor_leaderboard_visible';
@@ -115,14 +115,13 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
   const userProfile = getProfileCache();
   const stableUid = userProfile?.uid ?? ensureUid();
 
-  const [userVisible, setUserVisibleState] = useState<boolean>(() => {
-    const saved = localStorage.getItem(VISIBILITY_KEY);
-    if (saved !== null) return saved === 'true';
-    return false;
-  });
+  const [userVisible, setUserVisibleState] = useState<boolean>(() =>
+    getSettingCache<boolean>(VISIBILITY_KEY, false)
+  );
 
   const setUserVisible = (v: boolean) => {
-    localStorage.setItem(VISIBILITY_KEY, String(v));
+    const uid = auth.currentUser?.uid ?? getCurrentUid();
+    if (uid) queueSettingSync(uid, VISIBILITY_KEY, v);
     setUserVisibleState(v);
   };
 

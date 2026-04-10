@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EGYPT_GOVERNORATES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,6 +9,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
 import { auth, googleProvider, rtdb } from '@/lib/firebase';
@@ -248,6 +250,30 @@ export function Login({ onComplete }: LoginProps) {
     } catch { return false; }
   }
 
+  /* ── Handle Google redirect result on mount ─────────────── */
+  useEffect(() => {
+    setLoading(true);
+    getRedirectResult(auth)
+      .then(async result => {
+        if (!result?.user) { setLoading(false); return; }
+        const user = result.user;
+        const hasProfile = await checkExistingProfile(user.uid);
+        if (hasProfile) {
+          await initUserSync(user.uid);
+          onComplete();
+        } else {
+          setPendingUid(user.uid);
+          setPendingName(user.displayName ?? '');
+          setPendingEmail(user.email ?? '');
+          setPendingPhoto(user.photoURL ?? '');
+          setStep('city-picker');
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ── Google Sign-In ─────────────────────────────────────── */
   const handleGoogleSignIn = async () => {
     clearError();
@@ -258,11 +284,9 @@ export function Login({ onComplete }: LoginProps) {
       const hasProfile = await checkExistingProfile(user.uid);
 
       if (hasProfile) {
-        // returning user — load and go
         await initUserSync(user.uid);
         onComplete();
       } else {
-        // new Google user — pick city
         setPendingUid(user.uid);
         setPendingName(user.displayName ?? '');
         setPendingEmail(user.email ?? '');
@@ -272,7 +296,22 @@ export function Login({ onComplete }: LoginProps) {
       }
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
-      setError(mapFirebaseError(code));
+      // popup مغلق أو غير مدعوم → انتقل إلى redirect
+      if (
+        code === 'auth/popup-blocked' ||
+        code === 'auth/popup-cancelled-by-user' ||
+        code === 'auth/cancelled-popup-request' ||
+        code === 'auth/unauthorized-domain'
+      ) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return; // الصفحة ستنتقل
+        } catch {
+          setError('حدث خطأ في تسجيل الدخول بـ Google');
+        }
+      } else {
+        setError(mapFirebaseError(code));
+      }
       setLoading(false);
     }
   };

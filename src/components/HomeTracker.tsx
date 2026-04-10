@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, type ReactElement } from 'react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { SURAH_NAMES } from '@/lib/constants';
 import { HISN_ITEMS } from '@/lib/hisnData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Link } from 'wouter';
-import { queueDailyTrackerSync, getCurrentUid, getCacheValue } from '@/lib/rtdb';
+import { queueDailyTrackerSync, getCurrentUid, getCacheValue, getSettingCache } from '@/lib/rtdb';
 import { auth } from '@/lib/firebase';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 /* IDs for أذكار الصباح والمساء (category 27 in hisnData) */
 const MORNING_EVENING_CATEGORY_ID = 27;
@@ -418,9 +418,10 @@ export function HomeTracker() {
     return cached ?? DEFAULT_STATE;
   });
 
-  // Ward type and bookmark — device preferences, fine in localStorage
-  const [wardType, setWardTypePref] = useLocalStorage<WardType>('quran_ward_type', 'hizb');
-  const [bookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
+  // Ward type — تفضيل المستخدم مخزّن في RTDB
+  const [wardType, setWardTypePref] = useUserSetting<WardType>('quran_ward_type', 'hizb');
+  // Bookmark — قراءته من كاش RTDB
+  const bookmark = getSettingCache<{ surah: number; ayah: number } | null>('quran_bookmark', null);
 
   // Azkar progress (morning/evening) — read from RTDB cache
   const azkarProgress = getCacheValue<Record<number, number>>(

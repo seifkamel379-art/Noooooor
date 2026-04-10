@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronDown, ChevronUp, BookOpen, Star } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 type SunnahItem = {
   id: string;
@@ -97,7 +97,7 @@ function SunnahCard({ item, dark }: { item: SunnahItem; dark: boolean }) {
 
 export function Sunnah() {
   const [, navigate] = useLocation();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const [data, setData] = useState<SunnahData | null>(null);

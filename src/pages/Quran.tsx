@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuranSurahs, useSurah, useTafsir } from '@/hooks/use-api';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { auth } from '@/lib/firebase';
+import { getCacheValue, getCurrentUid, queueRTDBUpdate, getSettingCache, queueSettingSync } from '@/lib/rtdb';
 import { SURAH_NAMES } from '@/lib/constants';
 import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown, Download } from 'lucide-react';
 import { padZero, cn } from '@/lib/utils';
@@ -96,7 +98,7 @@ function AyahMarker({ num, bookmarked, dark }: { num: number; bookmarked?: boole
 
 export function Quran() {
   const { data: surahs, isLoading: loadingList } = useQuranSurahs();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
@@ -115,29 +117,34 @@ export function Quran() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: tafsirData } = useTafsir(selectedSurah ?? 0, activeAyah ?? 0);
 
-  const [bookmark, setBookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
-  const [fontSize, setFontSize] = useLocalStorage<number>('quran_font_size', 1.75);
+  const [bookmark, setBookmark] = useUserSetting<{ surah: number; ayah: number } | null>('quran_bookmark', null);
+  const [fontSize, setFontSize] = useUserSetting<number>('quran_font_size', 1.75);
   const [showMoshaf, setShowMoshaf] = useState(false);
 
-  const [, setQuranCurrentSurahIdx] = useLocalStorage<number>('quran_current_surah_idx', 1);
-  const [, setQuranCompletions] = useLocalStorage<number>('quran_completions', 0);
-  const [, setTadabburStreak] = useLocalStorage<number>('tadabbur_streak', 0);
-
   const trackSurahSelection = useCallback((surahNum: number) => {
-    const prev = Number(localStorage.getItem('quran_current_surah_idx') || '1');
-    if (surahNum === 1 && prev >= 110) {
-      setQuranCompletions(c => c + 1);
+    const uid = auth.currentUser?.uid ?? getCurrentUid();
+    if (!uid) return;
+
+    const prevSurah = getCacheValue<number>('last_surah', 1);
+    const updates: Record<string, unknown> = { last_surah: surahNum };
+
+    if (surahNum === 1 && prevSurah >= 110) {
+      const completions = getCacheValue<number>('quran_completions', 0);
+      updates['quran_completions'] = completions + 1;
     }
-    setQuranCurrentSurahIdx(surahNum);
-    const todayKey = `tadabbur_${new Date().toISOString().slice(0, 10)}`;
-    const alreadyToday = localStorage.getItem(todayKey);
-    if (!alreadyToday) {
-      localStorage.setItem(todayKey, '1');
-      const yesterdayKey = `tadabbur_${new Date(Date.now() - 86400000).toISOString().slice(0, 10)}`;
-      const hadYesterday = localStorage.getItem(yesterdayKey);
-      setTadabburStreak(s => hadYesterday ? s + 1 : 1);
+
+    // حساب سلسلة التدبر بناءً على آخر تاريخ دخول
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastDate = getSettingCache<string>('tadabbur_last_date', '');
+    if (lastDate !== todayStr) {
+      const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const streak = getCacheValue<number>('tadabbur_streak', 0);
+      updates['tadabbur_streak'] = lastDate === yesterdayStr ? streak + 1 : 1;
+      queueSettingSync(uid, 'tadabbur_last_date', todayStr);
     }
-  }, [setQuranCompletions, setQuranCurrentSurahIdx, setTadabburStreak]);
+
+    queueRTDBUpdate(uid, updates);
+  }, []);
 
   const increaseFontSize = () => setFontSize(prev => Math.min(prev + FONT_STEP, FONT_MAX));
   const decreaseFontSize = () => setFontSize(prev => Math.max(prev - FONT_STEP, FONT_MIN));

@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { auth } from '@/lib/firebase';
+import { getSettingCache, queueSettingSync, getCurrentUid } from '@/lib/rtdb';
 
 import bg1 from '@assets/IMG-20260401-WA0004_1775009490731.jpg';
 import bg2 from '@assets/the-most-important-religious-and-historical-monuments-in-medin_1775009490792.jpg';
@@ -35,28 +37,53 @@ interface AppSettings {
 
 const AppSettingsContext = createContext<AppSettings | null>(null);
 
+function getUid() {
+  return auth.currentUser?.uid ?? getCurrentUid();
+}
+
+function saveSetting(key: string, value: unknown) {
+  const uid = getUid();
+  if (uid) queueSettingSync(uid, key, value);
+}
+
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
-  const [bgType, setBgTypeState] = useState<BgType>(() => {
-    try { return (localStorage.getItem('app_bg_type') as BgType) ?? 'none'; } catch { return 'none'; }
-  });
-  const [bgPreset, setBgPresetState] = useState<string>(() => {
-    try { return localStorage.getItem('app_bg_preset') ?? 'bg1'; } catch { return 'bg1'; }
-  });
+  const [bgType, setBgTypeState] = useState<BgType>(() =>
+    getSettingCache<BgType>('app_bg_type', 'none')
+  );
+  const [bgPreset, setBgPresetState] = useState<string>(() =>
+    getSettingCache<string>('app_bg_preset', 'bg1')
+  );
+  // bgCustom: base64 صورة كبيرة — نُبقيها في localStorage فقط (لا تُرسل لـ RTDB)
   const [bgCustom, setBgCustomState] = useState<string>(() => {
     try { return localStorage.getItem('app_bg_custom') ?? ''; } catch { return ''; }
   });
-  const [appFontScale, setAppFontScaleState] = useState<number>(() => {
-    try { return Number(localStorage.getItem('app_font_scale') ?? '1'); } catch { return 1; }
-  });
-  const [cardOpacity, setCardOpacityState] = useState<number>(() => {
-    try { return Number(localStorage.getItem('app_card_opacity') ?? '0.92'); } catch { return 0.92; }
-  });
+  const [appFontScale, setAppFontScaleState] = useState<number>(() =>
+    getSettingCache<number>('app_font_scale', 1)
+  );
+  const [cardOpacity, setCardOpacityState] = useState<number>(() =>
+    getSettingCache<number>('app_card_opacity', 0.92)
+  );
 
-  const setBgType = (v: BgType) => { setBgTypeState(v); localStorage.setItem('app_bg_type', v); };
-  const setBgPreset = (v: string) => { setBgPresetState(v); localStorage.setItem('app_bg_preset', v); };
-  const setBgCustom = (v: string) => { setBgCustomState(v); localStorage.setItem('app_bg_custom', v); };
-  const setAppFontScale = (v: number) => { setAppFontScaleState(v); localStorage.setItem('app_font_scale', String(v)); };
-  const setCardOpacity = (v: number) => { setCardOpacityState(v); localStorage.setItem('app_card_opacity', String(v)); };
+  const setBgType = (v: BgType) => {
+    setBgTypeState(v);
+    saveSetting('app_bg_type', v);
+  };
+  const setBgPreset = (v: string) => {
+    setBgPresetState(v);
+    saveSetting('app_bg_preset', v);
+  };
+  const setBgCustom = (v: string) => {
+    setBgCustomState(v);
+    try { localStorage.setItem('app_bg_custom', v); } catch {}
+  };
+  const setAppFontScale = (v: number) => {
+    setAppFontScaleState(v);
+    saveSetting('app_font_scale', v);
+  };
+  const setCardOpacity = (v: number) => {
+    setCardOpacityState(v);
+    saveSetting('app_card_opacity', v);
+  };
 
   const activeBgSrc: string | null = (() => {
     if (bgType === 'preset') {

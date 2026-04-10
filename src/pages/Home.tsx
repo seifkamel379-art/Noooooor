@@ -211,7 +211,7 @@ export function Home() {
             </span>
             مواقيت الصلاة
           </h2>
-          {userProfile.governorateName && (
+          {userProfile?.governorateName && (
             <span className="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-full flex items-center gap-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
               <MapPin className="w-3 h-3" />
               {userProfile.governorateName}

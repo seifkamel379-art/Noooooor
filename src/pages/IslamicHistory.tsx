@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ChevronLeft, BookOpen, Search, X, Calendar, ChevronDown } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 type Era = 'seerah' | 'rashidun' | 'umayyad' | 'abbasid' | 'ottoman';
 
@@ -145,7 +145,7 @@ const HistoryCard = ({
 
 export function IslamicHistory() {
   const [, navigate] = useLocation();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const [items, setItems] = useState<HistoryItem[]>([]);

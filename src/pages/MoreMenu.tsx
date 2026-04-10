@@ -5,12 +5,12 @@ import {
   Star, Copy, X, Check, Mail, MessageSquare, Settings2, Pencil, Clock,
   Lock, Eye, EyeOff, ShieldCheck,
 } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut, auth } from '@/lib/firebase';
 import { linkWithCredential, EmailAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
 import { deleteLeaderboardEntry } from '@/lib/firestore';
-import { getProfileCache, updateProfileInRTDB } from '@/lib/rtdb';
+import { getProfileCache, updateProfileInRTDB, initUserSync } from '@/lib/rtdb';
 import {
   IslamicStarIcon,
   HeadphonesIcon,
@@ -509,9 +509,8 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
     setLoading(true);
     setError('');
     try {
-      const raw     = localStorage.getItem('user_profile');
-      const profile = raw ? JSON.parse(raw) : null;
-      const oldLeaderboardId: string | null = profile?.leaderboardId ?? null;
+      const profile = getProfileCache() as (Record<string, unknown> | null);
+      const oldLeaderboardId: string | null = (profile?.leaderboardId as string) ?? null;
 
       let uid: string;
 
@@ -540,18 +539,10 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
         }
       }
 
-      /* حدّث الـ profile المحلي */
-      if (profile) {
-        profile.uid           = uid;
-        profile.email         = email.trim();
-        profile.isGuest       = false;
-        profile.leaderboardId = uid;
-        localStorage.setItem('user_profile', JSON.stringify(profile));
-      }
+      /* الـ profile موجود بالفعل في RTDB cache — لا حاجة لـ localStorage */
 
       /* ابدأ المزامنة مع RTDB بالـ uid الجديد */
       await initUserSync(uid);
-      queueProfileSync(uid);
 
       /* أطلق حدث التحديث */
       window.dispatchEvent(new CustomEvent('noor-profile-updated'));
@@ -717,7 +708,7 @@ function GuestUpgradeSheet({ onClose, onDone }: { onClose: () => void; onDone: (
 }
 
 export function MoreMenu() {
-  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme, setTheme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);

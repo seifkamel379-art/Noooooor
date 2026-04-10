@@ -3,10 +3,10 @@ import { Link } from 'wouter';
 import { ChevronLeft, Image, Upload, X, Type, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAppSettings, PRESET_BACKGROUNDS } from '@/contexts/AppSettingsContext';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 export function Settings() {
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const {

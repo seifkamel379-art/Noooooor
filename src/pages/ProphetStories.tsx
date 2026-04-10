@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, BookOpen, Search, X, Star } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 type ProphetMeta = {
   id: string;
@@ -141,7 +141,7 @@ const EventCard = ({
 
 export function ProphetStories() {
   const [, navigate] = useLocation();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const [prophets, setProphets] = useState<ProphetMeta[]>([]);

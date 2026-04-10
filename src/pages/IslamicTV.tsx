@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, Tv, Play, Wifi, WifiOff, X, Volume2, VolumeX } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 type Channel = {
   id: number;
@@ -196,7 +196,7 @@ function VideoPlayer({
 
 export function IslamicTV() {
   const [, navigate] = useLocation();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
 

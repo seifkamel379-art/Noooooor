@@ -36,7 +36,7 @@ import { IslamicTV } from "@/pages/IslamicTV";
 import { onAuthStateChanged } from "firebase/auth";
 import { get, ref } from "firebase/database";
 import { auth, rtdb } from "@/lib/firebase";
-import { initUserSync, clearSyncState } from "@/lib/rtdb";
+import { initUserSync, clearSyncState, getSettingCache } from "@/lib/rtdb";
 
 const queryClient = new QueryClient();
 
@@ -169,10 +169,6 @@ function App() {
   const handleSplashDone = useCallback(() => {
     setSplashDone(true);
     document.documentElement.dir = 'rtl';
-    const theme = localStorage.getItem('theme');
-    if (theme === '"dark"') {
-      document.documentElement.classList.add('dark');
-    }
   }, []);
 
   const handleLoginComplete = useCallback(() => {
@@ -181,10 +177,6 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dir = 'rtl';
-    const theme = localStorage.getItem('theme');
-    if (theme === '"dark"') {
-      document.documentElement.classList.add('dark');
-    }
   }, []);
 
   // Firebase Auth state observer — source of truth for login state
@@ -195,6 +187,9 @@ function App() {
           const profileSnap = await get(ref(rtdb, `users/${user.uid}/profile`));
           if (profileSnap.exists()) {
             await initUserSync(user.uid);
+            // تطبيق الثيم من RTDB بعد تحميل بيانات المستخدم
+            const theme = getSettingCache<'light' | 'dark'>('theme', 'light');
+            document.documentElement.classList.toggle('dark', theme === 'dark');
             setIsLoggedIn(true);
           } else {
             // authenticated but no profile yet (incomplete registration)

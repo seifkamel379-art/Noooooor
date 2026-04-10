@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Play, Pause, SkipBack, SkipForward, ChevronFirst, ChevronLast, Bookmark } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQuranSurahs, useSurah } from '@/hooks/use-api';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { SURAH_NAMES } from '@/lib/constants';
 
@@ -24,7 +24,7 @@ function fmtTime(mins: number): string {
 
 export function SpeedReader() {
   const { data: surahs } = useQuranSurahs();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const [selectedSurah, setSelectedSurah] = useState(1);
@@ -36,7 +36,7 @@ export function SpeedReader() {
   const [wpm, setWpm] = useState(60);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const [savedProgress, setSavedProgress] = useLocalStorage<{ surah: number; wordIndex: number; surahName: string } | null>(
+  const [savedProgress, setSavedProgress] = useUserSetting<{ surah: number; wordIndex: number; surahName: string } | null>(
     'speed_reader_progress', null
   );
 

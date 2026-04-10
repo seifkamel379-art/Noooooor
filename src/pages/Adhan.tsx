@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Square, Volume2 } from 'lucide-react';
 import { Link } from 'wouter';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { ADHAN_RECITERS } from '@/lib/constants';
 
@@ -75,7 +75,7 @@ function MosqueSVG() {
 }
 
 export function Adhan() {
-  const [reciterId, setReciterId] = useLocalStorage<string>('adhan_reciter', 'azan1');
+  const [reciterId, setReciterId] = useUserSetting<string>('adhan_reciter', 'azan1');
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cacheRef = useRef<Record<string, HTMLAudioElement>>({});

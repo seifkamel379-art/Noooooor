@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, Award, CheckCircle, XCircle, Trophy, RotateCcw, ExternalLink } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useUserSetting } from '@/hooks/use-user-setting';
 
 type Answer = { answer: string; t: number };
 type Question = { id: number; q: string; answers: Answer[]; link?: string };
@@ -45,7 +45,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 export function IslamicQuizzes() {
   const [, navigate] = useLocation();
-  const [theme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+  const [theme] = useUserSetting<'light' | 'dark'>('theme', 'light');
   const dark = theme === 'dark';
 
   const [quizData, setQuizData] = useState<QuizData | null>(null);

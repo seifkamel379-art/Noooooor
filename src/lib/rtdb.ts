@@ -239,3 +239,17 @@ export function queueAzkarSync(
 export function getCurrentUid(): string | null {
   return _currentUid;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SETTINGS — تفضيلات المستخدم
+══════════════════════════════════════════════════════════════ */
+
+/** اقرأ إعداد من الكاش */
+export function getSettingCache<T>(key: string, defaultVal: T): T {
+  return getCacheValue<T>(`settings/${key}`, defaultVal);
+}
+
+/** قائمة انتظار تحديث إعداد */
+export function queueSettingSync(uid: string, key: string, value: unknown): void {
+  queueRTDBUpdate(uid, { [`settings/${key}`]: value });
+}
