@@ -215,21 +215,36 @@ export function Tasbih() {
       )}
 
       {/* Dhikr type selector */}
-      <div className="flex overflow-x-auto gap-2 py-1 mb-3 custom-scrollbar" style={{ scrollbarWidth: 'none' }}>
-        {TASBIH_TYPES.map((t, idx) => (
-          <button
-            key={t.id}
-            onClick={() => handleTypeChange(idx)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
-              typeIndex === idx
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-card text-muted-foreground border-border hover:bg-secondary'
-            }`}
-            style={{ fontFamily: '"Tajawal", sans-serif' }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div
+        className="flex overflow-x-auto"
+        style={{ gap: '8px', padding: '4px 0 4px 0', marginBottom: '12px', marginTop: '6px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {TASBIH_TYPES.map((t, idx) => {
+          const isActive = typeIndex === idx;
+          return (
+            <button
+              key={t.id}
+              onClick={() => handleTypeChange(idx)}
+              style={{
+                flexShrink: 0,
+                height: '32px',
+                padding: '0 12px',
+                borderRadius: '10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                fontFamily: '"Tajawal", sans-serif',
+                border: isActive ? '1.5px solid #C19A6B' : '1.5px solid rgba(139,99,64,0.25)',
+                background: isActive ? '#C19A6B' : 'rgba(255,255,255,0.6)',
+                color: isActive ? '#1a0e00' : '#7A4F28',
+                whiteSpace: 'nowrap',
+                transition: 'none',
+                lineHeight: '32px',
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Current dhikr text */}
