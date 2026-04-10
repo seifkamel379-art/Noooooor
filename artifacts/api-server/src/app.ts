@@ -11,11 +11,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-/* Serve the frontend static build */
-const staticDir = path.resolve(process.cwd(), "dist", "public");
-app.use(express.static(staticDir));
-app.get("/{*path}", (_req, res) => {
-  res.sendFile(path.join(staticDir, "index.html"));
-});
+/* Serve the frontend static build only in production */
+if (process.env.NODE_ENV === "production") {
+  const staticDir = path.resolve(process.cwd(), "dist", "public");
+  app.use(express.static(staticDir));
+  app.get("/{*path}", (_req, res) => {
+    res.sendFile(path.join(staticDir, "index.html"));
+  });
+}
 
 export default app;
