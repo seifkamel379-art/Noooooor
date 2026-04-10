@@ -21,7 +21,7 @@ cleanup() {
 trap cleanup SIGTERM SIGINT
 
 echo "Starting API server (dev) on port $API_SERVER_PORT..."
-(cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development pnpm exec tsx ./src/index.ts 2>&1) &
+(cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development "$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx" ./src/index.ts 2>&1) &
 
 echo "Starting Vite dev server on port $VITE_PORT..."
-cd "$ROOT_DIR" && exec env VITE_PORT=$VITE_PORT pnpm exec vite --config "$ROOT_DIR/vite.config.ts"
+cd "$ROOT_DIR" && exec env VITE_PORT=$VITE_PORT "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
