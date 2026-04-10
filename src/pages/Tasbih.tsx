@@ -172,7 +172,7 @@ export function Tasbih() {
   };
 
   return (
-    <div className="pb-24 pt-4 px-4 h-screen flex flex-col max-w-lg mx-auto" dir="rtl">
+    <div className="pb-24 pt-4 px-4 h-[100dvh] flex flex-col max-w-lg mx-auto" dir="rtl">
       {/* Header */}
       <div className="flex justify-between items-center mb-3">
         <h1 className="text-2xl font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>السبحة الإلكترونية</h1>
@@ -215,7 +215,7 @@ export function Tasbih() {
       )}
 
       {/* Dhikr type selector */}
-      <div className="flex overflow-x-auto gap-2 pb-2 mb-3 custom-scrollbar">
+      <div className="flex overflow-x-auto gap-2 py-1 mb-3 custom-scrollbar" style={{ scrollbarWidth: 'none' }}>
         {TASBIH_TYPES.map((t, idx) => (
           <button
             key={t.id}
