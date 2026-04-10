@@ -10,11 +10,11 @@ name = "API Server"
 paths = ["/"]
 
 [services.development]
-run = "node /home/runner/workspace/scripts/proxy.js"
+run = "bash /home/runner/workspace/scripts/dev-artifact.sh"
 
 [services.development.env]
-PORT = "3000"
-PROXY_PORT = "19382"
+PORT = "19382"
+API_SERVER_PORT = "3001"
 
 [services.production]
 build = "npm run build && pnpm --filter @workspace/api-server run build"

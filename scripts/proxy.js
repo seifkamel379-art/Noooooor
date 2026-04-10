@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import http from "http";
 
-const TARGET_PORT = Number(process.env.PORT ?? 5000);
-const PROXY_PORT = Number(process.env.PROXY_PORT ?? 19382);
+const TARGET_PORT = Number(process.env.TARGET_PORT ?? process.env.VITE_PORT ?? 5000);
+const PROXY_PORT = Number(process.env.PROXY_PORT ?? process.env.PORT ?? 19382);
 
 const server = http.createServer((req, res) => {
   const options = {

@@ -15,7 +15,7 @@ A cross-platform Islamic companion app built with React, Vite, and Express, supp
 - **الإذاعات الإسلامية** — Live Islamic radio (Quran + Sunnah channels)
 - **القنوات الإسلامية** — Live Islamic TV channels (HLS streams) with hls.js support
 
-## Static Data Strategy (Vercel Optimization)
+## Static Data Strategy
 All large content is in `public/data/` and lazy-fetched on page visit:
 - `public/data/history-seerah.json` — 317KB, 128 events (lazy-loaded per era)
 - `public/data/history-rashidun.json` — 269KB, 126 events
@@ -25,12 +25,6 @@ All large content is in `public/data/` and lazy-fetched on page visit:
 - `public/data/quizzes.json` — 4.4MB, full quiz data
 - `public/data/sunnah.json` — 40KB, prophetic sunnah
 - `public/data/moshaf.json` — 3.3KB, moshaf PDF links
-
-### Vercel Free Tier Capacity Estimate
-- Bandwidth: 100GB/month
-- Average session bandwidth: ~500KB-1MB (depending on which era is browsed)
-- Estimated capacity: 100,000–200,000 page sessions/month
-- Abbasid/Ottoman eras are the largest files (~4.6-4.8MB each) but only load on demand
 
 ## Project Structure
 
@@ -44,10 +38,12 @@ This is a pnpm monorepo workspace.
 ### `artifacts/api-server/`
 - **Express backend** — handles `/api/*` routes
 - Uses Drizzle ORM with PostgreSQL
-- Built to `dist/index.cjs` for production
+- Registered as Replit artifact at path `/`
+- Built to `artifacts/api-server/dist/index.cjs` for production
 
 ### `artifacts/mockup-sandbox/`
 - Isolated Vite dev environment for UI component prototyping
+- Registered at path `/__mockup`
 
 ### `lib/`
 - `lib/db` — Drizzle ORM schema and database client
@@ -56,91 +52,61 @@ This is a pnpm monorepo workspace.
 - `lib/api-zod` — Generated Zod schemas from OpenAPI spec
 
 ### `scripts/`
-- `replit-dev.sh` — starts the dev API server (port 3001) then launches the Replit artifact router
-- `dev.sh` — alternative simple dev mode using Vite dev server (port 5000) + dev API server (port 3001)
-- `start.js` — Node.js alternative launcher for the dev stack
-- `proxy.js` — HTTP proxy helper (port forwarding)
+- `dev-artifact.sh` — **Primary dev script**: starts Vite on PORT (19382 from Replit artifact system) + API server on API_SERVER_PORT (3001)
+- `dev.sh` — Alternative dev script: starts Vite on 5000 + API server on 3001 (used by "npm run dev")
+- `replit-dev.sh` — Launches the Replit artifact router which manages all services
+- `proxy.js` — HTTP reverse proxy (forwards PROXY_PORT → TARGET_PORT)
 
-## Development
+## Development on Replit
 
-The "Start application" workflow runs:
-```
-node scripts/start.js
-```
+### How It Works
+The app runs through Replit's artifact system:
 
-This starts all three services in parallel:
-1. **Dev API server** on port 3001 — tsx live-reload Express server for backend development
-2. **Vite dev server** on port 5000 — React frontend with hot module replacement
-3. **Production api-server** on port 19382 — serves built frontend + API, used for workflow health check
+1. The **"artifacts/api-server: API Server"** workflow runs `dev-artifact.sh` with `PORT=19382`
+2. This starts Vite on port 19382 (the artifact's registered port) and the API server on port 3001
+3. Replit routes external traffic: port 80 → port 19382 → Vite dev server
+4. The Vite dev server proxies `/api/*` requests to `localhost:3001`
 
-**Port Architecture**:
-- External port 80 → Replit proxy → `localhost:19382` (production server serves both frontend + API)
-- `localhost:5000` — Vite dev server (React frontend with HMR)
-- `localhost:3001` — Dev API server (tsx live-reload for backend development)
+### Port Architecture
+- External port 80 → `localhost:19382` → Vite dev server (via Replit artifact routing)
+- `localhost:19382` — Vite dev server (React frontend with HMR)
+- `localhost:3001` — Express API server (tsx live-reload for backend development)
 
-**Important**: After making frontend code changes, rebuild with `pnpm exec vite build --config vite.config.ts` to update `dist/public/`. The production api-server (port 19382) serves the built static files.
-
-**After making backend changes**: Rebuild with `pnpm --filter @workspace/api-server run build` to update `artifacts/api-server/dist/index.cjs`.
+### Running in Development
+The primary workflow is **"artifacts/api-server: API Server"** — this is what keeps the app running. The "Start application" workflow uses `npm run dev` (Vite on port 5000) as a standalone alternative.
 
 ## Firebase
 
 Single Firebase project: **noooooor-app** (projectId: `noooooor-app`)
-- Config hardcoded in `src/lib/firebase.ts` as fallback values, also in `vercel.json` env vars
-- Used for: Global Counter (Firestore), Active Sessions presence, Leaderboard
-- Login is manual name entry only (no Google sign-in)
-- `firebaseSignOut` in `src/lib/firebase.ts` is still exported for MoreMenu logout button
+- Config stored in `.replit` as `VITE_FIREBASE_*` environment variables
+- Used for: Firebase Auth (Google sign-in), Firestore (global counter, leaderboard, sessions)
 
 ### Firestore Collections
-- `globalCounter/main` — total tasbeeh count, incremented atomically with `increment()`
-- `activeSessions/{sessionId}` — tracks users actively pressing tasbeeh (TTL: 3 min). Updated on every button press via `recordTasbeehPress()` in Tasbih.tsx
-- `sohbaLeaderboard/{userId}` — per-user leaderboard entries, only queried when `isPublic=true`
-
-### Required Firestore Rules (noooooor-app project)
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
+- `globalCounter/main` — total tasbeeh count
+- `activeSessions/{sessionId}` — tracks users actively pressing tasbeeh (TTL: 3 min)
+- `sohbaLeaderboard/{userId}` — per-user leaderboard entries
 
 ## Key Configuration
 
-- **Frontend port (dev)**: 5000 (Replit-compatible port)
-- **API server port (dev)**: 3001
 - **Vite proxy**: `/api` → `http://localhost:3001`
-- **Vite host**: `0.0.0.0` (binds to all interfaces)
-- **Firebase**: Configured via `VITE_FIREBASE_*` environment variables in `.replit`
+- **Vite host**: `true` (binds to all interfaces including IPv6)
+- **Firebase**: Configured via `VITE_FIREBASE_*` environment variables in Replit secrets
 
 ## Database
 
-- PostgreSQL via Replit's built-in database
+- PostgreSQL via Replit's built-in database (`DATABASE_URL` secret)
 - Schema managed with Drizzle ORM in `lib/db/src/schema/`
-- Push schema changes: `cd lib/db && pnpm run push`
+- Tables auto-created on server startup via `artifacts/api-server/src/db-init.ts`
+  - `global_counter` — global tasbeeh count
+  - `sohba_leaderboard` — community leaderboard
 
 ## Production Build
 
 ```bash
-npm run build
+npm run build && pnpm --filter @workspace/api-server run build
 ```
 
-Builds frontend to `dist/public` and bundles api-server to `dist/index.cjs`. The server serves static frontend files in production.
-
-## Features
-
-- Quran reader
-- Azkar (Islamic remembrances)
-- Prayer times (Adhan)
-- Qibla direction
-- Community feature ("Sohba")
-- Firebase authentication
-
-## Database Auto-Init
-
-`artifacts/api-server/src/db-init.ts` runs `CREATE TABLE IF NOT EXISTS` at startup (before listening). No manual migration needed — tables are created automatically on any fresh pull/deploy.
+Builds frontend to `dist/public` and bundles api-server to `artifacts/api-server/dist/index.cjs`.
 
 ## UI Design System
 
@@ -148,11 +114,10 @@ Builds frontend to `dist/public` and bundles api-server to `dist/index.cjs`. The
 - **Fonts**: `"Tajawal"` for UI text, `"Amiri"/"Scheherazade New"` for Arabic calligraphy
 - **NoorIcons**: Custom 3D-style SVG icon library at `src/components/NoorIcons.tsx` using `currentColor` for theming
 
-### Recent UI Improvements (March 2026)
+## Artifact Configuration
 
-- **SplashScreen**: Full 3D Islamic star animation with gold particles, ambient glow blobs, and beautiful Basmala reveal
-- **Home.tsx**: Custom 3D clock SVG icon (`Clock3DIcon`) next to prayer times header
-- **HomeTracker**: Redesigned daily prayers section from circles → table-style rows with unique 3D prayer icons (Fajr/Dhuhr/Asr/Maghrib/Isha each have custom SVG with depth effects); all colors use CSS variables
-- **Azkar.tsx**: Category tabs redesigned to be taller with larger icons (20px), icon containers with background, and visible completion badges
-- **GlobalCounter leaderboard**: Star icon (Sparkles) replaced with TasbihIcon from NoorIcons for the tasbeeh count display
-- **MoreMenu About section**: Icon gradients unified to deep harmonious palette (Islamic greens, navies, golds, purples) instead of rainbow neon colors
+The app uses Replit's artifact system with:
+- `artifacts/api-server/.replit-artifact/artifact.toml` — registers the API server at path `/`, localPort 19382
+- `artifacts/mockup-sandbox/.replit-artifact/artifact.toml` — registers the mockup sandbox at path `/__mockup`, localPort 8081
+- Development service: `bash scripts/dev-artifact.sh` (Vite + API in one process)
+- Production service: `node artifacts/api-server/dist/index.cjs`
