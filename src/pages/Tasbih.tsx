@@ -221,22 +221,43 @@ export function Tasbih() {
       )}
 
       {/* Dhikr type selector */}
-      <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar" style={{ marginBottom: '4px' }}>
+      <div
+        className="no-scrollbar"
+        style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'scroll',
+          overflowY: 'visible',
+          paddingTop: '6px',
+          paddingBottom: '6px',
+          marginBottom: '4px',
+        }}
+      >
         {TASBIH_TYPES.map((t, idx) => {
           const isActive = typeIndex === idx;
           return (
             <button
               key={t.id}
               onClick={() => handleTypeChange(idx)}
-              className="flex-shrink-0 px-4 py-2 rounded-2xl text-sm font-bold transition-all"
               style={{
+                flexShrink: 0,
+                padding: '8px 16px',
+                borderRadius: '16px',
+                fontSize: '14px',
+                fontWeight: 700,
                 fontFamily: '"Tajawal", sans-serif',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                outline: 'none',
+                transition: 'background 0.2s, color 0.2s',
                 background: isActive
                   ? 'linear-gradient(135deg, #C19A6B, #a07a4a)'
-                  : (dark ? 'rgba(193,154,107,0.08)' : 'rgba(193,154,107,0.1)'),
-                color: isActive ? '#fff' : (dark ? '#C19A6B' : '#8B6B3D'),
-                border: isActive ? 'none' : `1px solid ${border}`,
-                whiteSpace: 'nowrap',
+                  : (dark ? 'rgba(193,154,107,0.12)' : 'rgba(193,154,107,0.13)'),
+                color: isActive ? '#fff' : (dark ? '#C19A6B' : '#7a4f1e'),
+                border: isActive
+                  ? '1.5px solid #C19A6B'
+                  : `1.5px solid ${dark ? 'rgba(193,154,107,0.3)' : 'rgba(193,154,107,0.35)'}`,
+                boxShadow: isActive ? '0 2px 8px rgba(193,154,107,0.25)' : 'none',
               }}
             >
               {t.label}
