@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { EGYPT_GOVERNORATES } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,11 +8,9 @@ import {
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
 } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
-import { auth, googleProvider, rtdb } from '@/lib/firebase';
+import { auth, rtdb } from '@/lib/firebase';
 import { initUserSync, saveProfileToRTDB, type UserProfile } from '@/lib/rtdb';
 import { EGYPT_GOVERNORATES as GOVS } from '@/lib/constants';
 
@@ -26,17 +24,6 @@ type Step =
   | 'login-email'  | 'login-password'
   | 'city-picker';
 
-/* ── Google logo SVG ──────────────────────────────────────── */
-function GoogleLogo({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <path d="M44.5 20H24v8.5h11.8C34.7 33.9 29.9 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.8 20-21 0-1.4-.2-2.7-.5-4z" fill="#FFC107"/>
-      <path d="M6.3 14.7l7 5.1C15.1 16.6 19.2 14 24 14c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3c-7.6 0-14.2 4.3-17.7 10.7z" fill="#FF3D00"/>
-      <path d="M24 45c5.8 0 10.7-1.9 14.6-5.2l-6.7-5.7C29.9 35.8 27.1 37 24 37c-5.8 0-10.7-3.7-12.5-8.8l-7 5.4C8.2 40.7 15.5 45 24 45z" fill="#4CAF50"/>
-      <path d="M44.5 20H24v8.5h11.8c-.9 2.8-2.8 5.1-5.3 6.6l6.7 5.7C41.5 37.4 45 31.3 45 24c0-1.4-.2-2.7-.5-4z" fill="#1976D2"/>
-    </svg>
-  );
-}
 
 
 function InputField({
@@ -252,44 +239,6 @@ export function Login({ onComplete }: LoginProps) {
     } catch { return false; }
   }
 
-  /* ── Handle Google redirect result on mount ─────────────── */
-  useEffect(() => {
-    setLoading(true);
-    getRedirectResult(auth)
-      .then(async result => {
-        if (!result?.user) { setLoading(false); return; }
-        const user = result.user;
-        const hasProfile = await checkExistingProfile(user.uid);
-        if (hasProfile) {
-          await initUserSync(user.uid);
-          onComplete();
-        } else {
-          setPendingUid(user.uid);
-          setPendingName(user.displayName ?? '');
-          setPendingEmail(user.email ?? '');
-          setPendingPhoto(user.photoURL ?? '');
-          setStep('city-picker');
-          setLoading(false);
-        }
-      })
-      .catch(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /* ── Google Sign-In (redirect) ──────────────────────────── */
-  const handleGoogleSignIn = async () => {
-    clearError();
-    setLoading(true);
-    try {
-      await signInWithRedirect(auth, googleProvider);
-      // الصفحة ستنتقل تلقائيًا، والنتيجة تُعالَج في useEffect أعلاه
-    } catch (e: unknown) {
-      const code = (e as { code?: string })?.code ?? '';
-      setError(mapFirebaseError(code));
-      setLoading(false);
-    }
-  };
-
   /* ── Email Signup ─────────────────────────────────────────── */
   const handleSignupCity = async (selectedGov: string) => {
     if (!selectedGov) return;
@@ -479,35 +428,6 @@ export function Login({ onComplete }: LoginProps) {
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(193,154,107,0.12)' }}>
                   <ChevronRight className="w-4 h-4" style={{ color: '#C19A6B' }} />
-                </div>
-              </button>
-
-              {/* دخول بـ Google */}
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97] disabled:opacity-70"
-                style={{
-                  background: 'rgba(255,255,255,0.7)',
-                  border: '1.5px solid rgba(139,99,64,0.18)',
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.9)', border: '1.5px solid rgba(139,99,64,0.15)' }}
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-[#9B7043]/30 border-t-[#9B7043] rounded-full animate-spin" />
-                  ) : (
-                    <GoogleLogo size={22} />
-                  )}
-                </div>
-                <div className="text-right flex-1">
-                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#5D3010' }}>الدخول بـ Google</p>
-                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>سريع وآمن بحسابك في جوجل</p>
-                </div>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,99,64,0.08)' }}>
-                  <ChevronRight className="w-4 h-4" style={{ color: '#9B7043' }} />
                 </div>
               </button>
 

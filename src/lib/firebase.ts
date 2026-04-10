@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, signOut, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -39,7 +39,6 @@ export { app };
 export const auth = getAuth(app);
 export const db   = getFirestore(app);
 export const rtdb = getDatabase(app);
-export const googleProvider = new GoogleAuthProvider();
 
 /* ─── Sign Out ───────────────────────────────────────────── */
 export async function firebaseSignOut(): Promise<void> {
