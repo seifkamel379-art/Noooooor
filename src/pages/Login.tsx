@@ -8,12 +8,11 @@ import {
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth';
 import { get, ref } from 'firebase/database';
-import { auth, googleProvider, rtdb } from '@/lib/firebase';
+import { auth, googleProvider, facebookProvider, rtdb } from '@/lib/firebase';
 import { initUserSync, saveProfileToRTDB, type UserProfile } from '@/lib/rtdb';
 import { EGYPT_GOVERNORATES as GOVS } from '@/lib/constants';
 
@@ -35,6 +34,16 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
       <path d="M6.3 14.7l7 5.1C15.1 16.6 19.2 14 24 14c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3c-7.6 0-14.2 4.3-17.7 10.7z" fill="#FF3D00"/>
       <path d="M24 45c5.8 0 10.7-1.9 14.6-5.2l-6.7-5.7C29.9 35.8 27.1 37 24 37c-5.8 0-10.7-3.7-12.5-8.8l-7 5.4C8.2 40.7 15.5 45 24 45z" fill="#4CAF50"/>
       <path d="M44.5 20H24v8.5h11.8c-.9 2.8-2.8 5.1-5.3 6.6l6.7 5.7C41.5 37.4 45 31.3 45 24c0-1.4-.2-2.7-.5-4z" fill="#1976D2"/>
+    </svg>
+  );
+}
+
+/* ── Facebook logo SVG ────────────────────────────────────── */
+function FacebookLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="24" fill="#fff"/>
+      <path d="M32 12h-4c-2.2 0-4 1.8-4 4v3h-4v5h4v12h5V24h4l1-5h-5v-3c0-.6.4-1 1-1h4v-4z" fill="#1877F2"/>
     </svg>
   );
 }
@@ -184,17 +193,19 @@ function ErrorBadge({ msg }: { msg: string }) {
 
 function mapFirebaseError(code: string): string {
   switch (code) {
-    case 'auth/email-already-in-use':    return 'هذا البريد الإلكتروني مستخدم بالفعل';
-    case 'auth/invalid-email':            return 'البريد الإلكتروني غير صحيح';
-    case 'auth/weak-password':            return 'كلمة السر ضعيفة جداً (٦ أحرف على الأقل)';
-    case 'auth/user-not-found':           return 'لا يوجد حساب بهذا البريد الإلكتروني';
-    case 'auth/wrong-password':           return 'كلمة السر غير صحيحة';
-    case 'auth/invalid-credential':       return 'البريد الإلكتروني أو كلمة السر غير صحيحة';
-    case 'auth/too-many-requests':        return 'محاولات كثيرة، حاول مرة أخرى لاحقاً';
-    case 'auth/network-request-failed':   return 'تحقق من اتصال الإنترنت وحاول مجدداً';
-    case 'auth/popup-closed-by-user':     return 'تم إغلاق نافذة الدخول';
-    case 'auth/cancelled-popup-request':  return 'تم إلغاء الطلب';
-    default:                              return 'حدث خطأ، حاول مرة أخرى';
+    case 'auth/email-already-in-use':       return 'هذا البريد الإلكتروني مستخدم بالفعل';
+    case 'auth/invalid-email':              return 'البريد الإلكتروني غير صحيح';
+    case 'auth/weak-password':              return 'كلمة السر ضعيفة جداً (٦ أحرف على الأقل)';
+    case 'auth/user-not-found':             return 'لا يوجد حساب بهذا البريد الإلكتروني';
+    case 'auth/wrong-password':             return 'كلمة السر غير صحيحة';
+    case 'auth/invalid-credential':         return 'البريد الإلكتروني أو كلمة السر غير صحيحة';
+    case 'auth/too-many-requests':          return 'محاولات كثيرة، حاول مرة أخرى لاحقاً';
+    case 'auth/network-request-failed':     return 'تحقق من اتصال الإنترنت وحاول مجدداً';
+    case 'auth/popup-closed-by-user':       return 'تم إغلاق نافذة الدخول';
+    case 'auth/cancelled-popup-request':    return 'تم إلغاء الطلب';
+    case 'auth/account-exists-with-different-credential':
+      return 'هذا البريد مسجّل بطريقة دخول أخرى (جوجل أو بريد إلكتروني)';
+    default:                                return 'حدث خطأ، حاول مرة أخرى';
   }
 }
 
@@ -274,44 +285,30 @@ export function Login({ onComplete }: LoginProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Google Sign-In ─────────────────────────────────────── */
+  /* ── Google Sign-In (redirect) ──────────────────────────── */
   const handleGoogleSignIn = async () => {
     clearError();
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user   = result.user;
-      const hasProfile = await checkExistingProfile(user.uid);
-
-      if (hasProfile) {
-        await initUserSync(user.uid);
-        onComplete();
-      } else {
-        setPendingUid(user.uid);
-        setPendingName(user.displayName ?? '');
-        setPendingEmail(user.email ?? '');
-        setPendingPhoto(user.photoURL ?? '');
-        setLoading(false);
-        setStep('city-picker');
-      }
+      await signInWithRedirect(auth, googleProvider);
+      // الصفحة ستنتقل تلقائيًا، والنتيجة تُعالَج في useEffect أعلاه
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
-      // popup مغلق أو غير مدعوم → انتقل إلى redirect
-      if (
-        code === 'auth/popup-blocked' ||
-        code === 'auth/popup-cancelled-by-user' ||
-        code === 'auth/cancelled-popup-request' ||
-        code === 'auth/unauthorized-domain'
-      ) {
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return; // الصفحة ستنتقل
-        } catch {
-          setError('حدث خطأ في تسجيل الدخول بـ Google');
-        }
-      } else {
-        setError(mapFirebaseError(code));
-      }
+      setError(mapFirebaseError(code));
+      setLoading(false);
+    }
+  };
+
+  /* ── Facebook Sign-In (redirect) ────────────────────────── */
+  const handleFacebookSignIn = async () => {
+    clearError();
+    setLoading(true);
+    try {
+      await signInWithRedirect(auth, facebookProvider);
+      // الصفحة ستنتقل تلقائيًا، والنتيجة تُعالَج في useEffect أعلاه
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code ?? '';
+      setError(mapFirebaseError(code));
       setLoading(false);
     }
   };
@@ -534,6 +531,35 @@ export function Login({ onComplete }: LoginProps) {
                 </div>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,99,64,0.08)' }}>
                   <ChevronRight className="w-4 h-4" style={{ color: '#9B7043' }} />
+                </div>
+              </button>
+
+              {/* دخول بـ Facebook */}
+              <button
+                onClick={handleFacebookSignIn}
+                disabled={loading}
+                className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all active:scale-[0.97] disabled:opacity-70"
+                style={{
+                  background: 'rgba(24,119,242,0.08)',
+                  border: '1.5px solid rgba(24,119,242,0.25)',
+                }}
+              >
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: '#1877F2', border: '1.5px solid rgba(24,119,242,0.3)' }}
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <FacebookLogo size={22} />
+                  )}
+                </div>
+                <div className="text-right flex-1">
+                  <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#1877F2' }}>الدخول بـ Facebook</p>
+                  <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#1877F2', opacity: 0.7 }}>سريع وآمن بحسابك في فيسبوك</p>
+                </div>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(24,119,242,0.1)' }}>
+                  <ChevronRight className="w-4 h-4" style={{ color: '#1877F2' }} />
                 </div>
               </button>
 

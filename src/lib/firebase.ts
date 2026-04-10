@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -7,7 +7,6 @@ import {
   getFirestore,
 } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
-import { GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY             || 'AIzaSyDOVE54x_j5fldKYwTRAG9QzdRok_pD074',
@@ -41,6 +40,7 @@ export const auth = getAuth(app);
 export const db   = getFirestore(app);
 export const rtdb = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
+export const facebookProvider = new FacebookAuthProvider();
 
 /* ─── Sign Out ───────────────────────────────────────────── */
 export async function firebaseSignOut(): Promise<void> {
