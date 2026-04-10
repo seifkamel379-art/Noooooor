@@ -5,7 +5,8 @@ import { HISN_ITEMS } from '@/lib/hisnData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Link } from 'wouter';
-import { queueDailyTrackerSync, getCurrentUid } from '@/lib/rtdb';
+import { queueDailyTrackerSync, getCurrentUid, getCacheValue } from '@/lib/rtdb';
+import { auth } from '@/lib/firebase';
 
 /* IDs for أذكار الصباح والمساء (category 27 in hisnData) */
 const MORNING_EVENING_CATEGORY_ID = 27;
@@ -368,24 +369,22 @@ function DuaIcon3D() {
 function getDayScore(dateKey: string): number {
   let score = 0;
   try {
-    const raw = localStorage.getItem(`daily_tracker_${dateKey}`);
-    if (raw) {
-      const t = JSON.parse(raw);
-      score += Object.values(t.prayers || {}).filter(Boolean).length;
-      if (t.quranWird) score += 1;
-    }
+    const t = getCacheValue<{ prayers?: Record<string, boolean>; quranWird?: boolean }>(
+      `daily_tracker/${dateKey}`, {}
+    );
+    score += Object.values(t.prayers || {}).filter(Boolean).length;
+    if (t.quranWird) score += 1;
   } catch {}
   try {
-    const raw = localStorage.getItem(`azkar_hisn_${dateKey}_${MORNING_EVENING_CATEGORY_ID}`);
-    if (raw) {
-      const p: Record<number, number> = JSON.parse(raw);
-      const allDone = MORNING_EVENING_ITEMS.length > 0 &&
-        MORNING_EVENING_ITEMS.every(z => (p[z.id] ?? 0) >= z.count);
-      if (allDone) score += 1;
-    }
+    const p = getCacheValue<Record<number, number>>(
+      `azkar/${dateKey}/${MORNING_EVENING_CATEGORY_ID}`, {}
+    );
+    const allDone = MORNING_EVENING_ITEMS.length > 0 &&
+      MORNING_EVENING_ITEMS.every(z => (p[z.id] ?? 0) >= z.count);
+    if (allDone) score += 1;
   } catch {}
   try {
-    const daily = parseInt(localStorage.getItem(`tasbih_daily_${dateKey}`) ?? '0', 10);
+    const daily = getCacheValue<number>(`tasbih_daily/${dateKey}`, 0);
     if (daily >= TASBIH_DAILY_GOAL) score += 1;
   } catch {}
   return score;
@@ -413,32 +412,27 @@ const PRAYERS: { key: PrayerKey; label: string }[] = [
 export function HomeTracker() {
   const [currentDateKey, setCurrentDateKey] = useState(getTodayDateKey);
 
-  const [state, setState] = useLocalStorage<TrackerState>(
-    `daily_tracker_${currentDateKey}`,
-    DEFAULT_STATE,
-  );
+  // Load from RTDB cache (populated at startup by initUserSync)
+  const [state, setState] = useState<TrackerState>(() => {
+    const cached = getCacheValue<TrackerState | null>(`daily_tracker/${currentDateKey}`, null);
+    return cached ?? DEFAULT_STATE;
+  });
+
+  // Ward type and bookmark — device preferences, fine in localStorage
   const [wardType, setWardTypePref] = useLocalStorage<WardType>('quran_ward_type', 'hizb');
   const [bookmark] = useLocalStorage<{ surah: number; ayah: number } | null>('quran_bookmark', null);
-  const [azkarProgress] = useLocalStorage<Record<number, number>>(
-    `azkar_hisn_${currentDateKey}_${MORNING_EVENING_CATEGORY_ID}`, {}
+
+  // Azkar progress (morning/evening) — read from RTDB cache
+  const azkarProgress = getCacheValue<Record<number, number>>(
+    `azkar/${currentDateKey}/${MORNING_EVENING_CATEGORY_ID}`, {}
   );
 
   const azkarItemsDone = MORNING_EVENING_ITEMS.filter(z => (azkarProgress[z.id] ?? 0) >= z.count).length;
   const azkarTotalItems = MORNING_EVENING_ITEMS.length;
   const azkarDone = azkarTotalItems > 0 && azkarItemsDone === azkarTotalItems;
 
-  const [dailyTasbihCount, setDailyTasbihCount] = useState(() =>
-    parseInt(localStorage.getItem(`tasbih_daily_${currentDateKey}`) ?? '0', 10)
-  );
-
-  useEffect(() => {
-    const refresh = () => {
-      setDailyTasbihCount(parseInt(localStorage.getItem(`tasbih_daily_${currentDateKey}`) ?? '0', 10));
-    };
-    window.addEventListener('focus', refresh);
-    const id = setInterval(refresh, 3000);
-    return () => { window.removeEventListener('focus', refresh); clearInterval(id); };
-  }, [currentDateKey]);
+  // Daily tasbih count — read from RTDB cache
+  const dailyTasbihCount = getCacheValue<number>(`tasbih_daily/${currentDateKey}`, 0);
 
   const tasbih500Done = dailyTasbihCount >= TASBIH_DAILY_GOAL;
   const tasbihPct = Math.min(100, Math.round((dailyTasbihCount / TASBIH_DAILY_GOAL) * 100));
@@ -449,7 +443,7 @@ export function HomeTracker() {
   const togglePrayer = (key: PrayerKey) => {
     setState(prev => {
       const next = { ...prev, prayers: { ...prev.prayers, [key]: !prev.prayers[key] } };
-      const uid = getCurrentUid();
+      const uid = auth.currentUser?.uid ?? getCurrentUid();
       if (uid) queueDailyTrackerSync(uid, currentDateKey, next);
       return next;
     });
@@ -459,7 +453,7 @@ export function HomeTracker() {
   const toggleQuranWird = () => {
     setState(prev => {
       const next = { ...prev, quranWird: !prev.quranWird };
-      const uid = getCurrentUid();
+      const uid = auth.currentUser?.uid ?? getCurrentUid();
       if (uid) queueDailyTrackerSync(uid, currentDateKey, next);
       return next;
     });

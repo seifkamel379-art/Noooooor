@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseSignOut, auth } from '@/lib/firebase';
 import { linkWithCredential, EmailAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
 import { deleteLeaderboardEntry } from '@/lib/firestore';
-import { initUserSync, queueProfileSync } from '@/lib/rtdb';
+import { getProfileCache, updateProfileInRTDB } from '@/lib/rtdb';
 import {
   IslamicStarIcon,
   HeadphonesIcon,
@@ -366,7 +366,8 @@ function EditNameDialog({
   onSave: (newName: string) => void;
   onCancel: () => void;
 }) {
-  const lastChangedTs = Number(localStorage.getItem(NAME_LAST_CHANGED_KEY) ?? '0') || null;
+  const cachedProfile = getProfileCache();
+  const lastChangedTs = cachedProfile?.nameLastChanged ?? null;
   const daysLeft = daysUntilCanChange(lastChangedTs);
   const canEdit = daysLeft === 0;
 
@@ -720,8 +721,9 @@ export function MoreMenu() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showEditNameDialog, setShowEditNameDialog] = useState(false);
-  const [showGuestUpgrade, setShowGuestUpgrade] = useState(false);
   const [profileVersion, setProfileVersion] = useState(0);
+
+  void profileVersion;
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -731,25 +733,18 @@ export function MoreMenu() {
 
   const handleLogoutConfirm = async () => {
     await firebaseSignOut();
-    localStorage.removeItem('user_profile');
     window.dispatchEvent(new Event('app-logout'));
   };
 
-  const handleSaveName = (newName: string) => {
-    const raw = localStorage.getItem('user_profile');
-    if (!raw) return;
-    const profile = JSON.parse(raw);
-    profile.name = newName;
-    localStorage.setItem('user_profile', JSON.stringify(profile));
-    localStorage.setItem(NAME_LAST_CHANGED_KEY, String(Date.now()));
+  const handleSaveName = async (newName: string) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    await updateProfileInRTDB(uid, { name: newName, nameLastChanged: Date.now() });
     setProfileVersion(v => v + 1);
     setShowEditNameDialog(false);
   };
 
-  const userProfileRaw = localStorage.getItem('user_profile');
-  const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
-
-  void profileVersion;
+  const userProfile = getProfileCache();
 
   const MENU_ITEMS = [
     { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',                grad: 'linear-gradient(145deg, #2d6a4f, #1b4332)' },
@@ -773,12 +768,6 @@ export function MoreMenu() {
         )}
         {showShareSheet && (
           <ShareChooserSheet onClose={() => setShowShareSheet(false)} />
-        )}
-        {showGuestUpgrade && (
-          <GuestUpgradeSheet
-            onClose={() => setShowGuestUpgrade(false)}
-            onDone={() => { setShowGuestUpgrade(false); setProfileVersion(v => v + 1); }}
-          />
         )}
         {showEditNameDialog && userProfile && (
           <EditNameDialog
@@ -830,40 +819,6 @@ export function MoreMenu() {
         </div>
       )}
 
-      {/* Upgrade banner: show for any user who hasn't linked an email yet */}
-      {userProfile && !userProfile.email && (
-        <button
-          onClick={() => setShowGuestUpgrade(true)}
-          className="w-full mb-4 rounded-2xl overflow-hidden transition-all active:scale-[0.98]"
-          style={{
-            background: 'linear-gradient(135deg, #8B6340 0%, #C19A6B 50%, #9a7048 100%)',
-            boxShadow: '0 6px 24px rgba(193,154,107,0.45)',
-          }}
-        >
-          <div className="p-4 flex items-center gap-3.5">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 flex-shrink-0"
-              style={{ background: 'rgba(0,0,0,0.25)' }}
-            >
-              <Mail className="text-white" size={22} />
-            </div>
-            <div className="flex-1 text-right">
-              <p className="font-bold text-sm text-white" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                احفظ حسابك بالبريد الإلكتروني
-              </p>
-              <p className="text-xs mt-0.5 leading-relaxed text-white/80" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                بياناتك وتسبيحاتك لن تُحذف — تحويل آمن ١٠٠٪
-              </p>
-            </div>
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(0,0,0,0.2)' }}
-            >
-              <ChevronLeft className="w-4 h-4 text-white" />
-            </div>
-          </div>
-        </button>
-      )}
 
       <div className="space-y-2.5">
         {MENU_ITEMS.map((item, idx) => {

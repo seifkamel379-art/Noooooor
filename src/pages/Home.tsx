@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePrayerTimes } from '@/hooks/use-api';
 import { HomeTracker } from '@/components/HomeTracker';
+import { getProfileCache } from '@/lib/rtdb';
 
 const PRAYERS = [
   { id: 'Fajr',    name: 'الفجر'  },
@@ -88,12 +89,9 @@ function Clock3DIcon({ size = 20 }: { size?: number }) {
 export function Home() {
   const [dateOffset, setDateOffset] = useState(0);
 
-  const userProfile = (() => {
-    try { return JSON.parse(localStorage.getItem('user_profile') ?? '{}'); } catch { return {}; }
-  })();
-
-  const lat = userProfile.lat ?? null;
-  const lng = userProfile.lng ?? null;
+  const userProfile = getProfileCache();
+  const lat = userProfile?.lat ?? null;
+  const lng = userProfile?.lng ?? null;
 
   const { data: prayerResult } = usePrayerTimes(lat, lng, dateOffset);
   const times = prayerResult?.timings;

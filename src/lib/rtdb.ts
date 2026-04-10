@@ -25,6 +25,7 @@ export interface UserProfile {
   lat: number;
   lng: number;
   joinedAt: number;
+  nameLastChanged?: number;
 }
 
 /* ══════════════════════════════════════════════════════════════

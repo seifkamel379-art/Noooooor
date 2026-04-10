@@ -76,7 +76,6 @@ function useDarkMode() {
 
 function getLocalTasbeehCount(): number {
   try {
-    const { getCacheValue } = await import('@/lib/rtdb');
     const totals = getCacheValue<Record<string, number>>('tasbih_totals', {});
     return Object.values(totals).reduce((a, b) => a + b, 0);
   } catch { return 0; }
@@ -113,9 +112,8 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
   const cardBg = isDark ? 'rgba(193,154,107,0.06)' : 'rgba(193,154,107,0.08)';
   const cardBorder = `rgba(193,154,107,${isDark ? '0.2' : '0.3'})`;
 
-  const userProfileRaw = localStorage.getItem('user_profile');
-  const userProfile = userProfileRaw ? JSON.parse(userProfileRaw) : null;
-  const stableUid = userProfile ? (userProfile.uid || ensureUid()) : null;
+  const userProfile = getProfileCache();
+  const stableUid = userProfile?.uid ?? ensureUid();
 
   const [userVisible, setUserVisibleState] = useState<boolean>(() => {
     const saved = localStorage.getItem(VISIBILITY_KEY);
@@ -134,10 +132,10 @@ function LeaderboardTab({ isDark }: { isDark: boolean }) {
     governorate: userProfile?.governorateName || null,
     isPublic,
     tasbeehCount: getLocalTasbeehCount(),
-    quranCompletions: Number(localStorage.getItem('quran_completions') || 0),
-    currentSurah: Number(localStorage.getItem('last_surah') || 1),
-    azkarStreak: Number(localStorage.getItem('azkar_streak') || 0),
-    tadabburStreak: Number(localStorage.getItem('tadabbur_streak') || 0),
+    quranCompletions: getCacheValue<number>('quran_completions', 0),
+    currentSurah: getCacheValue<number>('last_surah', 1),
+    azkarStreak: getCacheValue<number>('azkar_streak', 0),
+    tadabburStreak: getCacheValue<number>('tadabbur_streak', 0),
     earnedBadges: [] as string[],
   });
 
