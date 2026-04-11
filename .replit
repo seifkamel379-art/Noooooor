@@ -29,7 +29,7 @@ outputType = "webview"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash scripts/dev.sh"
-waitForPort = 19382
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"
