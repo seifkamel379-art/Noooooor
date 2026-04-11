@@ -243,7 +243,7 @@ export function Tasbih() {
               style={{
                 flexShrink: 0,
                 padding: '5px 12px',
-                borderRadius: '12px',
+                borderRadius: '999px',
                 fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: '"Tajawal", sans-serif',

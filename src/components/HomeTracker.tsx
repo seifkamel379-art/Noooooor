@@ -4,9 +4,8 @@ import { HISN_ITEMS } from '@/lib/hisnData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Link } from 'wouter';
-import { queueDailyTrackerSync, getCurrentUid, getCacheValue, getSettingCache } from '@/lib/rtdb';
+import { queueDailyTrackerSync, getCurrentUid, getCacheValue, getFullCache, getSettingCache } from '@/lib/rtdb';
 import { auth } from '@/lib/firebase';
-import { useUserSetting } from '@/hooks/use-user-setting';
 
 /* IDs for أذكار الصباح والمساء (category 27 in hisnData) */
 const MORNING_EVENING_CATEGORY_ID = 27;
@@ -15,7 +14,6 @@ const MORNING_EVENING_ITEMS = HISN_ITEMS[MORNING_EVENING_CATEGORY_ID] ?? [];
 const TASBIH_DAILY_GOAL = 500;
 
 type PrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
-type WardType = 'hizb' | 'juz';
 
 interface TrackerState {
   prayers: Record<PrayerKey, boolean>;
@@ -27,72 +25,6 @@ const DEFAULT_STATE: TrackerState = {
   quranWird: false,
 };
 
-const JUZ_STARTS: { juz: number; surah: number; ayah: number }[] = [
-  { juz: 1,  surah: 1,   ayah: 1  }, { juz: 2,  surah: 2,   ayah: 142 },
-  { juz: 3,  surah: 2,   ayah: 253 }, { juz: 4,  surah: 3,   ayah: 93  },
-  { juz: 5,  surah: 4,   ayah: 24  }, { juz: 6,  surah: 4,   ayah: 148 },
-  { juz: 7,  surah: 5,   ayah: 82  }, { juz: 8,  surah: 6,   ayah: 111 },
-  { juz: 9,  surah: 7,   ayah: 88  }, { juz: 10, surah: 8,   ayah: 41  },
-  { juz: 11, surah: 9,   ayah: 93  }, { juz: 12, surah: 11,  ayah: 6   },
-  { juz: 13, surah: 12,  ayah: 53  }, { juz: 14, surah: 15,  ayah: 1   },
-  { juz: 15, surah: 17,  ayah: 1   }, { juz: 16, surah: 18,  ayah: 75  },
-  { juz: 17, surah: 21,  ayah: 1   }, { juz: 18, surah: 23,  ayah: 1   },
-  { juz: 19, surah: 25,  ayah: 21  }, { juz: 20, surah: 27,  ayah: 56  },
-  { juz: 21, surah: 29,  ayah: 46  }, { juz: 22, surah: 33,  ayah: 31  },
-  { juz: 23, surah: 36,  ayah: 28  }, { juz: 24, surah: 39,  ayah: 32  },
-  { juz: 25, surah: 41,  ayah: 47  }, { juz: 26, surah: 46,  ayah: 1   },
-  { juz: 27, surah: 51,  ayah: 31  }, { juz: 28, surah: 58,  ayah: 1   },
-  { juz: 29, surah: 67,  ayah: 1   }, { juz: 30, surah: 78,  ayah: 1   },
-];
-
-const JUZ_MIDPOINTS: { juz: number; surah: number; ayah: number }[] = [
-  { juz: 1,  surah: 2,  ayah: 75  }, { juz: 2,  surah: 2,  ayah: 203 },
-  { juz: 3,  surah: 3,  ayah: 14  }, { juz: 4,  surah: 3,  ayah: 171 },
-  { juz: 5,  surah: 4,  ayah: 88  }, { juz: 6,  surah: 5,  ayah: 4   },
-  { juz: 7,  surah: 6,  ayah: 36  }, { juz: 8,  surah: 7,  ayah: 32  },
-  { juz: 9,  surah: 7,  ayah: 172 }, { juz: 10, surah: 9,  ayah: 34  },
-  { juz: 11, surah: 10, ayah: 27  }, { juz: 12, surah: 11, ayah: 85  },
-  { juz: 13, surah: 13, ayah: 19  }, { juz: 14, surah: 16, ayah: 51  },
-  { juz: 15, surah: 17, ayah: 99  }, { juz: 16, surah: 20, ayah: 1   },
-  { juz: 17, surah: 22, ayah: 1   }, { juz: 18, surah: 24, ayah: 21  },
-  { juz: 19, surah: 26, ayah: 84  }, { juz: 20, surah: 28, ayah: 51  },
-  { juz: 21, surah: 31, ayah: 1   }, { juz: 22, surah: 35, ayah: 1   },
-  { juz: 23, surah: 38, ayah: 1   }, { juz: 24, surah: 40, ayah: 41  },
-  { juz: 25, surah: 43, ayah: 24  }, { juz: 26, surah: 49, ayah: 1   },
-  { juz: 27, surah: 54, ayah: 1   }, { juz: 28, surah: 62, ayah: 1   },
-  { juz: 29, surah: 72, ayah: 1   }, { juz: 30, surah: 93, ayah: 1   },
-];
-
-function pos(surah: number, ayah: number) { return surah * 400 + ayah; }
-
-function findCurrentJuz(surah: number, ayah: number): number {
-  let juz = 1;
-  for (const b of JUZ_STARTS) {
-    if (pos(surah, ayah) >= pos(b.surah, b.ayah)) juz = b.juz;
-  }
-  return juz;
-}
-
-function getWardTarget(
-  bookmark: { surah: number; ayah: number },
-  wardType: WardType,
-): { surah: number; ayah: number; label: string } | null {
-  const currentJuz = findCurrentJuz(bookmark.surah, bookmark.ayah);
-  const mid = JUZ_MIDPOINTS.find(m => m.juz === currentJuz);
-  const nextJuz = JUZ_STARTS.find(j => j.juz === currentJuz + 1);
-  if (wardType === 'juz') {
-    if (!nextJuz) return null;
-    return { surah: nextJuz.surah, ayah: nextJuz.ayah, label: `نهاية الجزء ${currentJuz}` };
-  } else {
-    if (mid && pos(bookmark.surah, bookmark.ayah) < pos(mid.surah, mid.ayah)) {
-      return { surah: mid.surah, ayah: mid.ayah, label: `منتصف الجزء ${currentJuz}` };
-    }
-    if (nextJuz) {
-      return { surah: nextJuz.surah, ayah: nextJuz.ayah, label: `نهاية الجزء ${currentJuz}` };
-    }
-    return null;
-  }
-}
 
 function getTodayDateKey() {
   const d = new Date();
@@ -418,10 +350,7 @@ export function HomeTracker() {
     return cached ?? DEFAULT_STATE;
   });
 
-  // Ward type — تفضيل المستخدم مخزّن في RTDB
-  const [wardType, setWardTypePref] = useUserSetting<WardType>('quran_ward_type', 'hizb');
-  // Bookmark — قراءته من كاش RTDB
-  const bookmark = getSettingCache<{ surah: number; ayah: number } | null>('quran_bookmark', null);
+  const [showAllDays, setShowAllDays] = useState(false);
 
   // Azkar progress (morning/evening) — read from RTDB cache
   const azkarProgress = getCacheValue<Record<number, number>>(
@@ -469,15 +398,41 @@ export function HomeTracker() {
     return () => clearInterval(id);
   }, [currentDateKey]);
 
-  const wardTarget = bookmark ? getWardTarget(bookmark, wardType) : null;
+  const bookmark = getSettingCache<{ surah: number; ayah: number } | null>('quran_bookmark', null);
 
   const { weeks, monthLabels } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-    const totalCells = 91 + (6 - dayOfWeek);
-    const gridStart = new Date(today);
-    gridStart.setDate(gridStart.getDate() - (totalCells - 1));
+    let gridStart: Date;
+    let totalCells: number;
+
+    if (showAllDays) {
+      const cache = getFullCache();
+      const allDateKeys: string[] = [];
+      const dt = cache['daily_tracker'] as Record<string, unknown> | undefined;
+      if (dt) allDateKeys.push(...Object.keys(dt));
+      const td = cache['tasbih_daily'] as Record<string, unknown> | undefined;
+      if (td) allDateKeys.push(...Object.keys(td));
+      const az = cache['azkar'] as Record<string, unknown> | undefined;
+      if (az) allDateKeys.push(...Object.keys(az));
+      const validKeys = allDateKeys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+      let earliest = today;
+      if (validKeys.length > 0) {
+        const e = new Date(validKeys[0]);
+        e.setHours(0, 0, 0, 0);
+        if (e < today) earliest = e;
+      }
+      const startDow = earliest.getDay();
+      gridStart = new Date(earliest);
+      gridStart.setDate(gridStart.getDate() - startDow);
+      const diffDays = Math.floor((today.getTime() - gridStart.getTime()) / 86400000) + 7;
+      totalCells = Math.ceil(diffDays / 7) * 7;
+    } else {
+      const dayOfWeek = today.getDay();
+      totalCells = 91 + (6 - dayOfWeek);
+      gridStart = new Date(today);
+      gridStart.setDate(gridStart.getDate() - (totalCells - 1));
+    }
 
     const cells: { dateKey: string; score: number; isToday: boolean; date: Date }[] = [];
     for (let i = 0; i < totalCells; i++) {
@@ -503,7 +458,7 @@ export function HomeTracker() {
     });
 
     return { weeks: weeksArr, monthLabels: months };
-  }, []);
+  }, [showAllDays]);
 
   const progressColor = progressPct === 100 ? '#22c55e' : progressPct >= 60 ? '#c5a059' : '#a07a3a';
 
@@ -713,8 +668,8 @@ export function HomeTracker() {
               </div>
 
               <motion.button
-                onClick={bookmark ? toggleQuranWird : undefined}
-                whileTap={bookmark ? { scale: 0.88 } : {}}
+                onClick={toggleQuranWird}
+                whileTap={{ scale: 0.88 }}
                 className="w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300"
                 style={
                   state.quranWird
@@ -726,45 +681,11 @@ export function HomeTracker() {
               </motion.button>
             </div>
 
-            {bookmark && (
-              <div className="mt-3 pt-3 border-t" style={{ borderColor: 'rgba(197,160,89,0.12)' }}>
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>مقدار الورد:</span>
-                  <div className="flex rounded-xl overflow-hidden border" style={{ borderColor: 'rgba(197,160,89,0.3)' }}>
-                    {(['hizb', 'juz'] as WardType[]).map(t => (
-                      <button key={t} onClick={() => setWardTypePref(t)} className="px-3 py-1 text-xs font-bold transition-all"
-                        style={{
-                          fontFamily: '"Tajawal", sans-serif',
-                          background: wardType === t ? 'linear-gradient(135deg, #c5a059, #9a7430)' : 'transparent',
-                          color: wardType === t ? '#fff' : 'var(--muted-foreground)',
-                        }}>
-                        {t === 'hizb' ? 'حزب' : 'جزء'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {wardTarget ? (
-                  <div className="flex items-center justify-between rounded-xl px-3 py-2"
-                    style={{ background: 'rgba(197,160,89,0.08)', border: '1px solid rgba(197,160,89,0.18)' }}>
-                    <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                      {wardTarget.label} — اقرأ حتى:
-                    </span>
-                    <span className="text-xs font-bold text-primary" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                      {SURAH_NAMES[wardTarget.surah]} آية {wardTarget.ayah}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'rgba(197,160,89,0.08)' }}>
-                    <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>الجزء 30 — اقرأ حتى نهاية القرآن</span>
-                  </div>
-                )}
-                {!state.quranWird && (
-                  <button onClick={toggleQuranWird} className="w-full mt-2 py-2 rounded-xl text-xs font-bold text-center transition-all"
-                    style={{ fontFamily: '"Tajawal", sans-serif', background: 'linear-gradient(135deg, #c5a059, #9a7430)', color: '#fff' }}>
-                    أكملت وردي ✓
-                  </button>
-                )}
-              </div>
+            {!state.quranWird && (
+              <button onClick={toggleQuranWird} className="w-full mt-3 py-2 rounded-xl text-xs font-bold text-center transition-all"
+                style={{ fontFamily: '"Tajawal", sans-serif', background: 'linear-gradient(135deg, #c5a059, #9a7430)', color: '#fff' }}>
+                أكملت وردي ✓
+              </button>
             )}
 
             {!bookmark && (
@@ -828,7 +749,18 @@ export function HomeTracker() {
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm text-primary" style={{ fontFamily: '"Tajawal", sans-serif' }}>سجل الأيام</h3>
-            <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>آخر 13 أسبوع</span>
+            <button
+              onClick={() => setShowAllDays(v => !v)}
+              className="text-xs px-2.5 py-1 rounded-full transition-all"
+              style={{
+                fontFamily: '"Tajawal", sans-serif',
+                background: showAllDays ? 'rgba(197,160,89,0.2)' : 'rgba(197,160,89,0.08)',
+                color: '#c5a059',
+                border: '1px solid rgba(197,160,89,0.25)',
+              }}
+            >
+              {showAllDays ? 'آخر 13 أسبوع' : 'كل الأيام'}
+            </button>
           </div>
           <div className="overflow-x-auto" style={{ direction: 'ltr' }}>
             <div style={{ display: 'inline-block' }}>
