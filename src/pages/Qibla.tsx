@@ -609,12 +609,10 @@ function ARQiblaView({
                     className="font-black"
                     style={{ fontSize: 28, lineHeight: 1, color: '#E8C060', fontFamily: 'monospace' }}
                   >
-                    {distance >= 1000
-                      ? `${(distance / 1000).toFixed(2)}`
-                      : `${Math.round(distance)}`}
+                    {Math.round(distance).toLocaleString('en-US')}
                   </span>
                   <span className="text-sm font-bold" style={{ fontFamily: '"Tajawal",sans-serif', color: '#C8991A' }}>
-                    {distance >= 1000 ? 'ألف كم' : 'كم'}
+                    كم
                   </span>
                 </div>
               ) : (
