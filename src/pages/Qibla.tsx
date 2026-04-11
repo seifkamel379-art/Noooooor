@@ -427,31 +427,6 @@ function ARQiblaView({
         </div>
       </div>
 
-      {/* ── Kaaba image — centered on screen ── */}
-      <div
-        className="absolute inset-x-0 flex justify-center pointer-events-none z-20"
-        style={{ top: '42%', transform: 'translateY(-130px)' }}
-      >
-        <div
-          className="flex flex-col items-center gap-2"
-          style={{ transition: 'filter 0.5s' }}
-        >
-          <img
-            src={kaabaImg}
-            alt="الكعبة المشرفة"
-            style={{
-              width: 110,
-              height: 110,
-              objectFit: 'contain',
-              filter: isAligned
-                ? 'drop-shadow(0 0 18px rgba(74,222,128,1)) drop-shadow(0 0 36px rgba(74,222,128,0.5))'
-                : 'drop-shadow(0 0 12px rgba(200,153,26,0.6)) drop-shadow(0 4px 16px rgba(0,0,0,0.9))',
-              transition: 'filter 0.5s',
-            }}
-          />
-        </div>
-      </div>
-
       {/* ── Horizontal scan rail — middle of screen ── */}
       <div
         className="absolute inset-x-0 pointer-events-none z-10"
@@ -490,18 +465,18 @@ function ARQiblaView({
           </svg>
         </div>
 
-        {/* ── Moving Qibla indicator ── */}
+        {/* ── Moving Kaaba indicator ── */}
         <div
           className="absolute"
           style={{
             left: `calc(50% + ${indicatorX}px)`,
-            top: -50,
+            top: -54,
             transform: 'translateX(-50%)',
             transition: heading !== null ? 'left 0.12s ease-out' : 'none',
             zIndex: 30,
           }}
         >
-          {/* Glow beam */}
+          {/* Glow beam connecting image to rail */}
           <div
             style={{
               position: 'absolute',
@@ -509,7 +484,7 @@ function ARQiblaView({
               top: '100%',
               transform: 'translateX(-50%)',
               width: 2,
-              height: 24,
+              height: 20,
               background: isAligned
                 ? 'linear-gradient(to bottom, #4ade80, transparent)'
                 : 'linear-gradient(to bottom, #C8991A, transparent)',
@@ -517,52 +492,25 @@ function ARQiblaView({
             }}
           />
 
-          {/* Main indicator diamond */}
-          <svg width="60" height="60" viewBox="0 0 60 60" style={{ overflow: 'visible' }}>
-            <defs>
-              <filter id="arGlow">
-                <feGaussianBlur stdDeviation="3" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-            {/* Outer halo */}
-            <polygon
-              points="30,4 56,30 30,56 4,30"
-              fill="none"
-              stroke={isAligned ? '#4ade80' : '#C8991A'}
-              strokeWidth="1"
-              opacity="0.3"
-              filter="url(#arGlow)"
-            />
-            {/* Inner diamond */}
-            <polygon
-              points="30,12 48,30 30,48 12,30"
-              fill={isAligned ? 'rgba(74,222,128,0.15)' : 'rgba(200,153,26,0.12)'}
-              stroke={isAligned ? '#4ade80' : '#C8991A'}
-              strokeWidth="1.5"
-              filter="url(#arGlow)"
-              style={{ transition: 'all 0.5s' }}
-            />
-            {/* Center dot */}
-            <circle
-              cx="30" cy="30" r={isAligned ? 5 : 3}
-              fill={isAligned ? '#4ade80' : '#C8991A'}
-              filter="url(#arGlow)"
-              style={{ transition: 'all 0.5s' }}
-            />
-            {/* Kaaba mini icon inside when aligned */}
-            {isAligned && (
-              <text x="30" y="30" textAnchor="middle" dominantBaseline="middle"
-                fontSize="8" fill="#fff" fontFamily="sans-serif" opacity="0.9">
-                ◆
-              </text>
-            )}
-          </svg>
+          {/* Kaaba image as the moving indicator */}
+          <img
+            src={kaabaImg}
+            alt="الكعبة"
+            style={{
+              width: 72,
+              height: 72,
+              objectFit: 'contain',
+              filter: isAligned
+                ? 'drop-shadow(0 0 14px rgba(74,222,128,1)) drop-shadow(0 0 28px rgba(74,222,128,0.6))'
+                : 'drop-shadow(0 0 10px rgba(200,153,26,0.8)) drop-shadow(0 2px 12px rgba(0,0,0,0.9))',
+              transition: 'filter 0.5s',
+            }}
+          />
 
-          {/* Label above indicator */}
+          {/* Label below image */}
           <div
             className="absolute text-center pointer-events-none"
-            style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', marginBottom: 4 }}
+            style={{ top: '100%', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', marginTop: 22 }}
           >
             <span
               className="text-xs font-bold px-2 py-0.5 rounded-full"
