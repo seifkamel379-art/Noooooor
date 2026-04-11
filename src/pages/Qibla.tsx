@@ -1,12 +1,10 @@
 import { useCompass } from '@/hooks/use-compass';
-import { useGeolocation, calculateQibla, calculateDistance } from '@/hooks/use-geolocation';
-import { ArrowLeft, MapPin, RotateCcw, Camera, Compass } from 'lucide-react';
+import { useGeolocation, calculateQibla } from '@/hooks/use-geolocation';
+import { ArrowLeft, MapPin, RotateCcw } from 'lucide-react';
 import { Link } from 'wouter';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import kaabaImg from '@assets/Picsart_26-03-30_10-52-34-641_1774860779806.png';
 
-const MAKKAH_LAT = 21.422487;
-const MAKKAH_LNG = 39.826206;
 
 /* ── Islamic Geometric Background ───────────────────────────── */
 function IslamicBg() {
@@ -253,389 +251,9 @@ function CompassNeedle({ isAligned, isSearching }: { isAligned: boolean; isSearc
   );
 }
 
-/* ── AR Camera Qibla View ───────────────────────────────────── */
-function ARQiblaView({
-  heading,
-  qiblaAngle,
-  coords,
-  isSupported,
-  requestPermission,
-}: {
-  heading: number | null;
-  qiblaAngle: number;
-  coords: { lat: number; lng: number } | null;
-  isSupported: boolean;
-  requestPermission: () => Promise<void>;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraRequested, setCameraRequested] = useState(false);
-
-  const distance = coords
-    ? calculateDistance(coords.lat, coords.lng, MAKKAH_LAT, MAKKAH_LNG)
-    : null;
-
-  /* Angle difference between Qibla and current heading */
-  const angleDiff = heading !== null
-    ? ((qiblaAngle - heading + 540) % 360) - 180
-    : null;
-
-  const isAligned = angleDiff !== null && Math.abs(angleDiff) < 7;
-
-  /* Horizontal offset in px: 1 degree ≈ 5px, capped */
-  const MAX_OFFSET = 160;
-  const indicatorX = angleDiff !== null
-    ? Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, angleDiff * 5))
-    : 0;
-
-  const startCamera = useCallback(async () => {
-    setCameraRequested(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setCameraActive(true);
-      setCameraError(null);
-    } catch {
-      setCameraError('تعذّر الوصول للكاميرا. يرجى السماح بإذن الكاميرا.');
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-      }
-    };
-  }, []);
-
-  /* ── Permission / Start screen ── */
-  if (!cameraRequested) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 text-center">
-        <div
-          className="w-24 h-24 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(200,153,26,0.12)', border: '2px solid rgba(200,153,26,0.35)' }}
-        >
-          <Camera className="w-10 h-10" style={{ color: '#C8991A' }}/>
-        </div>
-        <div>
-          <p className="font-bold text-lg mb-2" style={{ fontFamily: '"Tajawal",sans-serif', color: '#E8C060' }}>
-            تحديد القبلة بالكاميرا
-          </p>
-          <p className="text-sm" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>
-            سيتم استخدام الكاميرا لعرض اتجاه القبلة بشكل مباشر على الشاشة
-          </p>
-        </div>
-        <button
-          onClick={startCamera}
-          className="w-full max-w-xs py-4 rounded-2xl font-bold text-base"
-          style={{ fontFamily: '"Tajawal",sans-serif', background: '#C8991A', color: '#0d0d0d' }}
-        >
-          تشغيل الكاميرا
-        </button>
-        {!isSupported && (
-          <p className="text-xs" style={{ fontFamily: '"Tajawal",sans-serif', color: '#f87171' }}>
-            تنبيه: حساس البوصلة غير مدعوم في هذا الجهاز
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (cameraError) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(248,113,113,0.1)', border: '2px solid rgba(248,113,113,0.3)' }}
-        >
-          <Camera className="w-9 h-9" style={{ color: '#f87171' }}/>
-        </div>
-        <p className="font-bold" style={{ fontFamily: '"Tajawal",sans-serif', color: '#f87171' }}>
-          {cameraError}
-        </p>
-        <button
-          onClick={startCamera}
-          className="px-8 py-3 rounded-2xl font-bold text-sm"
-          style={{ fontFamily: '"Tajawal",sans-serif', background: '#C8991A', color: '#0d0d0d' }}
-        >
-          إعادة المحاولة
-        </button>
-      </div>
-    );
-  }
-
-  /* ── AR View ── */
-  return (
-    <div className="flex-1 relative overflow-hidden bg-black">
-
-      {/* Camera feed */}
-      <video
-        ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover"
-        playsInline
-        muted
-        style={{ opacity: cameraActive ? 1 : 0, transition: 'opacity 0.5s' }}
-      />
-
-      {/* Dark gradient overlays — top and bottom */}
-      <div
-        className="absolute inset-x-0 top-0 h-32 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)' }}
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 h-56 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)' }}
-      />
-
-      {/* ── Alignment status pill ── */}
-      <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none z-20">
-        <div
-          className="px-6 py-2 rounded-full text-center transition-all duration-500"
-          style={{
-            background: isAligned
-              ? 'rgba(22,101,52,0.75)'
-              : 'rgba(0,0,0,0.55)',
-            border: '1px solid',
-            borderColor: isAligned ? '#22c55e' : 'rgba(200,153,26,0.45)',
-            backdropFilter: 'blur(8px)',
-            boxShadow: isAligned ? '0 0 18px rgba(74,222,128,0.4)' : 'none',
-          }}
-        >
-          <p
-            className="font-bold text-sm"
-            style={{
-              fontFamily: '"Tajawal",sans-serif',
-              color: isAligned ? '#4ade80' : '#E8C060',
-            }}
-          >
-            {heading === null
-              ? 'جاري البحث عن البوصلة...'
-              : isAligned
-              ? '✓ أنت في اتجاه القبلة'
-              : `وجّه هاتفك — القبلة على بُعد ${Math.round(Math.abs(angleDiff ?? 0))}°`}
-          </p>
-        </div>
-      </div>
-
-      {/* ── Horizontal scan rail — middle of screen ── */}
-      <div
-        className="absolute inset-x-0 pointer-events-none z-10"
-        style={{ top: '42%', transform: 'translateY(-50%)' }}
-      >
-        {/* Rail line */}
-        <div
-          className="relative mx-8"
-          style={{
-            height: 1,
-            background: isAligned
-              ? 'linear-gradient(90deg, transparent, rgba(74,222,128,0.25), rgba(74,222,128,0.7), rgba(74,222,128,0.25), transparent)'
-              : 'linear-gradient(90deg, transparent, rgba(200,153,26,0.2), rgba(200,153,26,0.5), rgba(200,153,26,0.2), transparent)',
-            transition: 'background 0.5s',
-          }}
-        />
-
-        {/* Center crosshair target */}
-        <div
-          className="absolute"
-          style={{
-            left: '50%',
-            top: '-22px',
-            transform: 'translateX(-50%)',
-            width: 44,
-            height: 44,
-          }}
-        >
-          <svg width="44" height="44" viewBox="0 0 44 44">
-            <line x1="22" y1="2"  x2="22" y2="12" stroke={isAligned ? '#4ade80' : '#C8991A'} strokeWidth="1.5" opacity="0.7"/>
-            <line x1="22" y1="32" x2="22" y2="42" stroke={isAligned ? '#4ade80' : '#C8991A'} strokeWidth="1.5" opacity="0.7"/>
-            <line x1="2"  y1="22" x2="12" y2="22" stroke={isAligned ? '#4ade80' : '#C8991A'} strokeWidth="1.5" opacity="0.7"/>
-            <line x1="32" y1="22" x2="42" y2="22" stroke={isAligned ? '#4ade80' : '#C8991A'} strokeWidth="1.5" opacity="0.7"/>
-            <circle cx="22" cy="22" r="8" fill="none" stroke={isAligned ? '#4ade80' : '#C8991A'} strokeWidth="1" opacity="0.5"/>
-            {isAligned && <circle cx="22" cy="22" r="4" fill="#4ade80" opacity="0.6"/>}
-          </svg>
-        </div>
-
-        {/* ── Moving Kaaba indicator ── */}
-        <div
-          className="absolute"
-          style={{
-            left: `calc(50% + ${indicatorX}px)`,
-            top: -54,
-            transform: 'translateX(-50%)',
-            transition: heading !== null ? 'left 0.12s ease-out' : 'none',
-            zIndex: 30,
-          }}
-        >
-          {/* Glow beam connecting image to rail */}
-          <div
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: '100%',
-              transform: 'translateX(-50%)',
-              width: 2,
-              height: 20,
-              background: isAligned
-                ? 'linear-gradient(to bottom, #4ade80, transparent)'
-                : 'linear-gradient(to bottom, #C8991A, transparent)',
-              transition: 'background 0.5s',
-            }}
-          />
-
-          {/* Kaaba image as the moving indicator */}
-          <img
-            src={kaabaImg}
-            alt="الكعبة"
-            style={{
-              width: 72,
-              height: 72,
-              objectFit: 'contain',
-              filter: isAligned
-                ? 'drop-shadow(0 0 14px rgba(74,222,128,1)) drop-shadow(0 0 28px rgba(74,222,128,0.6))'
-                : 'drop-shadow(0 0 10px rgba(200,153,26,0.8)) drop-shadow(0 2px 12px rgba(0,0,0,0.9))',
-              transition: 'filter 0.5s',
-            }}
-          />
-
-          {/* Label below image */}
-          <div
-            className="absolute text-center pointer-events-none"
-            style={{ top: '100%', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', marginTop: 22 }}
-          >
-            <span
-              className="text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{
-                fontFamily: '"Tajawal",sans-serif',
-                background: isAligned ? 'rgba(22,101,52,0.8)' : 'rgba(0,0,0,0.65)',
-                color: isAligned ? '#4ade80' : '#E8C060',
-                border: `1px solid ${isAligned ? 'rgba(74,222,128,0.5)' : 'rgba(200,153,26,0.4)'}`,
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              الكعبة
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── IOS compass permission button ── */}
-      {heading === null && typeof (DeviceOrientationEvent as any).requestPermission === 'function' && (
-        <div className="absolute inset-x-0 flex justify-center z-30" style={{ bottom: '220px' }}>
-          <button
-            onClick={requestPermission}
-            className="px-6 py-2.5 rounded-2xl font-bold text-sm"
-            style={{
-              fontFamily: '"Tajawal",sans-serif',
-              background: '#C8991A',
-              color: '#0d0d0d',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            تفعيل البوصلة
-          </button>
-        </div>
-      )}
-
-      {/* ── Distance Panel at bottom ── */}
-      <div
-        className="absolute inset-x-0 bottom-0 z-20 px-4 pb-6"
-      >
-        <div
-          className="rounded-3xl overflow-hidden"
-          style={{
-            background: 'rgba(8,12,6,0.82)',
-            border: '1px solid rgba(200,153,26,0.3)',
-            backdropFilter: 'blur(16px)',
-          }}
-        >
-          <div className="px-5 pt-4 pb-2 flex items-center gap-2 border-b" style={{ borderColor: 'rgba(200,153,26,0.15)' }}>
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#C8991A' }}/>
-            <p className="text-xs font-bold tracking-widest uppercase" style={{ fontFamily: '"Tajawal",sans-serif', color: '#C8991A', letterSpacing: '0.12em' }}>
-              المسافة إلى الكعبة المشرفة
-            </p>
-          </div>
-
-          <div className="px-5 py-4 flex items-center gap-5">
-            {/* Kaaba image — prominent */}
-            <div
-              className="flex-shrink-0 rounded-2xl overflow-hidden flex items-center justify-center"
-              style={{
-                width: 90,
-                height: 90,
-                background: 'rgba(200,153,26,0.08)',
-                border: '1.5px solid rgba(200,153,26,0.3)',
-                boxShadow: isAligned
-                  ? '0 0 20px rgba(74,222,128,0.3)'
-                  : '0 0 12px rgba(0,0,0,0.6)',
-                transition: 'box-shadow 0.5s',
-              }}
-            >
-              <img
-                src={kaabaImg}
-                alt="الكعبة المشرفة"
-                style={{
-                  width: 80,
-                  height: 80,
-                  objectFit: 'contain',
-                  filter: isAligned
-                    ? 'drop-shadow(0 0 10px rgba(74,222,128,0.8))'
-                    : 'drop-shadow(0 2px 8px rgba(0,0,0,0.9))',
-                  transition: 'filter 0.5s',
-                }}
-              />
-            </div>
-
-            {/* Distance text */}
-            <div className="flex-1">
-              <p className="text-xs mb-1" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>
-                بُعدك الحالي عن
-              </p>
-              <p className="text-xs mb-2" style={{ fontFamily: '"Tajawal",sans-serif', color: '#8B9070' }}>
-                البيت الحرام — مكة المكرمة
-              </p>
-              {distance !== null ? (
-                <div className="flex items-baseline gap-1.5">
-                  <span
-                    className="font-black"
-                    style={{ fontSize: 28, lineHeight: 1, color: '#E8C060', fontFamily: 'monospace' }}
-                  >
-                    {Math.round(distance).toLocaleString('en-US')}
-                  </span>
-                  <span className="text-sm font-bold" style={{ fontFamily: '"Tajawal",sans-serif', color: '#C8991A' }}>
-                    كم
-                  </span>
-                </div>
-              ) : (
-                <p className="text-sm" style={{ fontFamily: '"Tajawal",sans-serif', color: '#4a5040' }}>
-                  يتطلب تحديد الموقع
-                </p>
-              )}
-              {coords && (
-                <p className="text-xs mt-1.5" style={{ fontFamily: '"Tajawal",sans-serif', color: '#4a5040' }}>
-                  {coords.lat.toFixed(4)}°، {coords.lng.toFixed(4)}°
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ── Main Qibla Page ────────────────────────────────────────── */
 export function Qibla() {
-  const [activeTab, setActiveTab] = useState<'compass' | 'ar'>('compass');
   const { heading, isSupported, requestPermission } = useCompass();
   const { coords, error: geoError, isLoading: geoLoading, requestLocation } = useGeolocation(true);
 
@@ -833,15 +451,14 @@ export function Qibla() {
       dir="rtl"
       style={{ background: 'linear-gradient(180deg, #121b10 0%, #0c1309 50%, #080e06 100%)' }}
     >
-      {activeTab === 'compass' && <IslamicBg/>}
+      <IslamicBg/>
 
       {/* Header */}
       <div
         className="relative z-10 px-4 py-4 flex items-center gap-4 flex-shrink-0 border-b"
         style={{
-          background: activeTab === 'ar' ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.35)',
+          background: 'rgba(0,0,0,0.35)',
           borderColor: 'rgba(200,153,26,0.2)',
-          backdropFilter: activeTab === 'ar' ? 'blur(8px)' : 'none',
         }}
       >
         <Link href="/more">
@@ -853,7 +470,7 @@ export function Qibla() {
           style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
           تحديد القبلة
         </h1>
-        {activeTab === 'compass' && (geoError || (!geoLoading && !coords)) && (
+        {(geoError || (!geoLoading && !coords)) && (
           <button
             onClick={requestLocation}
             className="mr-auto p-2 rounded-full"
@@ -864,63 +481,10 @@ export function Qibla() {
         )}
       </div>
 
-      {/* ── Tab Switcher ── */}
-      <div
-        className="relative z-10 flex-shrink-0 px-4 py-3 flex gap-2 border-b"
-        style={{
-          background: activeTab === 'ar' ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.3)',
-          borderColor: 'rgba(200,153,26,0.15)',
-          backdropFilter: activeTab === 'ar' ? 'blur(8px)' : 'none',
-        }}
-      >
-        <button
-          onClick={() => setActiveTab('compass')}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300"
-          style={{
-            fontFamily: '"Tajawal",sans-serif',
-            background: activeTab === 'compass'
-              ? 'linear-gradient(135deg, rgba(200,153,26,0.25), rgba(200,153,26,0.12))'
-              : 'transparent',
-            color: activeTab === 'compass' ? '#E8C060' : '#4a5040',
-            border: `1px solid ${activeTab === 'compass' ? 'rgba(200,153,26,0.5)' : 'transparent'}`,
-          }}
-        >
-          <Compass className="w-4 h-4"/>
-          تحديد القبلة
-        </button>
-        <button
-          onClick={() => setActiveTab('ar')}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all duration-300"
-          style={{
-            fontFamily: '"Tajawal",sans-serif',
-            background: activeTab === 'ar'
-              ? 'linear-gradient(135deg, rgba(200,153,26,0.25), rgba(200,153,26,0.12))'
-              : 'transparent',
-            color: activeTab === 'ar' ? '#E8C060' : '#4a5040',
-            border: `1px solid ${activeTab === 'ar' ? 'rgba(200,153,26,0.5)' : 'transparent'}`,
-          }}
-        >
-          <Camera className="w-4 h-4"/>
-          تحديد القبلة بالكاميرا
-        </button>
+      {/* ── Compass Content ── */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+        {renderCompassContent()}
       </div>
-
-      {/* ── Tab Content ── */}
-      {activeTab === 'compass' ? (
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
-          {renderCompassContent()}
-        </div>
-      ) : (
-        <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
-          <ARQiblaView
-            heading={heading}
-            qiblaAngle={qiblaAngle}
-            coords={coords}
-            isSupported={isSupported}
-            requestPermission={requestPermission}
-          />
-        </div>
-      )}
     </div>
   );
 }
