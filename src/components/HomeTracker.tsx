@@ -7,9 +7,10 @@ import { Link } from 'wouter';
 import { queueDailyTrackerSync, getCurrentUid, getCacheValue, getFullCache, getSettingCache } from '@/lib/rtdb';
 import { auth } from '@/lib/firebase';
 
-/* IDs for أذكار الصباح والمساء (category 27 in hisnData) */
-const MORNING_EVENING_CATEGORY_ID = 27;
-const MORNING_EVENING_ITEMS = HISN_ITEMS[MORNING_EVENING_CATEGORY_ID] ?? [];
+const MORNING_CAT_ID = 27;
+const EVENING_CAT_ID = 9001;
+const MORNING_ITEMS = HISN_ITEMS[MORNING_CAT_ID] ?? [];
+const EVENING_ITEMS = HISN_ITEMS[EVENING_CAT_ID] ?? MORNING_ITEMS;
 
 const TASBIH_DAILY_GOAL = 500;
 
@@ -308,12 +309,14 @@ function getDayScore(dateKey: string): number {
     if (t.quranWird) score += 1;
   } catch {}
   try {
-    const p = getCacheValue<Record<number, number>>(
-      `azkar/${dateKey}/${MORNING_EVENING_CATEGORY_ID}`, {}
-    );
-    const allDone = MORNING_EVENING_ITEMS.length > 0 &&
-      MORNING_EVENING_ITEMS.every(z => (p[z.id] ?? 0) >= z.count);
-    if (allDone) score += 1;
+    const pm = getCacheValue<Record<number, number>>(`azkar/${dateKey}/${MORNING_CAT_ID}`, {});
+    const morningDone = MORNING_ITEMS.length > 0 && MORNING_ITEMS.every(z => (pm[z.id] ?? 0) >= z.count);
+    if (morningDone) score += 1;
+  } catch {}
+  try {
+    const pe = getCacheValue<Record<number, number>>(`azkar/${dateKey}/${EVENING_CAT_ID}`, {});
+    const eveningDone = EVENING_ITEMS.length > 0 && EVENING_ITEMS.every(z => (pe[z.id] ?? 0) >= z.count);
+    if (eveningDone) score += 1;
   } catch {}
   try {
     const daily = getCacheValue<number>(`tasbih_daily/${dateKey}`, 0);
@@ -329,7 +332,8 @@ function cellColor(score: number, isToday: boolean): string {
   if (score <= 4) return '#a0702e';
   if (score <= 6) return '#c5922a';
   if (score <= 7) return '#c5b060';
-  return '#c5a059';
+  if (score <= 8) return '#c5a059';
+  return '#e8c870';
 }
 
 const PRAYERS: { key: PrayerKey; label: string }[] = [
@@ -352,14 +356,15 @@ export function HomeTracker() {
 
   const [showAllDays, setShowAllDays] = useState(false);
 
-  // Azkar progress (morning/evening) — read from RTDB cache
-  const azkarProgress = getCacheValue<Record<number, number>>(
-    `azkar/${currentDateKey}/${MORNING_EVENING_CATEGORY_ID}`, {}
-  );
+  // أذكار الصباح progress
+  const morningProgress = getCacheValue<Record<number, number>>(`azkar/${currentDateKey}/${MORNING_CAT_ID}`, {});
+  const morningDoneCount = MORNING_ITEMS.filter(z => (morningProgress[z.id] ?? 0) >= z.count).length;
+  const morningDone = MORNING_ITEMS.length > 0 && morningDoneCount === MORNING_ITEMS.length;
 
-  const azkarItemsDone = MORNING_EVENING_ITEMS.filter(z => (azkarProgress[z.id] ?? 0) >= z.count).length;
-  const azkarTotalItems = MORNING_EVENING_ITEMS.length;
-  const azkarDone = azkarTotalItems > 0 && azkarItemsDone === azkarTotalItems;
+  // أذكار المساء progress
+  const eveningProgress = getCacheValue<Record<number, number>>(`azkar/${currentDateKey}/${EVENING_CAT_ID}`, {});
+  const eveningDoneCount = EVENING_ITEMS.filter(z => (eveningProgress[z.id] ?? 0) >= z.count).length;
+  const eveningDone = EVENING_ITEMS.length > 0 && eveningDoneCount === EVENING_ITEMS.length;
 
   // Daily tasbih count — read from RTDB cache
   const dailyTasbihCount = getCacheValue<number>(`tasbih_daily/${currentDateKey}`, 0);
@@ -367,8 +372,8 @@ export function HomeTracker() {
   const tasbih500Done = dailyTasbihCount >= TASBIH_DAILY_GOAL;
   const tasbihPct = Math.min(100, Math.round((dailyTasbihCount / TASBIH_DAILY_GOAL) * 100));
   const prayersDone = PRAYERS.filter(p => state.prayers[p.key]).length;
-  const doneTasks = prayersDone + (azkarDone ? 1 : 0) + (state.quranWird ? 1 : 0) + (tasbih500Done ? 1 : 0);
-  const progressPct = Math.round((doneTasks / 8) * 100);
+  const doneTasks = prayersDone + (morningDone ? 1 : 0) + (eveningDone ? 1 : 0) + (state.quranWird ? 1 : 0) + (tasbih500Done ? 1 : 0);
+  const progressPct = Math.round((doneTasks / 9) * 100);
 
   const togglePrayer = (key: PrayerKey) => {
     setState(prev => {
@@ -500,7 +505,7 @@ export function HomeTracker() {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            {doneTasks} / 8 مهام
+            {doneTasks} / 9 مهام
           </span>
           <AnimatePresence>
             {progressPct === 100 && (
@@ -600,31 +605,62 @@ export function HomeTracker() {
       {/* ── Task Cards ── */}
       <div className="space-y-3">
 
-        {/* Azkar card */}
+        {/* Morning azkar card */}
         <div className="rounded-2xl p-4 border transition-all duration-300"
-          style={
-            azkarDone
-              ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
-              : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--color-card)' }
-          }>
+          style={morningDone
+            ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
+            : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--color-card)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: azkarDone ? 'rgba(34,197,94,0.12)' : 'rgba(197,160,89,0.1)' }}>
+                style={{ background: morningDone ? 'rgba(34,197,94,0.12)' : 'rgba(197,160,89,0.1)' }}>
                 <DuaIcon3D />
               </div>
               <div>
-                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>أذكار الصباح والمساء</p>
+                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>أذكار الصباح</p>
                 <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}>
-                  {azkarDone
-                    ? 'مكتمل ✓'
-                    : azkarItemsDone > 0
-                    ? `${azkarItemsDone} / ${azkarTotalItems} ذكر`
+                  {morningDone ? 'مكتمل ✓' : morningDoneCount > 0
+                    ? `${morningDoneCount} / ${MORNING_ITEMS.length} ذكر`
                     : 'لم يبدأ بعد'}
                 </p>
               </div>
             </div>
-            {azkarDone ? (
+            {morningDone ? (
+              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shadow-sm shadow-green-500/30">
+                <Check className="w-5 h-5 text-white" />
+              </div>
+            ) : (
+              <Link href="/azkar">
+                <div className="px-3 py-2 rounded-xl text-xs font-bold"
+                  style={{ fontFamily: '"Tajawal", sans-serif', background: 'linear-gradient(135deg, #c5a059, #9a7430)', color: '#fff' }}>
+                  ابدأ
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Evening azkar card */}
+        <div className="rounded-2xl p-4 border transition-all duration-300"
+          style={eveningDone
+            ? { borderColor: 'rgba(34,197,94,0.35)', background: 'rgba(34,197,94,0.05)' }
+            : { borderColor: 'rgba(197,160,89,0.18)', background: 'var(--color-card)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: eveningDone ? 'rgba(34,197,94,0.12)' : 'rgba(197,160,89,0.1)' }}>
+                <DuaIcon3D />
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>أذكار المساء</p>
+                <p className="text-xs mt-0.5" style={{ fontFamily: '"Tajawal", sans-serif', color: 'var(--muted-foreground)' }}>
+                  {eveningDone ? 'مكتمل ✓' : eveningDoneCount > 0
+                    ? `${eveningDoneCount} / ${EVENING_ITEMS.length} ذكر`
+                    : 'لم يبدأ بعد'}
+                </p>
+              </div>
+            </div>
+            {eveningDone ? (
               <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shadow-sm shadow-green-500/30">
                 <Check className="w-5 h-5 text-white" />
               </div>

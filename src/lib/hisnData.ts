@@ -6,7 +6,11 @@ export interface HisnItem { id: number; text: string; count: number; }
 export const HISN_CATEGORIES: HisnCategory[] = [
   {
     "id": 27,
-    "title": "أذكار الصباح والمساء"
+    "title": "أذكار الصباح"
+  },
+  {
+    "id": 9001,
+    "title": "أذكار المساء"
   },
   {
     "id": 28,
@@ -2135,3 +2139,5 @@ export const HISN_ITEMS: Record<number, HisnItem[]> = {
     }
   ]
 };
+// أذكار المساء تستخدم نفس أذكار الصباح (category 27) ولكن تُتتبَّع بشكل منفصل
+(HISN_ITEMS as Record<number, HisnItem[]>)[9001] = HISN_ITEMS[27];
