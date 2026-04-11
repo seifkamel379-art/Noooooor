@@ -427,6 +427,31 @@ function ARQiblaView({
         </div>
       </div>
 
+      {/* ── Kaaba image — centered on screen ── */}
+      <div
+        className="absolute inset-x-0 flex justify-center pointer-events-none z-20"
+        style={{ top: '42%', transform: 'translateY(-130px)' }}
+      >
+        <div
+          className="flex flex-col items-center gap-2"
+          style={{ transition: 'filter 0.5s' }}
+        >
+          <img
+            src={kaabaImg}
+            alt="الكعبة المشرفة"
+            style={{
+              width: 110,
+              height: 110,
+              objectFit: 'contain',
+              filter: isAligned
+                ? 'drop-shadow(0 0 18px rgba(74,222,128,1)) drop-shadow(0 0 36px rgba(74,222,128,0.5))'
+                : 'drop-shadow(0 0 12px rgba(200,153,26,0.6)) drop-shadow(0 4px 16px rgba(0,0,0,0.9))',
+              transition: 'filter 0.5s',
+            }}
+          />
+        </div>
+      </div>
+
       {/* ── Horizontal scan rail — middle of screen ── */}
       <div
         className="absolute inset-x-0 pointer-events-none z-10"
