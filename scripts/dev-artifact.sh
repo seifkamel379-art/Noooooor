@@ -1,14 +1,13 @@
 #!/bin/bash
-# This script is run by Replit's artifact infrastructure.
-# PORT is set by Replit to the artifact's localPort (19382).
-# We start Vite on PORT and the API server on API_SERVER_PORT.
+# Artifact dev script — starts the full Noor app (Vite + API server).
+# Replit sets PORT to the artifact's assigned port; Vite listens there.
 
 export BASE_PATH=/
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-VITE_PORT="${PORT:-19382}"
-API_SERVER_PORT="${API_SERVER_PORT:-3001}"
+VITE_PORT="${PORT:-5000}"
+API_SERVER_PORT=3001
 
 echo "Root dir: $ROOT_DIR"
 echo "Vite port: $VITE_PORT"
@@ -22,8 +21,12 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
+# Start the API server in the background
 echo "Starting API server on port $API_SERVER_PORT..."
-(cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development pnpm exec tsx ./src/index.ts 2>&1) &
+(cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development \
+  "$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx" ./src/index.ts 2>&1) &
 
-echo "Starting Vite on port $VITE_PORT..."
-cd "$ROOT_DIR" && exec env VITE_PORT=$VITE_PORT pnpm exec vite --config "$ROOT_DIR/vite.config.ts"
+# Start Vite in the foreground on the artifact's port
+echo "Starting Vite dev server on port $VITE_PORT..."
+cd "$ROOT_DIR" && exec env VITE_PORT=$VITE_PORT PORT=$VITE_PORT \
+  "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
