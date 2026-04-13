@@ -1,3 +1,513 @@
+// ── WORLD COUNTRIES & CITIES ──
+export interface WorldCity {
+  id: string;
+  nameAr: string;
+  lat: number;
+  lng: number;
+}
+export interface WorldCountry {
+  id: string;
+  nameAr: string;
+  flag: string;
+  cities: WorldCity[];
+}
+
+export const WORLD_COUNTRIES: WorldCountry[] = [
+  {
+    id: 'sa', nameAr: 'السعودية', flag: '🇸🇦',
+    cities: [
+      { id: 'riyadh',   nameAr: 'الرياض',          lat: 24.7136,  lng: 46.6753 },
+      { id: 'jeddah',   nameAr: 'جدة',              lat: 21.4858,  lng: 39.1925 },
+      { id: 'mecca',    nameAr: 'مكة المكرمة',      lat: 21.3891,  lng: 39.8579 },
+      { id: 'medina',   nameAr: 'المدينة المنورة',  lat: 24.5247,  lng: 39.5692 },
+      { id: 'dammam',   nameAr: 'الدمام',           lat: 26.4207,  lng: 50.0888 },
+      { id: 'taif',     nameAr: 'الطائف',           lat: 21.2703,  lng: 40.4158 },
+      { id: 'tabuk',    nameAr: 'تبوك',             lat: 28.3997,  lng: 36.5662 },
+      { id: 'abha',     nameAr: 'أبها',             lat: 18.2164,  lng: 42.5053 },
+      { id: 'hail',     nameAr: 'حائل',             lat: 27.5219,  lng: 41.7057 },
+      { id: 'najran',   nameAr: 'نجران',            lat: 17.5656,  lng: 44.2289 },
+      { id: 'khobar',   nameAr: 'الخبر',            lat: 26.2172,  lng: 50.1971 },
+      { id: 'jubail',   nameAr: 'الجبيل',           lat: 26.9690,  lng: 49.6265 },
+    ],
+  },
+  {
+    id: 'ae', nameAr: 'الإمارات', flag: '🇦🇪',
+    cities: [
+      { id: 'abudhabi',    nameAr: 'أبوظبي',       lat: 24.4539,  lng: 54.3773 },
+      { id: 'dubai',       nameAr: 'دبي',           lat: 25.2048,  lng: 55.2708 },
+      { id: 'sharjah',     nameAr: 'الشارقة',      lat: 25.3463,  lng: 55.4209 },
+      { id: 'ajman',       nameAr: 'عجمان',         lat: 25.4052,  lng: 55.5136 },
+      { id: 'alain',       nameAr: 'العين',         lat: 24.2075,  lng: 55.7447 },
+      { id: 'rasalkhaimah',nameAr: 'رأس الخيمة',   lat: 25.7895,  lng: 55.9432 },
+      { id: 'fujairah',    nameAr: 'الفجيرة',      lat: 25.1288,  lng: 56.3265 },
+    ],
+  },
+  {
+    id: 'kw', nameAr: 'الكويت', flag: '🇰🇼',
+    cities: [
+      { id: 'kuwait',     nameAr: 'مدينة الكويت',  lat: 29.3759,  lng: 47.9774 },
+      { id: 'hawalli',    nameAr: 'حولي',           lat: 29.3329,  lng: 48.0303 },
+      { id: 'farwaniya',  nameAr: 'الفروانية',     lat: 29.2741,  lng: 47.9566 },
+      { id: 'ahmadi',     nameAr: 'الأحمدي',       lat: 29.0769,  lng: 48.0838 },
+    ],
+  },
+  {
+    id: 'qa', nameAr: 'قطر', flag: '🇶🇦',
+    cities: [
+      { id: 'doha',      nameAr: 'الدوحة',          lat: 25.2854,  lng: 51.5310 },
+      { id: 'wakrah',    nameAr: 'الوكرة',          lat: 25.1659,  lng: 51.5988 },
+      { id: 'rayyan',    nameAr: 'الريان',          lat: 25.2521,  lng: 51.4247 },
+    ],
+  },
+  {
+    id: 'bh', nameAr: 'البحرين', flag: '🇧🇭',
+    cities: [
+      { id: 'manama',    nameAr: 'المنامة',          lat: 26.2154,  lng: 50.5832 },
+      { id: 'muharraq',  nameAr: 'المحرق',           lat: 26.2584,  lng: 50.6157 },
+      { id: 'riffa',     nameAr: 'الرفاع',           lat: 26.1320,  lng: 50.5553 },
+    ],
+  },
+  {
+    id: 'om', nameAr: 'عُمان', flag: '🇴🇲',
+    cities: [
+      { id: 'muscat',   nameAr: 'مسقط',             lat: 23.5880,  lng: 58.3829 },
+      { id: 'salalah',  nameAr: 'صلالة',            lat: 17.0151,  lng: 54.1000 },
+      { id: 'sohar',    nameAr: 'صحار',             lat: 24.3477,  lng: 56.7350 },
+      { id: 'nizwa',    nameAr: 'نزوى',             lat: 22.9333,  lng: 57.5333 },
+    ],
+  },
+  {
+    id: 'ye', nameAr: 'اليمن', flag: '🇾🇪',
+    cities: [
+      { id: 'sanaa',    nameAr: 'صنعاء',            lat: 15.3694,  lng: 44.1910 },
+      { id: 'aden',     nameAr: 'عدن',              lat: 12.7797,  lng: 45.0367 },
+      { id: 'taiz',     nameAr: 'تعز',              lat: 13.5789,  lng: 44.0178 },
+      { id: 'hodeidah', nameAr: 'الحديدة',          lat: 14.7980,  lng: 42.9530 },
+      { id: 'mukalla',  nameAr: 'المكلا',           lat: 14.5241,  lng: 49.1227 },
+    ],
+  },
+  {
+    id: 'jo', nameAr: 'الأردن', flag: '🇯🇴',
+    cities: [
+      { id: 'amman',   nameAr: 'عمان',              lat: 31.9554,  lng: 35.9453 },
+      { id: 'irbid',   nameAr: 'إربد',             lat: 32.5556,  lng: 35.8500 },
+      { id: 'zarqa',   nameAr: 'الزرقاء',           lat: 32.0728,  lng: 36.0879 },
+      { id: 'aqaba',   nameAr: 'العقبة',            lat: 29.5266,  lng: 35.0060 },
+    ],
+  },
+  {
+    id: 'ps', nameAr: 'فلسطين', flag: '🇵🇸',
+    cities: [
+      { id: 'jerusalem', nameAr: 'القدس',           lat: 31.7683,  lng: 35.2137 },
+      { id: 'gaza',      nameAr: 'غزة',             lat: 31.5017,  lng: 34.4668 },
+      { id: 'ramallah',  nameAr: 'رام الله',        lat: 31.8996,  lng: 35.2042 },
+      { id: 'nablus',    nameAr: 'نابلس',           lat: 32.2211,  lng: 35.2544 },
+      { id: 'hebron',    nameAr: 'الخليل',          lat: 31.5326,  lng: 35.0998 },
+    ],
+  },
+  {
+    id: 'lb', nameAr: 'لبنان', flag: '🇱🇧',
+    cities: [
+      { id: 'beirut',  nameAr: 'بيروت',             lat: 33.8938,  lng: 35.5018 },
+      { id: 'tripoli', nameAr: 'طرابلس',            lat: 34.4367,  lng: 35.8497 },
+      { id: 'sidon',   nameAr: 'صيدا',              lat: 33.5611,  lng: 35.3753 },
+    ],
+  },
+  {
+    id: 'sy', nameAr: 'سوريا', flag: '🇸🇾',
+    cities: [
+      { id: 'damascus', nameAr: 'دمشق',             lat: 33.5102,  lng: 36.2913 },
+      { id: 'aleppo',   nameAr: 'حلب',              lat: 36.2021,  lng: 37.1343 },
+      { id: 'latakia',  nameAr: 'اللاذقية',         lat: 35.5225,  lng: 35.7915 },
+      { id: 'homs',     nameAr: 'حمص',              lat: 34.7324,  lng: 36.7124 },
+      { id: 'hama',     nameAr: 'حماة',             lat: 35.1352,  lng: 36.7553 },
+    ],
+  },
+  {
+    id: 'iq', nameAr: 'العراق', flag: '🇮🇶',
+    cities: [
+      { id: 'baghdad', nameAr: 'بغداد',             lat: 33.3152,  lng: 44.3661 },
+      { id: 'basra',   nameAr: 'البصرة',            lat: 30.5085,  lng: 47.7838 },
+      { id: 'mosul',   nameAr: 'الموصل',            lat: 36.3350,  lng: 43.1189 },
+      { id: 'erbil',   nameAr: 'أربيل',             lat: 36.1911,  lng: 44.0092 },
+      { id: 'najaf',   nameAr: 'النجف',             lat: 32.0025,  lng: 44.3365 },
+      { id: 'karbala', nameAr: 'كربلاء',            lat: 32.6154,  lng: 44.0244 },
+      { id: 'kirkuk',  nameAr: 'كركوك',             lat: 35.4681,  lng: 44.3922 },
+    ],
+  },
+  {
+    id: 'ly', nameAr: 'ليبيا', flag: '🇱🇾',
+    cities: [
+      { id: 'tripoli_ly', nameAr: 'طرابلس',         lat: 32.9024,  lng: 13.1800 },
+      { id: 'benghazi',   nameAr: 'بنغازي',         lat: 32.1194,  lng: 20.0865 },
+      { id: 'misrata',    nameAr: 'مصراتة',         lat: 32.3754,  lng: 15.0924 },
+    ],
+  },
+  {
+    id: 'tn', nameAr: 'تونس', flag: '🇹🇳',
+    cities: [
+      { id: 'tunis',    nameAr: 'تونس',             lat: 36.8190,  lng: 10.1658 },
+      { id: 'sfax',     nameAr: 'صفاقس',            lat: 34.7406,  lng: 10.7603 },
+      { id: 'sousse',   nameAr: 'سوسة',             lat: 35.8245,  lng: 10.6346 },
+      { id: 'kairouan', nameAr: 'القيروان',         lat: 35.6781,  lng: 10.0963 },
+      { id: 'bizerte',  nameAr: 'بنزرت',            lat: 37.2746,  lng:  9.8735 },
+    ],
+  },
+  {
+    id: 'dz', nameAr: 'الجزائر', flag: '🇩🇿',
+    cities: [
+      { id: 'algiers',    nameAr: 'الجزائر العاصمة', lat: 36.7325, lng:  3.0875 },
+      { id: 'oran',       nameAr: 'وهران',           lat: 35.6987,  lng: -0.6349 },
+      { id: 'constantine',nameAr: 'قسنطينة',        lat: 36.3650,  lng:  6.6147 },
+      { id: 'annaba',     nameAr: 'عنابة',           lat: 36.9000,  lng:  7.7667 },
+      { id: 'tlemcen',    nameAr: 'تلمسان',          lat: 34.8828,  lng: -1.3167 },
+      { id: 'batna',      nameAr: 'باتنة',           lat: 35.5560,  lng:  6.1742 },
+    ],
+  },
+  {
+    id: 'ma', nameAr: 'المغرب', flag: '🇲🇦',
+    cities: [
+      { id: 'rabat',        nameAr: 'الرباط',          lat: 34.0209,  lng: -6.8416 },
+      { id: 'casablanca',   nameAr: 'الدار البيضاء',   lat: 33.5731,  lng: -7.5898 },
+      { id: 'marrakech',    nameAr: 'مراكش',           lat: 31.6295,  lng: -7.9811 },
+      { id: 'fez',          nameAr: 'فاس',             lat: 34.0181,  lng: -5.0078 },
+      { id: 'tangier',      nameAr: 'طنجة',            lat: 35.7595,  lng: -5.8340 },
+      { id: 'agadir',       nameAr: 'أغادير',          lat: 30.4278,  lng: -9.5981 },
+      { id: 'meknes',       nameAr: 'مكناس',           lat: 33.8935,  lng: -5.5473 },
+      { id: 'oujda',        nameAr: 'وجدة',            lat: 34.6800,  lng: -1.9000 },
+    ],
+  },
+  {
+    id: 'sd', nameAr: 'السودان', flag: '🇸🇩',
+    cities: [
+      { id: 'khartoum',   nameAr: 'الخرطوم',         lat: 15.5007,  lng: 32.5599 },
+      { id: 'omdurman',   nameAr: 'أم درمان',        lat: 15.6333,  lng: 32.4833 },
+      { id: 'portsudan',  nameAr: 'بورسودان',        lat: 19.6158,  lng: 37.2164 },
+    ],
+  },
+  {
+    id: 'mr', nameAr: 'موريتانيا', flag: '🇲🇷',
+    cities: [
+      { id: 'nouakchott',  nameAr: 'نواكشوط',        lat: 18.0735,  lng: -15.9582 },
+      { id: 'nouadhibou',  nameAr: 'نواذيبو',        lat: 20.9318,  lng: -17.0347 },
+    ],
+  },
+  {
+    id: 'so', nameAr: 'الصومال', flag: '🇸🇴',
+    cities: [
+      { id: 'mogadishu', nameAr: 'مقديشو',           lat:  2.0469,  lng: 45.3182 },
+    ],
+  },
+  {
+    id: 'dj', nameAr: 'جيبوتي', flag: '🇩🇯',
+    cities: [
+      { id: 'djibouti_city', nameAr: 'مدينة جيبوتي', lat: 11.5720, lng: 43.1456 },
+    ],
+  },
+  {
+    id: 'km', nameAr: 'جزر القمر', flag: '🇰🇲',
+    cities: [
+      { id: 'moroni', nameAr: 'موروني',               lat: -11.7022, lng: 43.2551 },
+    ],
+  },
+  {
+    id: 'tr', nameAr: 'تركيا', flag: '🇹🇷',
+    cities: [
+      { id: 'istanbul',   nameAr: 'إسطنبول',          lat: 41.0082,  lng: 28.9784 },
+      { id: 'ankara',     nameAr: 'أنقرة',            lat: 39.9334,  lng: 32.8597 },
+      { id: 'izmir',      nameAr: 'إزمير',            lat: 38.4192,  lng: 27.1287 },
+      { id: 'bursa',      nameAr: 'بورصة',            lat: 40.1885,  lng: 29.0610 },
+      { id: 'antalya',    nameAr: 'أنطاليا',          lat: 36.8969,  lng: 30.7133 },
+      { id: 'konya',      nameAr: 'قونية',            lat: 37.8715,  lng: 32.4846 },
+      { id: 'adana',      nameAr: 'أضنة',             lat: 37.0000,  lng: 35.3213 },
+      { id: 'gaziantep',  nameAr: 'غازي عنتاب',      lat: 37.0662,  lng: 37.3833 },
+      { id: 'trabzon',    nameAr: 'طرابزون',          lat: 41.0027,  lng: 39.7168 },
+    ],
+  },
+  {
+    id: 'pk', nameAr: 'باكستان', flag: '🇵🇰',
+    cities: [
+      { id: 'karachi',    nameAr: 'كراتشي',           lat: 24.8607,  lng: 67.0011 },
+      { id: 'lahore',     nameAr: 'لاهور',            lat: 31.5204,  lng: 74.3587 },
+      { id: 'islamabad',  nameAr: 'إسلام آباد',       lat: 33.6844,  lng: 73.0479 },
+      { id: 'rawalpindi', nameAr: 'راولبندي',         lat: 33.6007,  lng: 73.0679 },
+      { id: 'faisalabad', nameAr: 'فيصل آباد',        lat: 31.4504,  lng: 73.1350 },
+      { id: 'multan',     nameAr: 'ملتان',            lat: 30.1575,  lng: 71.5249 },
+      { id: 'peshawar',   nameAr: 'بيشاور',           lat: 34.0151,  lng: 71.5805 },
+      { id: 'quetta',     nameAr: 'كويتا',            lat: 30.1798,  lng: 66.9750 },
+    ],
+  },
+  {
+    id: 'bd', nameAr: 'بنغلاديش', flag: '🇧🇩',
+    cities: [
+      { id: 'dhaka',       nameAr: 'دكا',             lat: 23.8103,  lng: 90.4125 },
+      { id: 'chittagong',  nameAr: 'شيتاغونغ',        lat: 22.3569,  lng: 91.7832 },
+      { id: 'sylhet',      nameAr: 'سيلهيت',          lat: 24.8949,  lng: 91.8687 },
+    ],
+  },
+  {
+    id: 'id', nameAr: 'إندونيسيا', flag: '🇮🇩',
+    cities: [
+      { id: 'jakarta',    nameAr: 'جاكرتا',           lat: -6.2088, lng: 106.8456 },
+      { id: 'surabaya',   nameAr: 'سورابايا',         lat: -7.2575, lng: 112.7521 },
+      { id: 'bandung',    nameAr: 'باندونغ',          lat: -6.9175, lng: 107.6191 },
+      { id: 'medan',      nameAr: 'ميدان',            lat:  3.5952, lng:  98.6722 },
+      { id: 'makassar',   nameAr: 'ماكاسار',          lat: -5.1477, lng: 119.4327 },
+      { id: 'yogyakarta', nameAr: 'يوغياكارتا',       lat: -7.7956, lng: 110.3695 },
+    ],
+  },
+  {
+    id: 'my', nameAr: 'ماليزيا', flag: '🇲🇾',
+    cities: [
+      { id: 'kualalumpur', nameAr: 'كوالالمبور',      lat:  3.1390, lng: 101.6869 },
+      { id: 'penang',      nameAr: 'بينانج',           lat:  5.4141, lng: 100.3288 },
+      { id: 'johor',       nameAr: 'جوهور بهرو',       lat:  1.4927, lng: 103.7414 },
+      { id: 'kotakinabalu',nameAr: 'كوتا كينابالو',   lat:  5.9804, lng: 116.0735 },
+    ],
+  },
+  {
+    id: 'ng', nameAr: 'نيجيريا', flag: '🇳🇬',
+    cities: [
+      { id: 'lagos',    nameAr: 'لاغوس',              lat:  6.5244,  lng:  3.3792 },
+      { id: 'abuja',    nameAr: 'أبوجا',              lat:  9.0765,  lng:  7.3986 },
+      { id: 'kano',     nameAr: 'كانو',               lat: 12.0022,  lng:  8.5920 },
+      { id: 'ibadan',   nameAr: 'إيبادان',            lat:  7.3776,  lng:  3.9470 },
+      { id: 'kaduna',   nameAr: 'كادونا',             lat: 10.5264,  lng:  7.4382 },
+    ],
+  },
+  {
+    id: 'sn', nameAr: 'السنغال', flag: '🇸🇳',
+    cities: [
+      { id: 'dakar', nameAr: 'داكار',                 lat: 14.7167,  lng: -17.4677 },
+      { id: 'touba', nameAr: 'طوبى',                  lat: 14.8542,  lng: -15.8822 },
+    ],
+  },
+  {
+    id: 'af', nameAr: 'أفغانستان', flag: '🇦🇫',
+    cities: [
+      { id: 'kabul',      nameAr: 'كابل',             lat: 34.5553,  lng: 69.2075 },
+      { id: 'kandahar',   nameAr: 'قندهار',           lat: 31.6289,  lng: 65.7372 },
+      { id: 'herat',      nameAr: 'هراة',             lat: 34.3529,  lng: 62.2040 },
+      { id: 'mazarsharif',nameAr: 'مزار شريف',        lat: 36.7069,  lng: 67.1100 },
+    ],
+  },
+  {
+    id: 'ir', nameAr: 'إيران', flag: '🇮🇷',
+    cities: [
+      { id: 'tehran',   nameAr: 'طهران',              lat: 35.6892,  lng: 51.3890 },
+      { id: 'mashhad',  nameAr: 'مشهد',               lat: 36.2605,  lng: 59.6168 },
+      { id: 'isfahan',  nameAr: 'أصفهان',             lat: 32.6546,  lng: 51.6680 },
+      { id: 'tabriz',   nameAr: 'تبريز',              lat: 38.0800,  lng: 46.2919 },
+      { id: 'shiraz',   nameAr: 'شيراز',              lat: 29.5918,  lng: 52.5837 },
+    ],
+  },
+  {
+    id: 'in', nameAr: 'الهند', flag: '🇮🇳',
+    cities: [
+      { id: 'newdelhi',   nameAr: 'نيو دلهي',         lat: 28.6139,  lng: 77.2090 },
+      { id: 'mumbai',     nameAr: 'مومباي',           lat: 19.0760,  lng: 72.8777 },
+      { id: 'hyderabad',  nameAr: 'حيدر آباد',        lat: 17.3850,  lng: 78.4867 },
+      { id: 'bangalore',  nameAr: 'بنغالور',          lat: 12.9716,  lng: 77.5946 },
+      { id: 'kolkata',    nameAr: 'كلكتا',            lat: 22.5726,  lng: 88.3639 },
+      { id: 'lucknow',    nameAr: 'لكناو',            lat: 26.8467,  lng: 80.9462 },
+    ],
+  },
+  {
+    id: 'kz', nameAr: 'كازاخستان', flag: '🇰🇿',
+    cities: [
+      { id: 'almaty',    nameAr: 'ألماتي',            lat: 43.2220,  lng: 76.8512 },
+      { id: 'nursultan', nameAr: 'أستانا',            lat: 51.1801,  lng: 71.4460 },
+    ],
+  },
+  {
+    id: 'az', nameAr: 'أذربيجان', flag: '🇦🇿',
+    cities: [
+      { id: 'baku', nameAr: 'باكو',                   lat: 40.4093,  lng: 49.8671 },
+    ],
+  },
+  {
+    id: 'ba', nameAr: 'البوسنة والهرسك', flag: '🇧🇦',
+    cities: [
+      { id: 'sarajevo', nameAr: 'سراييفو',            lat: 43.8563,  lng: 18.4131 },
+      { id: 'banja_luka',nameAr: 'بانيا لوكا',        lat: 44.7722,  lng: 17.1910 },
+    ],
+  },
+  {
+    id: 'al', nameAr: 'ألبانيا', flag: '🇦🇱',
+    cities: [
+      { id: 'tirana', nameAr: 'تيرانا',               lat: 41.3275,  lng: 19.8189 },
+    ],
+  },
+  {
+    id: 'xk', nameAr: 'كوسوفو', flag: '🇽🇰',
+    cities: [
+      { id: 'pristina', nameAr: 'بريشتينا',           lat: 42.6629,  lng: 21.1655 },
+    ],
+  },
+  {
+    id: 'us', nameAr: 'الولايات المتحدة', flag: '🇺🇸',
+    cities: [
+      { id: 'newyork',     nameAr: 'نيويورك',         lat: 40.7128,  lng: -74.0060 },
+      { id: 'losangeles',  nameAr: 'لوس أنجلوس',      lat: 34.0522,  lng:-118.2437 },
+      { id: 'chicago',     nameAr: 'شيكاغو',          lat: 41.8781,  lng: -87.6298 },
+      { id: 'houston',     nameAr: 'هيوستن',          lat: 29.7604,  lng: -95.3698 },
+      { id: 'dearborn',    nameAr: 'ديربورن',         lat: 42.3223,  lng: -83.1763 },
+      { id: 'dallas',      nameAr: 'دالاس',           lat: 32.7767,  lng: -96.7970 },
+      { id: 'washington',  nameAr: 'واشنطن',          lat: 38.9072,  lng: -77.0369 },
+      { id: 'newjersey',   nameAr: 'نيوجيرسي',        lat: 40.0583,  lng: -74.4057 },
+      { id: 'minneapolis', nameAr: 'مينيابوليس',      lat: 44.9778,  lng: -93.2650 },
+      { id: 'sanfrancisco',nameAr: 'سان فرانسيسكو',   lat: 37.7749,  lng:-122.4194 },
+    ],
+  },
+  {
+    id: 'gb', nameAr: 'المملكة المتحدة', flag: '🇬🇧',
+    cities: [
+      { id: 'london',     nameAr: 'لندن',             lat: 51.5074,  lng: -0.1278 },
+      { id: 'birmingham', nameAr: 'برمنغهام',         lat: 52.4862,  lng: -1.8904 },
+      { id: 'manchester', nameAr: 'مانشستر',          lat: 53.4808,  lng: -2.2426 },
+      { id: 'bradford',   nameAr: 'برادفورد',         lat: 53.7960,  lng: -1.7594 },
+      { id: 'leeds',      nameAr: 'ليدز',             lat: 53.8008,  lng: -1.5491 },
+      { id: 'leicester',  nameAr: 'ليستر',            lat: 52.6369,  lng: -1.1398 },
+      { id: 'glasgow',    nameAr: 'غلاسكو',           lat: 55.8642,  lng: -4.2518 },
+    ],
+  },
+  {
+    id: 'fr', nameAr: 'فرنسا', flag: '🇫🇷',
+    cities: [
+      { id: 'paris',      nameAr: 'باريس',            lat: 48.8566,  lng:  2.3522 },
+      { id: 'marseille',  nameAr: 'مرسيليا',          lat: 43.2965,  lng:  5.3698 },
+      { id: 'lyon',       nameAr: 'ليون',             lat: 45.7640,  lng:  4.8357 },
+      { id: 'strasbourg', nameAr: 'ستراسبورغ',        lat: 48.5734,  lng:  7.7521 },
+      { id: 'lille',      nameAr: 'ليل',              lat: 50.6292,  lng:  3.0573 },
+      { id: 'nice',       nameAr: 'نيس',              lat: 43.7102,  lng:  7.2620 },
+    ],
+  },
+  {
+    id: 'de', nameAr: 'ألمانيا', flag: '🇩🇪',
+    cities: [
+      { id: 'berlin',     nameAr: 'برلين',            lat: 52.5200,  lng: 13.4050 },
+      { id: 'hamburg',    nameAr: 'هامبورغ',          lat: 53.5753,  lng: 10.0153 },
+      { id: 'munich',     nameAr: 'ميونيخ',           lat: 48.1351,  lng: 11.5820 },
+      { id: 'cologne',    nameAr: 'كولونيا',          lat: 50.9333,  lng:  6.9500 },
+      { id: 'frankfurt',  nameAr: 'فرانكفورت',        lat: 50.1109,  lng:  8.6821 },
+      { id: 'duisburg',   nameAr: 'دويسبورغ',         lat: 51.4344,  lng:  6.7623 },
+    ],
+  },
+  {
+    id: 'ca', nameAr: 'كندا', flag: '🇨🇦',
+    cities: [
+      { id: 'toronto',     nameAr: 'تورنتو',          lat: 43.6532,  lng: -79.3832 },
+      { id: 'montreal',    nameAr: 'مونتريال',        lat: 45.5017,  lng: -73.5673 },
+      { id: 'vancouver',   nameAr: 'فانكوفر',         lat: 49.2827,  lng:-123.1207 },
+      { id: 'ottawa',      nameAr: 'أوتاوا',          lat: 45.4215,  lng: -75.6972 },
+      { id: 'calgary',     nameAr: 'كالغاري',         lat: 51.0447,  lng:-114.0719 },
+      { id: 'mississauga', nameAr: 'ميسيساغا',        lat: 43.5890,  lng: -79.6441 },
+    ],
+  },
+  {
+    id: 'au', nameAr: 'أستراليا', flag: '🇦🇺',
+    cities: [
+      { id: 'sydney',    nameAr: 'سيدني',             lat: -33.8688, lng: 151.2093 },
+      { id: 'melbourne', nameAr: 'ملبورن',            lat: -37.8136, lng: 144.9631 },
+      { id: 'brisbane',  nameAr: 'برزبان',            lat: -27.4698, lng: 153.0251 },
+      { id: 'perth',     nameAr: 'برث',               lat: -31.9505, lng: 115.8605 },
+    ],
+  },
+  {
+    id: 'es', nameAr: 'إسبانيا', flag: '🇪🇸',
+    cities: [
+      { id: 'madrid',    nameAr: 'مدريد',             lat: 40.4168,  lng: -3.7038 },
+      { id: 'barcelona', nameAr: 'برشلونة',           lat: 41.3851,  lng:  2.1734 },
+      { id: 'ceuta',     nameAr: 'سبتة',              lat: 35.8893,  lng: -5.3213 },
+    ],
+  },
+  {
+    id: 'it', nameAr: 'إيطاليا', flag: '🇮🇹',
+    cities: [
+      { id: 'rome',  nameAr: 'روما',                  lat: 41.9028,  lng: 12.4964 },
+      { id: 'milan', nameAr: 'ميلانو',                lat: 45.4654,  lng:  9.1859 },
+    ],
+  },
+  {
+    id: 'nl', nameAr: 'هولندا', flag: '🇳🇱',
+    cities: [
+      { id: 'amsterdam', nameAr: 'أمستردام',          lat: 52.3676,  lng:  4.9041 },
+      { id: 'rotterdam', nameAr: 'روتردام',           lat: 51.9244,  lng:  4.4777 },
+    ],
+  },
+  {
+    id: 'be', nameAr: 'بلجيكا', flag: '🇧🇪',
+    cities: [
+      { id: 'brussels', nameAr: 'بروكسل',             lat: 50.8503,  lng:  4.3517 },
+      { id: 'antwerp',  nameAr: 'أنتويرب',            lat: 51.2194,  lng:  4.4025 },
+    ],
+  },
+  {
+    id: 'se', nameAr: 'السويد', flag: '🇸🇪',
+    cities: [
+      { id: 'stockholm', nameAr: 'ستوكهولم',          lat: 59.3293,  lng: 18.0686 },
+      { id: 'malmo',     nameAr: 'مالمو',             lat: 55.6050,  lng: 13.0038 },
+    ],
+  },
+  {
+    id: 'no', nameAr: 'النرويج', flag: '🇳🇴',
+    cities: [
+      { id: 'oslo', nameAr: 'أوسلو',                  lat: 59.9139,  lng: 10.7522 },
+    ],
+  },
+  {
+    id: 'dk', nameAr: 'الدنمارك', flag: '🇩🇰',
+    cities: [
+      { id: 'copenhagen', nameAr: 'كوبنهاغن',         lat: 55.6761,  lng: 12.5683 },
+    ],
+  },
+  {
+    id: 'ch', nameAr: 'سويسرا', flag: '🇨🇭',
+    cities: [
+      { id: 'zurich',  nameAr: 'زيورخ',               lat: 47.3769,  lng:  8.5417 },
+      { id: 'geneva',  nameAr: 'جنيف',                lat: 46.2044,  lng:  6.1432 },
+    ],
+  },
+  {
+    id: 'ru', nameAr: 'روسيا', flag: '🇷🇺',
+    cities: [
+      { id: 'moscow',          nameAr: 'موسكو',        lat: 55.7558,  lng: 37.6173 },
+      { id: 'kazan',           nameAr: 'قازان',        lat: 55.8304,  lng: 49.0661 },
+      { id: 'makhachkala',     nameAr: 'ماخاتشكالا',  lat: 42.9849,  lng: 47.5047 },
+      { id: 'grozny',          nameAr: 'غروزني',       lat: 43.3187,  lng: 45.6985 },
+    ],
+  },
+  {
+    id: 'cn', nameAr: 'الصين', flag: '🇨🇳',
+    cities: [
+      { id: 'beijing',  nameAr: 'بكين',               lat: 39.9042,  lng: 116.4074 },
+      { id: 'urumqi',   nameAr: 'أورومتشي',           lat: 43.8256,  lng:  87.6168 },
+      { id: 'kashgar',  nameAr: 'كاشغر',              lat: 39.4703,  lng:  75.9939 },
+    ],
+  },
+  {
+    id: 'za', nameAr: 'جنوب أفريقيا', flag: '🇿🇦',
+    cities: [
+      { id: 'capetown',      nameAr: 'كيب تاون',       lat: -33.9249, lng: 18.4241 },
+      { id: 'johannesburg',  nameAr: 'جوهانسبرغ',      lat: -26.2041, lng: 28.0473 },
+      { id: 'durban',        nameAr: 'ديربان',          lat: -29.8587, lng: 31.0218 },
+    ],
+  },
+  {
+    id: 'ke', nameAr: 'كينيا', flag: '🇰🇪',
+    cities: [
+      { id: 'nairobi', nameAr: 'نيروبي',               lat: -1.2921,  lng: 36.8219 },
+      { id: 'mombasa', nameAr: 'مومباسا',              lat: -4.0435,  lng: 39.6682 },
+    ],
+  },
+  {
+    id: 'tz', nameAr: 'تنزانيا', flag: '🇹🇿',
+    cities: [
+      { id: 'daressalaam', nameAr: 'دار السلام',       lat: -6.7924,  lng: 39.2083 },
+    ],
+  },
+];
+
 // ── EGYPT GOVERNORATES (27) ──
 export const EGYPT_GOVERNORATES = [
   { id: "cairo",       name: "القاهرة",         lat: 30.0444, lng: 31.2357, flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Flag_of_Cairo.svg/120px-Flag_of_Cairo.svg.png" },

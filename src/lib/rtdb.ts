@@ -26,6 +26,8 @@ export interface UserProfile {
   lng: number;
   joinedAt: number;
   nameLastChanged?: number;
+  countryId?: string;
+  countryNameAr?: string;
 }
 
 /* ══════════════════════════════════════════════════════════════

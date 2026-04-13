@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { EGYPT_GOVERNORATES } from '@/lib/constants';
+import { useState, useMemo } from 'react';
+import { EGYPT_GOVERNORATES, WORLD_COUNTRIES, type WorldCountry, type WorldCity } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, Mail, Lock, Eye, EyeOff, ChevronRight,
-  LogIn, UserPlus,
+  LogIn, UserPlus, Search,
 } from 'lucide-react';
 import {
   createUserWithEmailAndPassword,
@@ -20,7 +20,7 @@ interface LoginProps {
 
 type Step =
   | 'welcome'
-  | 'signup-email' | 'signup-password' | 'signup-city'
+  | 'signup-email' | 'signup-password' | 'signup-country' | 'signup-gov' | 'signup-worldcity'
   | 'login-email'  | 'login-password'
   | 'city-picker';
 
@@ -156,6 +156,95 @@ function CityPicker({
   );
 }
 
+function CountryPicker({ onSelect }: { onSelect: (country: WorldCountry) => void }) {
+  const [search, setSearch] = useState('');
+
+  const egypt = { id: 'eg', nameAr: 'مصر', flag: '🇪🇬', cities: [] };
+  const allCountries = [egypt, ...WORLD_COUNTRIES];
+
+  const filtered = useMemo(() => {
+    const q = search.trim();
+    if (!q) return allCountries;
+    return allCountries.filter(c => c.nameAr.includes(q));
+  }, [search]);
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.65)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 8px rgba(93,48,16,0.06)' }}>
+      <div className="px-3 pt-3 pb-2">
+        <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.8)', border: '1.5px solid rgba(139,99,64,0.2)' }}>
+          <Search className="w-4 h-4 flex-shrink-0" style={{ color: '#C19A6B' }} />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="ابحث عن دولتك..."
+            className="flex-1 bg-transparent outline-none text-sm"
+            style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007', direction: 'rtl' }}
+          />
+        </div>
+      </div>
+      <div className="overflow-y-auto px-3 pb-3" style={{ maxHeight: '44vh' }}>
+        <div className="grid grid-cols-3 gap-2">
+          {filtered.map(country => (
+            <motion.button
+              key={country.id}
+              onClick={() => onSelect(country as WorldCountry)}
+              whileTap={{ scale: 0.93 }}
+              className="flex flex-col items-center gap-1.5 rounded-xl p-2 pt-2.5 transition-all duration-200"
+              style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.12)' }}
+            >
+              <div className="w-11 h-8 rounded-md flex items-center justify-center text-2xl" style={{ background: 'rgba(139,99,64,0.06)' }}>
+                {country.flag}
+              </div>
+              <span className="text-[10px] font-bold leading-tight text-center" style={{ fontFamily: '"Tajawal", sans-serif', color: '#7A4F28' }}>
+                {country.nameAr}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorldCityPicker({ country, cityId, onSelect }: { country: WorldCountry; cityId: string; onSelect: (city: WorldCity) => void }) {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.65)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 8px rgba(93,48,16,0.06)' }}>
+      <div className="overflow-y-auto" style={{ maxHeight: '44vh' }}>
+        <div className="flex flex-col gap-1 p-3">
+          {country.cities.map(city => {
+            const selected = cityId === city.id;
+            return (
+              <motion.button
+                key={city.id}
+                onClick={() => onSelect(city)}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200"
+                style={{
+                  background: selected ? 'linear-gradient(135deg,rgba(193,154,107,0.28),rgba(193,154,107,0.1))' : 'rgba(255,255,255,0.6)',
+                  border: selected ? '1.5px solid rgba(193,154,107,0.7)' : '1.5px solid rgba(139,99,64,0.12)',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{country.flag}</span>
+                  <span className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: selected ? '#8B6340' : '#5D3010' }}>
+                    {city.nameAr}
+                  </span>
+                </div>
+                {selected && (
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#C19A6B' }}>
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ErrorBadge({ msg }: { msg: string }) {
   return (
     <motion.div
@@ -194,21 +283,41 @@ async function finalizeUserProfile(
   userEmail: string,
   photo: string,
   selectedGovId: string,
+  worldLocation?: { cityId: string; cityNameAr: string; lat: number; lng: number; countryId: string; countryNameAr: string },
 ): Promise<void> {
-  const gov = GOVS.find(g => g.id === selectedGovId);
-  if (!gov) throw new Error('Governorate not found');
+  let profile: UserProfile;
 
-  const profile: UserProfile = {
-    uid,
-    name: displayName.trim() || userEmail.split('@')[0],
-    email: userEmail,
-    photo,
-    governorateId: selectedGovId,
-    governorateName: gov.name,
-    lat: gov.lat,
-    lng: gov.lng,
-    joinedAt: Date.now(),
-  };
+  if (worldLocation) {
+    profile = {
+      uid,
+      name: displayName.trim() || userEmail.split('@')[0],
+      email: userEmail,
+      photo,
+      governorateId: worldLocation.cityId,
+      governorateName: worldLocation.cityNameAr,
+      lat: worldLocation.lat,
+      lng: worldLocation.lng,
+      joinedAt: Date.now(),
+      countryId: worldLocation.countryId,
+      countryNameAr: worldLocation.countryNameAr,
+    };
+  } else {
+    const gov = GOVS.find(g => g.id === selectedGovId);
+    if (!gov) throw new Error('Governorate not found');
+    profile = {
+      uid,
+      name: displayName.trim() || userEmail.split('@')[0],
+      email: userEmail,
+      photo,
+      governorateId: selectedGovId,
+      governorateName: gov.name,
+      lat: gov.lat,
+      lng: gov.lng,
+      joinedAt: Date.now(),
+      countryId: 'eg',
+      countryNameAr: 'مصر',
+    };
+  }
 
   await initUserSync(uid);
   await saveProfileToRTDB(uid, profile);
@@ -222,6 +331,10 @@ export function Login({ onComplete }: LoginProps) {
   const [govId, setGovId]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+
+  // country / world city
+  const [selectedCountry, setSelectedCountry] = useState<WorldCountry | null>(null);
+  const [worldCityId, setWorldCityId]         = useState('');
 
   // after auth, hold uid+name+email+photo while user picks city
   const [pendingUid, setPendingUid]       = useState('');
@@ -239,14 +352,45 @@ export function Login({ onComplete }: LoginProps) {
     } catch { return false; }
   }
 
-  /* ── Email Signup ─────────────────────────────────────────── */
-  const handleSignupCity = async (selectedGov: string) => {
+  /* ── Country selection handler ───────────────────────────── */
+  const handleSignupCountry = (country: WorldCountry) => {
+    setSelectedCountry(country);
+    setWorldCityId('');
+    if (country.id === 'eg') {
+      setStep('signup-gov');
+    } else {
+      setStep('signup-worldcity');
+    }
+  };
+
+  /* ── Egypt governorate signup ─────────────────────────────── */
+  const handleSignupGov = async (selectedGov: string) => {
     if (!selectedGov) return;
     setLoading(true);
     setError('');
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await finalizeUserProfile(cred.user.uid, email.split('@')[0], email.trim(), '', selectedGov);
+      onComplete();
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code ?? '';
+      setError(mapFirebaseError(code));
+      setLoading(false);
+    }
+  };
+
+  /* ── World city signup ───────────────────────────────────── */
+  const handleSignupWorldCity = async (city: WorldCity) => {
+    if (!selectedCountry) return;
+    setWorldCityId(city.id);
+    setLoading(true);
+    setError('');
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await finalizeUserProfile(
+        cred.user.uid, email.split('@')[0], email.trim(), '', '',
+        { cityId: city.id, cityNameAr: city.nameAr, lat: city.lat, lng: city.lng, countryId: selectedCountry.id, countryNameAr: selectedCountry.nameAr },
+      );
       onComplete();
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code ?? '';
@@ -502,7 +646,7 @@ export function Login({ onComplete }: LoginProps) {
                   placeholder="كلمة السر (٦ أحرف على الأقل)..."
                   autoFocus
                   icon={<Lock className="w-4 h-4" />}
-                  onEnter={() => password.length >= 6 && setStep('signup-city')}
+                  onEnter={() => password.length >= 6 && setStep('signup-country')}
                   trailing={
                     <button type="button" onClick={() => setShowPass(s => !s)} style={{ color: '#9B7043' }}>
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -512,7 +656,7 @@ export function Login({ onComplete }: LoginProps) {
                 {error && <div className="mt-3"><ErrorBadge msg={error} /></div>}
               </div>
               <button
-                onClick={() => password.length >= 6 && setStep('signup-city')}
+                onClick={() => password.length >= 6 && setStep('signup-country')}
                 disabled={password.length < 6}
                 className="w-full py-4 rounded-2xl transition-all disabled:opacity-30"
                 style={BTN_GOLD}
@@ -522,9 +666,9 @@ export function Login({ onComplete }: LoginProps) {
             </motion.div>
           )}
 
-          {/* ─── Signup: City ─── */}
-          {step === 'signup-city' && (
-            <motion.div key="signup-city" {...slide} className="flex flex-col gap-4">
+          {/* ─── Signup: Country ─── */}
+          {step === 'signup-country' && (
+            <motion.div key="signup-country" {...slide} className="flex flex-col gap-4">
               <button
                 onClick={() => { clearError(); setStep('signup-password'); }}
                 className="flex items-center gap-1.5 text-sm"
@@ -533,9 +677,59 @@ export function Login({ onComplete }: LoginProps) {
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
               <div>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>اختر دولتك</h2>
+                <p className="text-xs text-center mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لضبط مواقيت الصلاة بدقة</p>
+                <CountryPicker onSelect={handleSignupCountry} />
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── Signup: Egypt Governorate ─── */}
+          {step === 'signup-gov' && (
+            <motion.div key="signup-gov" {...slide} className="flex flex-col gap-4">
+              <button
+                onClick={() => { clearError(); setStep('signup-country'); }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
+              >
+                <ChevronRight className="w-4 h-4" /> رجوع
+              </button>
+              <div>
                 <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>اختر محافظتك</h2>
                 <p className="text-xs text-center mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>لضبط مواقيت الصلاة بدقة</p>
-                <CityPicker govId={govId} onSelect={id => { setGovId(id); handleSignupCity(id); }} />
+                <CityPicker govId={govId} onSelect={id => { setGovId(id); handleSignupGov(id); }} />
+              </div>
+              {loading && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <div className="w-5 h-5 border-2 border-[#C19A6B]/30 border-t-[#C19A6B] rounded-full animate-spin" />
+                  <span className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>جاري الحفظ...</span>
+                </div>
+              )}
+              {error && <ErrorBadge msg={error} />}
+            </motion.div>
+          )}
+
+          {/* ─── Signup: World City ─── */}
+          {step === 'signup-worldcity' && selectedCountry && (
+            <motion.div key="signup-worldcity" {...slide} className="flex flex-col gap-4">
+              <button
+                onClick={() => { clearError(); setStep('signup-country'); }}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}
+              >
+                <ChevronRight className="w-4 h-4" /> رجوع
+              </button>
+              <div>
+                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>
+                  <span className="ml-2">{selectedCountry.flag}</span>
+                  {selectedCountry.nameAr}
+                </h2>
+                <p className="text-xs text-center mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>اختر مدينتك لضبط مواقيت الصلاة</p>
+                <WorldCityPicker
+                  country={selectedCountry}
+                  cityId={worldCityId}
+                  onSelect={handleSignupWorldCity}
+                />
               </div>
               {loading && (
                 <div className="flex items-center justify-center gap-2 py-2">
