@@ -5,7 +5,7 @@ import {
 import { Link } from 'wouter';
 
 /* ── Constants ──────────────────────────────────────────────────────── */
-const WORDS_PER_PAGE = 6;
+const WORDS_PER_PAGE = 1;
 const QURAN_CDN_BASE = 'https://verses.quran.com/';
 
 /* ── Arabic font options ────────────────────────────────────────────── */
@@ -124,23 +124,6 @@ export function QuranStatus() {
   const [recordError, setRecordError]     = useState('');
   const [completedVid, setCompletedVid]   = useState<CompletedVid | null>(null);
 
-  /* Preview panel ref for scale calculation */
-  const previewContainerRef               = useRef<HTMLDivElement>(null);
-  const [previewScale, setPreviewScale]   = useState(0.25);
-
-  /* ── Scale calculation ── */
-  useEffect(() => {
-    const update = () => {
-      if (previewContainerRef.current) {
-        const w = previewContainerRef.current.getBoundingClientRect().width;
-        if (w > 0) setPreviewScale(w / 1080);
-      }
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    if (previewContainerRef.current) ro.observe(previewContainerRef.current);
-    return () => ro.disconnect();
-  }, []);
 
   /* ── Fetch surahs ── */
   useEffect(() => {
@@ -394,13 +377,6 @@ export function QuranStatus() {
         bgImg = img;
       }
 
-      let basmalImg: HTMLImageElement | null = null;
-      try {
-        const bl = new Image(); bl.crossOrigin = 'anonymous'; bl.src = `${window.location.origin}/basmala.jpg`;
-        await new Promise<void>(r => { bl.onload = () => r(); bl.onerror = () => r(); });
-        if (bl.complete && bl.naturalWidth > 0) basmalImg = bl;
-      } catch { /* ok */ }
-
       let logoImg: HTMLImageElement | null = null;
       try {
         const l = new Image(); l.crossOrigin = 'anonymous'; l.src = `${window.location.origin}/logo.png`;
@@ -431,28 +407,16 @@ export function QuranStatus() {
         ov.addColorStop(0, 'rgba(0,0,0,0.30)'); ov.addColorStop(0.5, 'rgba(0,0,0,0.55)'); ov.addColorStop(1, 'rgba(0,0,0,0.80)');
         ctx.fillStyle = ov; ctx.fillRect(0, 0, W, H);
 
-        /* Basmala image */
-        if (basmalImg) {
-          const bw  = 880;
-          const bh  = Math.round(bw * (basmalImg.naturalHeight / basmalImg.naturalWidth));
-          const bx  = (W - bw) / 2;
-          const by  = 140;
-          ctx.globalAlpha = 0.95;
-          ctx.drawImage(basmalImg, bx, by, bw, bh);
-          ctx.globalAlpha = 1;
-          /* Gold line under basmala — generous gap */
-          ctx.strokeStyle = 'rgba(200,153,26,0.6)'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.moveTo(160, by + bh + 110); ctx.lineTo(920, by + bh + 110); ctx.stroke();
-        } else {
-          /* Text fallback */
+        /* Basmala — text only */
+        {
           ctx.font = `60px ${fontFamily}`; ctx.fillStyle = 'rgba(200,153,26,0.90)';
           ctx.textAlign = 'center'; ctx.direction = 'rtl';
           ctx.fillText('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ', W / 2, 260);
           ctx.strokeStyle = 'rgba(200,153,26,0.50)'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.moveTo(160, 290); ctx.lineTo(920, 290); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(160, 295); ctx.lineTo(920, 295); ctx.stroke();
         }
 
-        /* ── 6-word page ── */
+        /* ── current word ── */
         let currentWordIdxCanvas = 0;
         for (let i = 0; i < timeline.length; i++) {
           if (timeline[i].startMs <= elapsedMs) currentWordIdxCanvas = i;
@@ -569,20 +533,9 @@ export function QuranStatus() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Derived preview values ── */
-  const fontFamily = FONT_OPTIONS.find(f => f.id === selectedFont)!.cssFamily;
-  const textForSize = allWords.join(' ');
-
-  /* Active page for preview (null = static, showing first page) */
-  const activePage = currentWordIdx !== null
-    ? Math.floor(currentWordIdx / WORDS_PER_PAGE)
-    : 0;
-  const pageStart  = activePage * WORDS_PER_PAGE;
-  const pageWords  = allWords.slice(pageStart, pageStart + WORDS_PER_PAGE);
-
-  /* Font size for preview panel (in 1080px space) — includes user scale */
-  const pageText    = pageWords.join(' ');
-  const charCount   = pageText.length || 1;
-  const canvasFontSize = Math.max(50, Math.min(180, Math.round(9000 / Math.sqrt(charCount + 1) * fontScale)));
+  const fontFamily    = FONT_OPTIONS.find(f => f.id === selectedFont)!.cssFamily;
+  const totalChars    = allWords.join(' ').length;
+  const ayahFontSizePx = totalChars > 200 ? 10 : totalChars > 130 ? 12 : totalChars > 80 ? 14 : totalChars > 50 ? 16 : 18;
 
   /* ════════════════════════════════════ Render ── */
   return (
@@ -615,126 +568,88 @@ export function QuranStatus() {
         </div>
       </div>
 
-      {/* ── Preview Panel — pixel-perfect scaled canvas replica ── */}
+      {/* ── Preview Panel ── */}
       <div className="relative z-10 flex-shrink-0 mx-4 mt-3">
         <div
-          ref={previewContainerRef}
-          className="w-full rounded-3xl overflow-hidden relative"
+          className="w-full rounded-3xl overflow-hidden relative flex items-center justify-center"
           style={{ aspectRatio: '9/16', maxHeight: '40vh', border: '1.5px solid rgba(200,153,26,0.35)' }}
         >
-          {/* Outer clip wrapper */}
-          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-            {/* Inner element rendered at full 1080×1920 then scaled down */}
-            <div style={{
-              width: 1080, height: 1920,
-              transform: `scale(${previewScale})`,
-              transformOrigin: 'top left',
-              position: 'absolute', top: 0, left: 0,
-            }}>
-              {/* Background */}
-              {bgObjectUrl && bgType === 'image' && (
-                <img src={bgObjectUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-              )}
-              {bgObjectUrl && bgType === 'video' && (
-                <video ref={videoRef} src={bgObjectUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                  autoPlay loop muted playsInline />
-              )}
-              {!bgObjectUrl && (
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0e1f0b 0%, #142e10 40%, #060e04 100%)' }} />
-              )}
-              {/* Dark overlay */}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.52) 50%, rgba(0,0,0,0.78) 100%)' }} />
+          {/* Background */}
+          {bgObjectUrl && bgType === 'image' && (
+            <img src={bgObjectUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          {bgObjectUrl && bgType === 'video' && (
+            <video ref={videoRef} src={bgObjectUrl} className="absolute inset-0 w-full h-full object-cover"
+              autoPlay loop muted playsInline />
+          )}
+          {!bgObjectUrl && (
+            <div className="absolute inset-0"
+              style={{ background: 'linear-gradient(135deg, #0e1f0b 0%, #142e10 40%, #060e04 100%)' }} />
+          )}
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.22) 0%,rgba(0,0,0,0.52) 50%,rgba(0,0,0,0.75) 100%)' }} />
 
-              {/* Basmala image */}
-              <div style={{ position: 'absolute', top: 140, left: 100, right: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <img src="/basmala.jpg" alt="بسم الله الرحمن الرحيم"
-                  style={{ width: '100%', height: 'auto', objectFit: 'contain', opacity: 0.95 }} />
-                <div style={{ width: 760, height: 3, background: 'rgba(200,153,26,0.55)', marginTop: 110 }} />
-              </div>
+          {/* Basmala text + divider */}
+          <div className="absolute top-2.5 inset-x-0 flex flex-col items-center pointer-events-none gap-1">
+            <span style={{ fontFamily: '"Amiri","Traditional Arabic",serif', fontSize: '9px', color: 'rgba(200,153,26,0.88)', direction: 'rtl' }}>
+              بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+            </span>
+            <div style={{ width: 36, height: 1, background: 'rgba(200,153,26,0.35)' }} />
+          </div>
 
-              {/* Loading spinner */}
-              {loadingVerses && (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Loader2 style={{ width: 60, height: 60, color: '#C8991A', animation: 'spin 1s linear infinite' }} />
-                </div>
-              )}
+          {/* Verse text */}
+          <div className="relative z-10 px-4 text-center">
+            {loadingVerses ? (
+              <Loader2 className="w-7 h-7 animate-spin mx-auto" style={{ color: '#C8991A' }} />
+            ) : allWords.length === 0 ? (
+              <p style={{ fontFamily: '"Tajawal",sans-serif', fontSize: '11px', color: 'rgba(200,153,26,0.45)', direction: 'rtl' }}>
+                اختر سورة وآية لعرضها هنا
+              </p>
+            ) : currentWordIdx !== null ? (
+              /* Playback: show only current word — large & centred */
+              <p style={{
+                fontFamily,
+                fontSize: `${Math.round(20 * fontScale)}px`,
+                color: fontColor,
+                direction: 'rtl',
+                textShadow: '0 2px 14px rgba(0,0,0,0.95)',
+                lineHeight: 2,
+                transition: 'opacity 0.12s ease-out',
+              }}>
+                {allWords[currentWordIdx] ?? ''}
+              </p>
+            ) : (
+              /* Static: show all words */
+              <p style={{
+                fontFamily,
+                fontSize: `${Math.round(ayahFontSizePx * fontScale)}px`,
+                color: fontColor,
+                direction: 'rtl',
+                textShadow: '0 2px 14px rgba(0,0,0,0.95)',
+                lineHeight: 2.15,
+              }}>
+                {allWords.join(' ')}
+              </p>
+            )}
+          </div>
 
-              {/* 6-word page — each word fades in individually */}
-              {!loadingVerses && pageWords.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '50%', left: 60, right: 60,
-                  transform: 'translateY(-50%)',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  gap: '0 28px',
-                  direction: 'rtl',
-                  textAlign: 'center',
-                  lineHeight: 1.9,
-                }}>
-                  {pageWords.map((word, i) => {
-                    const globalI = pageStart + i;
-                    const isVisible = currentWordIdx === null
-                      ? true
-                      : globalI <= (currentWordIdx ?? -1);
-                    return (
-                      <span key={`${pageStart}-${i}`}
-                        style={{
-                          fontFamily,
-                          fontSize: canvasFontSize,
-                          color: fontColor,
-                          textShadow: '0 3px 18px rgba(0,0,0,0.98)',
-                          opacity: isVisible ? 1 : 0,
-                          transition: isVisible ? 'opacity 0.12s ease-out' : 'none',
-                          willChange: 'opacity',
-                          display: 'inline-block',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {word}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-
-              {!loadingVerses && allWords.length === 0 && (
-                <div style={{
-                  position: 'absolute', top: '50%', left: 0, right: 0,
-                  transform: 'translateY(-50%)', textAlign: 'center',
-                  fontFamily: '"Tajawal",sans-serif', fontSize: 52, color: 'rgba(200,153,26,0.5)',
-                }}>
-                  اختر سورة وآية
-                </div>
-              )}
-
-              {/* Surah tag */}
-              {verseTexts.length > 0 && !loadingVerses && (
-                <div style={{
-                  position: 'absolute', bottom: 200, left: 0, right: 0,
-                  display: 'flex', justifyContent: 'center',
-                }}>
-                  <span style={{
-                    fontFamily: '"Tajawal",sans-serif', fontSize: 44, direction: 'rtl',
-                    background: 'rgba(0,0,0,0.55)', color: 'rgba(200,153,26,0.92)',
-                    border: '2px solid rgba(200,153,26,0.3)', backdropFilter: 'blur(4px)',
-                    padding: '12px 40px', borderRadius: 999,
-                  }}>
-                    ﴿ {currentSurah?.name_arabic} — {ayahRange} ﴾
-                  </span>
-                </div>
-              )}
-
-              {/* Watermark */}
-              <div style={{ position: 'absolute', bottom: 80, left: 60, direction: 'ltr', display: 'flex', alignItems: 'center', gap: 20 }}>
-                <img src="/logo.png" alt="Noor" style={{ width: 90, height: 90, borderRadius: '50%', opacity: 0.9 }} />
-                <div>
-                  <div style={{ fontFamily: "'Segoe UI',sans-serif", fontSize: 46, fontWeight: 700, color: '#C8991A', textShadow: '0 1px 8px rgba(0,0,0,1)' }}>Noor App</div>
-                  <div style={{ fontFamily: '"Tajawal",sans-serif', fontSize: 32, color: 'rgba(200,153,26,0.70)' }}>تطبيق نور الإسلامي</div>
-                </div>
-              </div>
+          {/* Surah tag */}
+          {verseTexts.length > 0 && !loadingVerses && (
+            <div className="absolute bottom-6 inset-x-0 flex justify-center pointer-events-none">
+              <span className="px-2.5 py-0.5 rounded-full text-center" style={{
+                fontFamily: '"Tajawal",sans-serif', fontSize: '8px',
+                background: 'rgba(0,0,0,0.55)', color: 'rgba(200,153,26,0.92)',
+                border: '1px solid rgba(200,153,26,0.3)', backdropFilter: 'blur(4px)',
+              }}>
+                ﴿ {currentSurah?.name_arabic} — {ayahRange} ﴾
+              </span>
             </div>
+          )}
+
+          {/* Watermark */}
+          <div className="absolute bottom-1.5 left-2.5 flex items-center gap-1.5 pointer-events-none" style={{ direction: 'ltr' }}>
+            <img src="/logo.png" alt="Noor" style={{ width: 20, height: 20, borderRadius: '50%', opacity: 0.9 }} />
+            <span style={{ fontFamily: "'Segoe UI',sans-serif", fontSize: '7px', fontWeight: 700, color: 'rgba(200,153,26,0.75)' }}>Noor App</span>
           </div>
         </div>
       </div>
@@ -877,6 +792,7 @@ export function QuranStatus() {
             value={fontScale}
             onChange={e => setFontScale(parseFloat(e.target.value))}
             data-testid="slider-font-scale"
+            dir="ltr"
             style={{
               width: '100%', accentColor: '#C8991A', cursor: 'pointer',
               height: 4, borderRadius: 2, outline: 'none', appearance: 'none',
