@@ -13,7 +13,7 @@ let dbInitialized = false;
 /* Track unique sessions (one per browser tab/session) */
 const sseClients = new Map<string, Response>();
 
-async function initCounter() {
+export async function initCounter() {
   try {
     const rows = await db.select().from(globalCounter).limit(1);
     if (rows.length > 0) {
@@ -29,8 +29,6 @@ async function initCounter() {
     dbInitialized = true;
   }
 }
-
-initCounter();
 
 function broadcastToAll(data: { count: number; activeUsers: number }) {
   const msg = `data: ${JSON.stringify(data)}\n\n`;

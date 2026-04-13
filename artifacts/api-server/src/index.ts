@@ -1,5 +1,6 @@
 import app from "./app";
 import { initDatabase } from "./db-init";
+import { initCounter } from "./routes/counter";
 
 const rawPort = process.env["PORT"];
 
@@ -16,7 +17,8 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 /* Auto-initialize the database schema, then start serving */
-initDatabase().then(() => {
+initDatabase().then(async () => {
+  await initCounter();
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
   });

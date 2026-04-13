@@ -52,8 +52,8 @@ This is a pnpm monorepo workspace.
 - `lib/api-zod` — Generated Zod schemas from OpenAPI spec
 
 ### `scripts/`
-- `dev-artifact.sh` — **Primary dev script**: starts Vite on PORT (19382 from Replit artifact system) + API server on API_SERVER_PORT (3001)
-- `dev.sh` — Alternative dev script: starts Vite on 5000 + API server on 3001 (used by "npm run dev")
+- `dev-artifact.sh` — Artifact dev script: starts Vite on PORT + API server on API_SERVER_PORT (3001) using pnpm workspace executables
+- `dev.sh` — Primary workflow script: starts Vite on Replit's web port + API server on 3001 using pnpm workspace executables
 - `replit-dev.sh` — Launches the Replit artifact router which manages all services
 - `proxy.js` — HTTP reverse proxy (forwards PROXY_PORT → TARGET_PORT)
 
@@ -74,6 +74,11 @@ The app runs through Replit's artifact system:
 
 ### Running in Development
 The primary workflow is **"artifacts/api-server: API Server"** — this is what keeps the app running. The "Start application" workflow uses `npm run dev` (Vite on port 5000) as a standalone alternative.
+
+### Migration Notes
+- The Replit migration preserves the existing React/Vite frontend, Express API server, pnpm workspace structure, and database schema.
+- Startup scripts now invoke Vite and tsx through pnpm instead of hard-coded `node_modules/.bin` paths, which is more reliable in Replit's workspace layout.
+- Database initialization now completes before the global counter loads, preventing first-run errors when tables do not exist yet.
 
 ## Firebase
 
