@@ -216,11 +216,38 @@ function CountryPicker({ onSelect }: { onSelect: (country: WorldCountry) => void
 }
 
 function WorldCityPicker({ country, cityId, onSelect }: { country: WorldCountry; cityId: string; onSelect: (city: WorldCity) => void }) {
+  const [search, setSearch] = useState('');
+  const filtered = useMemo(() => {
+    const q = search.trim();
+    if (!q) return country.cities;
+    return country.cities.filter(c => c.nameAr.includes(q));
+  }, [search, country.cities]);
+
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.65)', border: '1.5px solid rgba(139,99,64,0.2)', boxShadow: '0 2px 8px rgba(93,48,16,0.06)' }}>
+      {country.cities.length > 4 && (
+        <div className="px-3 pt-3 pb-2">
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.8)', border: '1.5px solid rgba(139,99,64,0.2)' }}>
+            <Search className="w-4 h-4 flex-shrink-0" style={{ color: '#C19A6B' }} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="ابحث عن مدينتك..."
+              className="flex-1 bg-transparent outline-none text-sm"
+              style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007', direction: 'rtl' }}
+            />
+          </div>
+        </div>
+      )}
       <div className="overflow-y-auto" style={{ maxHeight: '44vh' }}>
         <div className="flex flex-col gap-1 p-3">
-          {country.cities.map(city => {
+          {filtered.length === 0 && (
+            <p className="text-center text-sm py-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#C19A6B' }}>
+              لا توجد نتائج
+            </p>
+          )}
+          {filtered.map(city => {
             const selected = cityId === city.id;
             return (
               <motion.button
