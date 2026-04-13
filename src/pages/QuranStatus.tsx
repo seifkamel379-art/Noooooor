@@ -557,108 +557,144 @@ export function QuranStatus() {
       setRecordPct(36);
 
       /* ── Try WebCodecs MP4 muxer first ── */
-      if (hasWebCodecs) {
-        const target = new ArrayBufferTarget();
-        const muxer  = new Muxer({
-          target,
-          video: { codec: 'avc', width: W, height: H },
-          audio: { codec: 'aac', numberOfChannels: 2, sampleRate: 44100 },
-          fastStart: 'in-memory',
-        });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const VideoEncoderClass = (window as any).VideoEncoder as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioEncoderClass = (window as any).AudioEncoder as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const VideoFrameClass   = (window as any).VideoFrame   as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioDataClass    = (window as any).AudioData    as any;
 
-        /* Video encoder */
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const VideoEncoderClass = (window as any).VideoEncoder;
-        const videoEncoder = new VideoEncoderClass({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          output: (chunk: any, meta: any) => muxer.addVideoChunk(chunk, meta),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          error: (e: any) => console.error('[VideoEncoder]', e),
-        });
-        videoEncoder.configure({
-          codec:     'avc1.640034', /* H.264 High Profile Level 5.2 */
-          width:     W,
-          height:    H,
-          bitrate:   8_000_000,
-          framerate: FPS,
-        });
+      let webCodecsDone = false;
 
-        /* Audio encoder */
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioEncoderClass = (window as any).AudioEncoder;
-        const audioEncoder = new AudioEncoderClass({
+      if (hasWebCodecs && VideoEncoderClass && AudioEncoderClass) {
+        try {
+          /* ── Find a supported H.264 codec config (most → least demanding) ── */
+          const W_ = W, H_ = H, FPS_ = FPS;
+          const codecCandidates = [
+            { codec: 'avc1.4D4028', bitrate: 6_000_000 }, /* Main Profile Level 4.0   */
+            { codec: 'avc1.42E028', bitrate: 5_000_000 }, /* Baseline Level 4.0        */
+            { codec: 'avc1.42E01E', bitrate: 4_000_000 }, /* Baseline Level 3.0        */
+            { codec: 'avc1.420015', bitrate: 3_000_000 }, /* Baseline Level 2.1        */
+          ];
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          output: (chunk: any, meta: any) => muxer.addAudioChunk(chunk, meta),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          error: (e: any) => console.error('[AudioEncoder]', e),
-        });
-        const SR = 44100;
-        audioEncoder.configure({
-          codec:            'mp4a.40.2',
-          numberOfChannels: 2,
-          sampleRate:       SR,
-          bitrate:          192_000,
-        });
-
-        /* Encode audio buffers */
-        const CHUNK = 1024;
-        let audioTimestampUs = 0;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioDataClass = (window as any).AudioData;
-        for (const buf of buffers) {
-          const ch0 = buf.getChannelData(0);
-          const ch1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : ch0;
-          for (let offset = 0; offset < buf.length; offset += CHUNK) {
-            const len     = Math.min(CHUNK, buf.length - offset);
-            const planar  = new Float32Array(len * 2);
-            for (let i = 0; i < len; i++) {
-              planar[i]       = ch0[offset + i];
-              planar[len + i] = ch1[offset + i];
-            }
-            const ad = new AudioDataClass({
-              format:           'f32-planar',
-              sampleRate:       SR,
-              numberOfFrames:   len,
-              numberOfChannels: 2,
-              timestamp:        audioTimestampUs,
-              data:             planar,
-            });
-            audioEncoder.encode(ad);
-            ad.close();
-            audioTimestampUs += Math.round((len / SR) * 1_000_000);
+          let videoConfig: any = null;
+          for (const cand of codecCandidates) {
+            try {
+              const cfg = { ...cand, width: W_, height: H_, framerate: FPS_ };
+              const sup = await VideoEncoderClass.isConfigSupported(cfg);
+              if (sup.supported) { videoConfig = cfg; break; }
+            } catch { /* try next */ }
           }
+          if (!videoConfig) throw new Error('No supported H.264 encoder config found on this device');
+
+          const target = new ArrayBufferTarget();
+          const muxer  = new Muxer({
+            target,
+            video: { codec: 'avc', width: W_, height: H_ },
+            audio: { codec: 'aac', numberOfChannels: 2, sampleRate: 44100 },
+            fastStart: 'in-memory',
+          });
+
+          /* ── Video encoder ── */
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let encodeError: any = null;
+          const videoEncoder = new VideoEncoderClass({
+            output: (chunk: any, meta: any) => muxer.addVideoChunk(chunk, meta),
+            error:  (e: any) => { encodeError = e; },
+          });
+          videoEncoder.configure(videoConfig);
+          /* Give the encoder a tick to settle */
+          await new Promise(r => setTimeout(r, 0));
+          if (videoEncoder.state === 'closed') throw new Error('VideoEncoder closed after configure — codec unsupported');
+
+          /* ── Audio encoder ── */
+          const SR = 44100;
+          const audioEncoder = new AudioEncoderClass({
+            output: (chunk: any, meta: any) => muxer.addAudioChunk(chunk, meta),
+            error:  (e: any) => { encodeError = e; },
+          });
+          audioEncoder.configure({
+            codec:            'mp4a.40.2',
+            numberOfChannels: 2,
+            sampleRate:       SR,
+            bitrate:          192_000,
+          });
+          await new Promise(r => setTimeout(r, 0));
+          if (audioEncoder.state === 'closed') throw new Error('AudioEncoder closed after configure');
+
+          /* ── Encode audio buffers ── */
+          const CHUNK = 2048;
+          let audioTimestampUs = 0;
+          for (const buf of buffers) {
+            const ch0 = buf.getChannelData(0);
+            const ch1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : ch0;
+            for (let offset = 0; offset < buf.length; offset += CHUNK) {
+              if (encodeError) throw encodeError;
+              const len    = Math.min(CHUNK, buf.length - offset);
+              const planar = new Float32Array(len * 2);
+              for (let i = 0; i < len; i++) {
+                planar[i]       = ch0[offset + i];
+                planar[len + i] = ch1[offset + i];
+              }
+              const ad = new AudioDataClass({
+                format:           'f32-planar',
+                sampleRate:       SR,
+                numberOfFrames:   len,
+                numberOfChannels: 2,
+                timestamp:        audioTimestampUs,
+                data:             planar,
+              });
+              /* Backpressure */
+              while (audioEncoder.encodeQueueSize > 30) await new Promise(r => setTimeout(r, 4));
+              audioEncoder.encode(ad);
+              ad.close();
+              audioTimestampUs += Math.round((len / SR) * 1_000_000);
+            }
+          }
+
+          /* ── Encode video frames ── */
+          const totalFrames = Math.ceil(totalDurationS * FPS_);
+          const frameDurUs  = 1_000_000 / FPS_;
+          for (let fi = 0; fi < totalFrames; fi++) {
+            if (encodeError) throw encodeError;
+            /* Backpressure: yield if encoder queue is saturated */
+            while (videoEncoder.encodeQueueSize > 15) await new Promise(r => setTimeout(r, 4));
+            if (videoEncoder.state === 'closed') throw new Error('VideoEncoder was closed mid-encode');
+
+            const elapsedMs = (fi / FPS_) * 1000;
+            drawFrame(elapsedMs);
+            const tsUs   = Math.round(fi * frameDurUs);
+            const vf     = new VideoFrameClass(canvas, { timestamp: tsUs, duration: Math.round(frameDurUs) });
+            const keyFrame = fi % (FPS_ * 2) === 0;
+            videoEncoder.encode(vf, { keyFrame });
+            vf.close();
+            setRecordPct(36 + Math.round((fi / totalFrames) * 58));
+            if (fi % 10 === 0) await new Promise(r => setTimeout(r, 0));
+          }
+
+          if (encodeError) throw encodeError;
+          await videoEncoder.flush();
+          await audioEncoder.flush();
+          muxer.finalize();
+
+          const blob = new Blob([target.buffer], { type: 'video/mp4' });
+          await audioCtx.close();
+          setCompletedVid({
+            blob,
+            filename: `noor-${selectedSurah}-${fromAyah}${fromAyah !== toAyah ? `-${toAyah}` : ''}.mp4`,
+          });
+          setRecordPct(100);
+          webCodecsDone = true;
+
+        } catch (wcErr) {
+          console.warn('[WebCodecs] failed, falling back to MediaRecorder:', wcErr);
+          /* fall through to MediaRecorder below */
         }
+      }
 
-        /* Encode video frames */
-        const totalFrames    = Math.ceil(totalDurationS * FPS);
-        const frameDurUs     = 1_000_000 / FPS;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const VideoFrameClass = (window as any).VideoFrame;
-        for (let fi = 0; fi < totalFrames; fi++) {
-          const elapsedMs = (fi / FPS) * 1000;
-          drawFrame(elapsedMs);
-          const tsUs     = Math.round(fi * frameDurUs);
-          const vf       = new VideoFrameClass(canvas, { timestamp: tsUs });
-          const keyFrame = fi % (FPS * 2) === 0;
-          videoEncoder.encode(vf, { keyFrame });
-          vf.close();
-          setRecordPct(36 + Math.round((fi / totalFrames) * 58));
-          if (fi % 8 === 0) await new Promise(r => setTimeout(r, 0));
-        }
-
-        await videoEncoder.flush();
-        await audioEncoder.flush();
-        muxer.finalize();
-
-        const blob = new Blob([target.buffer], { type: 'video/mp4' });
-        await audioCtx.close();
-        setCompletedVid({
-          blob,
-          filename: `noor-${selectedSurah}-${fromAyah}${fromAyah !== toAyah ? `-${toAyah}` : ''}.mp4`,
-        });
-        setRecordPct(100);
-
-      } else {
+      if (!webCodecsDone) {
         /* ── Fallback: MediaRecorder ── */
         const dest     = audioCtx.createMediaStreamDestination();
         const vStream  = canvas.captureStream(FPS);
