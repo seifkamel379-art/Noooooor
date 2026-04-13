@@ -108,6 +108,7 @@ export function QuranStatus() {
 
   const [fontColor, setFontColor]         = useState('#FFFFFF');
   const [selectedFont, setFont]           = useState<FontId>('amiri');
+  const [fontScale, setFontScale]         = useState(1.0); /* 0.6 – 2.0 */
 
   /* Preview state */
   const [isPlaying, setIsPlaying]         = useState(false);
@@ -439,9 +440,9 @@ export function QuranStatus() {
           ctx.globalAlpha = 0.95;
           ctx.drawImage(basmalImg, bx, by, bw, bh);
           ctx.globalAlpha = 1;
-          /* Gold line under basmala */
+          /* Gold line under basmala — generous gap */
           ctx.strokeStyle = 'rgba(200,153,26,0.6)'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.moveTo(160, by + bh + 30); ctx.lineTo(920, by + bh + 30); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(160, by + bh + 110); ctx.lineTo(920, by + bh + 110); ctx.stroke();
         } else {
           /* Text fallback */
           ctx.font = `60px ${fontFamily}`; ctx.fillStyle = 'rgba(200,153,26,0.90)';
@@ -461,7 +462,7 @@ export function QuranStatus() {
         const pageText  = pageTL.map(t => t.word).join(' ');
 
         const charCount = pageText.length;
-        const fontSize  = Math.max(72, Math.min(150, Math.round(9000 / Math.sqrt(charCount + 1))));
+        const fontSize  = Math.max(50, Math.min(180, Math.round(9000 / Math.sqrt(charCount + 1) * fontScale)));
         const lineH     = Math.round(fontSize * 1.9);
 
         ctx.font      = `bold ${fontSize}px ${fontFamily}`;
@@ -560,7 +561,7 @@ export function QuranStatus() {
       setIsRecording(false);
     }
   }, [verseTexts, fromAyah, toAyah, selectedSurah, currentSurah, audioMap, wordTimingMap,
-      bgObjectUrl, bgType, fontColor, selectedFont, ayahRange]);
+      bgObjectUrl, bgType, fontColor, selectedFont, fontScale, ayahRange]);
 
   /* ── Cleanup ── */
   useEffect(() => {
@@ -578,10 +579,10 @@ export function QuranStatus() {
   const pageStart  = activePage * WORDS_PER_PAGE;
   const pageWords  = allWords.slice(pageStart, pageStart + WORDS_PER_PAGE);
 
-  /* Font size for preview panel (in 1080px space) */
+  /* Font size for preview panel (in 1080px space) — includes user scale */
   const pageText    = pageWords.join(' ');
   const charCount   = pageText.length || 1;
-  const canvasFontSize = Math.max(72, Math.min(150, Math.round(9000 / Math.sqrt(charCount + 1))));
+  const canvasFontSize = Math.max(50, Math.min(180, Math.round(9000 / Math.sqrt(charCount + 1) * fontScale)));
 
   /* ════════════════════════════════════ Render ── */
   return (
@@ -648,7 +649,7 @@ export function QuranStatus() {
               <div style={{ position: 'absolute', top: 140, left: 100, right: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <img src="/basmala.jpg" alt="بسم الله الرحمن الرحيم"
                   style={{ width: '100%', height: 'auto', objectFit: 'contain', opacity: 0.95 }} />
-                <div style={{ width: 760, height: 3, background: 'rgba(200,153,26,0.55)', marginTop: 30 }} />
+                <div style={{ width: 760, height: 3, background: 'rgba(200,153,26,0.55)', marginTop: 110 }} />
               </div>
 
               {/* Loading spinner */}
@@ -859,6 +860,32 @@ export function QuranStatus() {
               <input type="color" value={fontColor} onChange={e => setFontColor(e.target.value)}
                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
             </label>
+          </div>
+        </div>
+
+        {/* Font Size Slider */}
+        <div className="rounded-2xl p-2.5"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>حجم الخط</p>
+            <span className="text-xs font-bold" style={{ color: '#C8991A', fontFamily: '"Tajawal",sans-serif' }}>
+              {Math.round(fontScale * 100)}٪
+            </span>
+          </div>
+          <input
+            type="range" min={0.6} max={2.0} step={0.05}
+            value={fontScale}
+            onChange={e => setFontScale(parseFloat(e.target.value))}
+            data-testid="slider-font-scale"
+            style={{
+              width: '100%', accentColor: '#C8991A', cursor: 'pointer',
+              height: 4, borderRadius: 2, outline: 'none', appearance: 'none',
+              background: `linear-gradient(to right, #C8991A ${((fontScale - 0.6) / 1.4) * 100}%, rgba(255,255,255,0.15) ${((fontScale - 0.6) / 1.4) * 100}%)`,
+            }}
+          />
+          <div className="flex justify-between mt-1">
+            <span className="text-xs" style={{ color: '#4B5563', fontFamily: '"Tajawal",sans-serif' }}>A</span>
+            <span className="text-sm font-bold" style={{ color: '#4B5563', fontFamily: '"Tajawal",sans-serif' }}>A</span>
           </div>
         </div>
 
