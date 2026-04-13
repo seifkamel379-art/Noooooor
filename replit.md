@@ -85,6 +85,7 @@ The primary workflow is **"artifacts/api-server: API Server"** — this is what 
 Single Firebase project: **noooooor-app** (projectId: `noooooor-app`)
 - Config stored in `.replit` as `VITE_FIREBASE_*` environment variables
 - Used for: Firebase Auth (Google sign-in), Firestore (global counter, leaderboard, sessions)
+- Email signup now collects email and password first, then asks for an Egyptian governorate only. Country and non-Egypt city selection were removed from the primary signup flow.
 
 ### Firestore Collections
 - `globalCounter/main` — total tasbeeh count
