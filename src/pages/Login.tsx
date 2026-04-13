@@ -156,10 +156,14 @@ function CityPicker({
   );
 }
 
+function flagUrl(id: string) {
+  return `https://flagcdn.com/w80/${id}.png`;
+}
+
 function CountryPicker({ onSelect }: { onSelect: (country: WorldCountry) => void }) {
   const [search, setSearch] = useState('');
 
-  const egypt = { id: 'eg', nameAr: 'مصر', flag: '🇪🇬', cities: [] };
+  const egypt = { id: 'eg', nameAr: 'مصر', flag: '', cities: [] } as WorldCountry;
   const allCountries = [egypt, ...WORLD_COUNTRIES];
 
   const filtered = useMemo(() => {
@@ -188,14 +192,18 @@ function CountryPicker({ onSelect }: { onSelect: (country: WorldCountry) => void
           {filtered.map(country => (
             <motion.button
               key={country.id}
-              onClick={() => onSelect(country as WorldCountry)}
+              onClick={() => onSelect(country)}
               whileTap={{ scale: 0.93 }}
               className="flex flex-col items-center gap-1.5 rounded-xl p-2 pt-2.5 transition-all duration-200"
               style={{ background: 'rgba(255,255,255,0.7)', border: '1.5px solid rgba(139,99,64,0.12)' }}
             >
-              <div className="w-11 h-8 rounded-md flex items-center justify-center text-2xl" style={{ background: 'rgba(139,99,64,0.06)' }}>
-                {country.flag}
-              </div>
+              <img
+                src={flagUrl(country.id)}
+                alt={country.nameAr}
+                className="w-11 h-7 rounded object-cover"
+                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.13)' }}
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
               <span className="text-[10px] font-bold leading-tight text-center" style={{ fontFamily: '"Tajawal", sans-serif', color: '#7A4F28' }}>
                 {country.nameAr}
               </span>
@@ -226,7 +234,12 @@ function WorldCityPicker({ country, cityId, onSelect }: { country: WorldCountry;
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{country.flag}</span>
+                  <img
+                    src={flagUrl(country.id)}
+                    alt={country.nameAr}
+                    className="w-7 h-5 rounded object-cover flex-shrink-0"
+                    style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}
+                  />
                   <span className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif', color: selected ? '#8B6340' : '#5D3010' }}>
                     {city.nameAr}
                   </span>
@@ -720,10 +733,17 @@ export function Login({ onComplete }: LoginProps) {
                 <ChevronRight className="w-4 h-4" /> رجوع
               </button>
               <div>
-                <h2 className="text-lg font-bold text-center mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>
-                  <span className="ml-2">{selectedCountry.flag}</span>
-                  {selectedCountry.nameAr}
-                </h2>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <img
+                    src={flagUrl(selectedCountry.id)}
+                    alt={selectedCountry.nameAr}
+                    className="w-8 h-6 rounded object-cover"
+                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.13)' }}
+                  />
+                  <h2 className="text-lg font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: '#3D2007' }}>
+                    {selectedCountry.nameAr}
+                  </h2>
+                </div>
                 <p className="text-xs text-center mb-4" style={{ fontFamily: '"Tajawal", sans-serif', color: '#9B7043' }}>اختر مدينتك لضبط مواقيت الصلاة</p>
                 <WorldCityPicker
                   country={selectedCountry}
