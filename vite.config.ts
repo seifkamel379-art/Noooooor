@@ -43,7 +43,7 @@ export default defineConfig({
   },
   server: {
     port,
-    strictPort: false,
+    strictPort: true,
     host: true,
     allowedHosts: true,
     fs: {
