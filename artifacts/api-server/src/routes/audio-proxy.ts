@@ -2,7 +2,7 @@ import { Router } from "express";
 
 const router = Router();
 
-const ALLOWED_HOSTS = ["everyayah.com", "cdn.islamic.network", "mp3quran.net"];
+const ALLOWED_HOSTS = ["everyayah.com", "cdn.islamic.network", "mp3quran.net", "verses.quran.com", "audio.qurancdn.com"];
 
 router.get("/audio-proxy", async (req, res) => {
   const rawUrl = req.query.url as string | undefined;

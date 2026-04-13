@@ -1,243 +1,283 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ArrowLeft, Upload, Play, Pause, Video, Palette, Check, Film,
+  ArrowLeft, Upload, Play, Pause, Download, Palette, Check, Film, Loader2,
 } from 'lucide-react';
 import { Link } from 'wouter';
 
-/* ── Reciters ──────────────────────────────────────────────────────── */
-const RECITERS = [
-  { id: 'Alafasy_128kbps',                name: 'مشاري العفاسي' },
-  { id: 'Abdul_Basit_Murattal_192kbps',   name: 'عبد الباسط عبد الصمد' },
-  { id: 'Husary_128kbps',                 name: 'محمود خليل الحصري' },
-  { id: 'Ghamadi_40kbps',                 name: 'سعد الغامدي' },
-  { id: 'Minshawi_Murattal_128kbps',      name: 'محمد صديق المنشاوي' },
-  { id: 'Mohammad_al_Tablawi_128kbps',    name: 'محمد الطبلاوي' },
-  { id: 'Maher_AlMuaiqly_128kbps',        name: 'ماهر المعيقلي' },
-  { id: 'Yasser_Ad-Dossari_128kbps',      name: 'ياسر الدوسري' },
-  { id: 'Nasser_Alqatami_128kbps',        name: 'ناصر القطامي' },
-  { id: 'Hani_Rifai_192kbps',             name: 'هاني الرفاعي' },
-  { id: 'Saood_ash-Shuraym_128kbps',      name: 'سعود الشريم' },
-  { id: 'Ahmed_ibn_Ali_al-Ajmy_128kbps',  name: 'أحمد بن علي العجمي' },
-  { id: 'Abdullah_Basfar_192kbps',        name: 'عبد الله بصفر' },
-  { id: 'Muhammad_Jibreel_128kbps',       name: 'محمد جبريل' },
-  { id: 'Ibrahim_walk_128kbps',           name: 'إبراهيم الأخضر' },
-  { id: 'AbdulSamad_128kbps',             name: 'عبد الباسط (مجود)' },
-  { id: 'Khaalid_Abdullaah_al-Qahtaanee_192kbps', name: 'خالد القحطاني' },
-  { id: 'Ayman_Soweid_192kbps',           name: 'أيمن سويد' },
-];
-
-/* ── Preset font colors ────────────────────────────────────────────── */
+/* ── Preset font colors ─────────────────────────────────────────────── */
 const PRESET_COLORS = [
   '#FFFFFF', '#FFF8E7', '#FFD700', '#C8991A',
   '#86efac', '#93c5fd', '#fca5a5', '#e9d5ff',
 ];
 
-/* ── Build proxied audio URL ────────────────────────────────────────── */
-function audioUrlFor(reciter: string, surah: number, ayah: number): string {
-  const direct = `https://everyayah.com/data/${reciter}/${String(surah).padStart(3, '0')}${String(ayah).padStart(3, '0')}.mp3`;
-  return `/api/audio-proxy?url=${encodeURIComponent(direct)}`;
+/* ── Proxied audio URL ──────────────────────────────────────────────── */
+function proxied(url: string) {
+  return `/api/audio-proxy?url=${encodeURIComponent(url)}`;
 }
 
-/* ── Load font into canvas ──────────────────────────────────────────── */
+/* ── Load font into canvas context ─────────────────────────────────── */
 async function loadFontForCanvas(name: string, url: string): Promise<void> {
   try {
     if ([...document.fonts].some(f => f.family === name && f.status === 'loaded')) return;
     const f = new FontFace(name, `url(${url})`);
-    const loaded = await f.load();
-    document.fonts.add(loaded);
-  } catch { /* fall back to system serif */ }
+    document.fonts.add(await f.load());
+  } catch { /* fall back to serif */ }
 }
 
-/* ── RTL text wrap ──────────────────────────────────────────────────── */
-function wrapTextRTL(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+/* ── RTL text wrap helper ───────────────────────────────────────────── */
+function wrapRTL(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
-  let current = '';
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else { current = test; }
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+    else cur = test;
   }
-  if (current) lines.push(current);
+  if (cur) lines.push(cur);
   return lines;
 }
 
-type Surah = { id: number; name_arabic: string; verses_count: number };
-type VerseItem = { ayah: number; text: string };
+type Surah        = { id: number; name_arabic: string; verses_count: number };
+type Recitation   = { id: number; name: string };
+type VerseAudio   = Record<string, string>; /* verse_key → direct CDN url */
 
 /* ════════════════════════════════════════════════════════════════════
    Main Component
    ════════════════════════════════════════════════════════════════════ */
 export function QuranStatus() {
+
+  /* ── Lists ── */
+  const [surahs, setSurahs]               = useState<Surah[]>([]);
+  const [recitations, setRecitations]     = useState<Recitation[]>([]);
+
+  /* ── Selection ── */
+  const [selectedSurah, setSurah]         = useState(1);
+  const [fromAyah, setFromAyah]           = useState(1);
+  const [toAyah, setToAyah]               = useState(1);
+  const [selectedRec, setSelectedRec]     = useState<number>(7); /* Afasy default */
+
+  /* ── Verse data ── */
+  const [verseTexts, setVerseTexts]       = useState<string[]>([]);  /* per-ayah text */
+  const [loadingVerses, setLoadingV]      = useState(false);
+
+  /* ── Audio URL map (cached per recitation+surah) ── */
+  const [audioMap, setAudioMap]           = useState<VerseAudio>({});
+  const [loadingAudio, setLoadingAudio]   = useState(false);
+  const audioCacheRef = useRef<Map<string, VerseAudio>>(new Map());
+
   /* ── Background ── */
-  const [bgFile, setBgFile]         = useState<File | null>(null);
-  const [bgObjectUrl, setBgObjUrl]  = useState<string | null>(null);
-  const [bgType, setBgType]         = useState<'image' | 'video'>('image');
-  const fileInputRef                = useRef<HTMLInputElement>(null);
-  const videoRef                    = useRef<HTMLVideoElement>(null);
-
-  /* ── Quran selection ── */
-  const [surahs, setSurahs]         = useState<Surah[]>([]);
-  const [selectedSurah, setSurah]   = useState(1);
-  const [fromAyah, setFromAyah]     = useState(1);
-  const [toAyah, setToAyah]         = useState(1);
-  const [verses, setVerses]         = useState<VerseItem[]>([]);
-  const [loadingVerses, setLoadingV] = useState(false);
-
-  /* ── Audio / Preview ── */
-  const [selectedReciter, setReciter] = useState('Alafasy_128kbps');
-  const [isPlaying, setIsPlaying]     = useState(false);
-  const [audioLoading, setAudioLoad]  = useState(false);
-  const [visibleWordCount, setVisWC]  = useState<number | null>(null);
-  const previewStopRef                = useRef<(() => void) | null>(null);
+  const [bgFile, setBgFile]               = useState<File | null>(null);
+  const [bgObjectUrl, setBgObjUrl]        = useState<string | null>(null);
+  const [bgType, setBgType]               = useState<'image' | 'video'>('image');
+  const fileInputRef                      = useRef<HTMLInputElement>(null);
+  const videoRef                          = useRef<HTMLVideoElement>(null);
 
   /* ── Appearance ── */
-  const [fontColor, setFontColor] = useState('#FFFFFF');
+  const [fontColor, setFontColor]         = useState('#FFFFFF');
 
-  /* ── Video recording ── */
-  const [isRecording, setIsRecording]   = useState(false);
-  const [recordingPct, setRecordingPct] = useState(0);
-  const [shareSuccess, setShareSuccess] = useState(false);
-  const [recordError, setRecordError]   = useState('');
+  /* ── Preview animation ── */
+  const [isPlaying, setIsPlaying]         = useState(false);
+  const [audioLoading, setAudioLoad]      = useState(false);
+  const [visibleWordCount, setVisWC]      = useState<number | null>(null);
+  const stoppedRef                        = useRef(false);
+  const previewAudiosRef                  = useRef<HTMLAudioElement[]>([]);
 
-  /* ──────────────────────────── Fetch surah list ── */
+  /* ── Recording ── */
+  const [isRecording, setIsRecording]     = useState(false);
+  const [recordPct, setRecordPct]         = useState(0);
+  const [doneMsg, setDoneMsg]             = useState('');
+  const [recordError, setRecordError]     = useState('');
+
+  /* ─────────────── Fetch surah list ── */
   useEffect(() => {
     fetch('https://api.quran.com/api/v4/chapters?language=ar')
-      .then(r => r.json())
-      .then(d => setSurahs(d.chapters ?? []))
-      .catch(() => {});
+      .then(r => r.json()).then(d => setSurahs(d.chapters ?? [])).catch(() => {});
   }, []);
 
+  /* ─────────────── Fetch recitations ── */
+  useEffect(() => {
+    fetch('https://api.quran.com/api/v4/resources/recitations?language=ar')
+      .then(r => r.json())
+      .then(d => {
+        const list: Recitation[] = (d.recitations ?? []).map((r: { id: number; translated_name?: { name?: string }; reciter_name?: string; style?: string }) => ({
+          id: r.id,
+          name: r.translated_name?.name ?? r.reciter_name ?? `قارئ ${r.id}`,
+        }));
+        setRecitations(list);
+        if (list.length && !list.find(r => r.id === 7)) setSelectedRec(list[0].id);
+      }).catch(() => {});
+  }, []);
+
+  /* ─────────────── Derived / helpers ── */
   const maxAyah = surahs.find(s => s.id === selectedSurah)?.verses_count ?? 286;
+  const currentSurah = surahs.find(s => s.id === selectedSurah);
+  const ayahRange = fromAyah === toAyah ? `آية ${fromAyah}` : `الآيات ${fromAyah}–${toAyah}`;
+  const allWords  = verseTexts.join(' ').split(' ').filter(Boolean);
 
-  /* ── Clamp range on surah change ── */
-  useEffect(() => {
-    setFromAyah(1);
-    setToAyah(1);
-  }, [selectedSurah]);
+  /* ─────────────── Clamp range on surah change ── */
+  useEffect(() => { setFromAyah(1); setToAyah(1); }, [selectedSurah]);
+  useEffect(() => { if (toAyah < fromAyah) setToAyah(fromAyah); }, [fromAyah, toAyah]);
 
-  /* ── Ensure toAyah >= fromAyah ── */
-  useEffect(() => {
-    if (toAyah < fromAyah) setToAyah(fromAyah);
-  }, [fromAyah, toAyah]);
-
-  /* ──────────────────────────── Fetch verses ── */
+  /* ─────────────── Fetch verse texts ── */
   useEffect(() => {
     if (fromAyah > toAyah) return;
     setLoadingV(true);
-    setVerses([]);
+    setVerseTexts([]);
     const ctrl = new AbortController();
     const ayahs = Array.from({ length: toAyah - fromAyah + 1 }, (_, i) => fromAyah + i);
     Promise.all(
       ayahs.map(a =>
-        fetch(
-          `https://api.quran.com/api/v4/verses/by_key/${selectedSurah}:${a}?fields=text_uthmani`,
-          { signal: ctrl.signal },
-        )
+        fetch(`https://api.quran.com/api/v4/verses/by_key/${selectedSurah}:${a}?fields=text_uthmani`,
+          { signal: ctrl.signal })
           .then(r => r.json())
-          .then(d => ({ ayah: a, text: (d.verse?.text_uthmani ?? '') as string }))
-          .catch(() => ({ ayah: a, text: '' })),
+          .then(d => d.verse?.text_uthmani ?? '')
+          .catch(() => ''),
       ),
-    )
-      .then(results => {
-        setVerses(results.filter(v => v.text));
-        setLoadingV(false);
-      })
-      .catch(e => { if (e.name !== 'AbortError') setLoadingV(false); });
+    ).then(texts => { setVerseTexts(texts.filter(Boolean)); setLoadingV(false); })
+     .catch(e => { if (e.name !== 'AbortError') setLoadingV(false); });
     return () => ctrl.abort();
   }, [selectedSurah, fromAyah, toAyah]);
 
-  /* ── Reset preview on selection change ── */
+  /* ─────────────── Fetch audio URL map ── */
   useEffect(() => {
-    previewStopRef.current?.();
-    previewStopRef.current = null;
-    setIsPlaying(false);
-    setVisWC(null);
-  }, [selectedSurah, fromAyah, toAyah, selectedReciter]);
+    if (!selectedRec) return;
+    const cacheKey = `${selectedRec}:${selectedSurah}`;
+    const cached = audioCacheRef.current.get(cacheKey);
+    if (cached) { setAudioMap(cached); return; }
+    setLoadingAudio(true);
+    fetch(`https://api.quran.com/api/v4/recitations/${selectedRec}/by_chapter/${selectedSurah}?per_page=300`)
+      .then(r => r.json())
+      .then(d => {
+        const map: VerseAudio = {};
+        for (const f of (d.audio_files ?? [])) map[f.verse_key] = f.url;
+        audioCacheRef.current.set(cacheKey, map);
+        setAudioMap(map);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingAudio(false));
+  }, [selectedRec, selectedSurah]);
 
-  /* ──────────────────────────── Background upload ── */
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  /* ─────────────── Reset preview on changes ── */
+  useEffect(() => {
+    stopPreview();
+  }, [selectedSurah, fromAyah, toAyah, selectedRec]);
+
+  /* ─────────────── Background upload ── */
+  const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
     if (bgObjectUrl) URL.revokeObjectURL(bgObjectUrl);
-    const url = URL.createObjectURL(file);
     setBgFile(file);
-    setBgObjUrl(url);
+    setBgObjUrl(URL.createObjectURL(file));
     setBgType(file.type.startsWith('video') ? 'video' : 'image');
   }, [bgObjectUrl]);
 
-  /* ──────────────────────────── Preview play ── */
-  const togglePreviewPlay = useCallback(async () => {
-    if (isPlaying) {
-      previewStopRef.current?.();
-      return;
-    }
-    if (verses.length === 0) return;
+  /* ─────────────── Stop preview ── */
+  const stopPreview = useCallback(() => {
+    stoppedRef.current = true;
+    for (const a of previewAudiosRef.current) { try { a.pause(); } catch { /* ok */ } }
+    previewAudiosRef.current = [];
+    setIsPlaying(false);
+    setVisWC(null);
+    setAudioLoad(false);
+  }, []);
 
-    setAudioLoad(true);
+  /* ─────────────── Preview play (word by word) ── */
+  const togglePreview = useCallback(async () => {
+    if (isPlaying) { stopPreview(); return; }
+    if (verseTexts.length === 0) return;
+
+    stoppedRef.current = false;
     setIsPlaying(true);
+    setAudioLoad(true);
     setVisWC(0);
 
-    const allWords = verses.map(v => v.text).join(' ').split(' ').filter(Boolean);
-    let stopped = false;
-
-    const stop = () => {
-      stopped = true;
-      setIsPlaying(false);
-      setVisWC(null);
-      setAudioLoad(false);
-    };
-    previewStopRef.current = stop;
-
     let wordOffset = 0;
-    for (const v of verses) {
-      if (stopped) break;
-      const url = audioUrlFor(selectedReciter, selectedSurah, v.ayah);
-      const vWords = v.text.split(' ').filter(Boolean);
+
+    for (let vi = 0; vi < verseTexts.length; vi++) {
+      if (stoppedRef.current) break;
+
+      const ayah = fromAyah + vi;
+      const vKey = `${selectedSurah}:${ayah}`;
+      const rawUrl = audioMap[vKey];
+      const vWords = verseTexts[vi].split(' ').filter(Boolean);
       const capturedOffset = wordOffset;
 
       await new Promise<void>(outerResolve => {
-        let done = false;
-        const killTimer = setTimeout(() => { if (!done) { done = true; outerResolve(); } }, 60_000);
-        const resolve = () => { if (!done) { done = true; clearTimeout(killTimer); outerResolve(); } };
+        let settled = false;
+        const settle = () => { if (!settled) { settled = true; outerResolve(); } };
+        const killTimer = setTimeout(settle, 90_000);
 
-        const audio = new Audio(url);
-        audio.oncanplaythrough = () => {
-          if (stopped) { resolve(); return; }
+        const audio = new Audio(rawUrl ? proxied(rawUrl) : '');
+        previewAudiosRef.current.push(audio);
+
+        /* Get duration, then play */
+        audio.onloadedmetadata = () => {
+          if (stoppedRef.current) { clearTimeout(killTimer); settle(); return; }
           setAudioLoad(false);
-          const dur = audio.duration || 5;
+
+          const dur = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 5;
           const msPerWord = (dur * 1000) / vWords.length;
-          let idx = 0;
-          const tick = setInterval(() => {
-            if (stopped) { clearInterval(tick); resolve(); return; }
-            idx = Math.min(idx + 1, vWords.length);
-            setVisWC(capturedOffset + idx);
-            if (idx >= vWords.length) { clearInterval(tick); }
-          }, msPerWord);
-          audio.play().catch(() => { clearInterval(tick); resolve(); });
-          audio.onended = () => { clearInterval(tick); resolve(); };
-          audio.onerror = () => { clearInterval(tick); resolve(); };
+
+          audio.play().then(() => {
+            /* Start word timer exactly when audio starts */
+            const startTime = performance.now();
+            let lastShown = capturedOffset;
+
+            const tick = setInterval(() => {
+              if (stoppedRef.current) { clearInterval(tick); settle(); return; }
+              const elapsed = performance.now() - startTime;
+              const expected = Math.min(
+                capturedOffset + vWords.length,
+                capturedOffset + Math.ceil(elapsed / msPerWord),
+              );
+              if (expected > lastShown) {
+                lastShown = expected;
+                setVisWC(expected);
+              }
+              if (elapsed >= dur * 1000) { clearInterval(tick); }
+            }, 40); /* ~25fps */
+
+            audio.onended = () => { clearInterval(tick); clearTimeout(killTimer); settle(); };
+            audio.onerror = () => { clearInterval(tick); clearTimeout(killTimer); settle(); };
+          }).catch(() => { clearTimeout(killTimer); settle(); });
         };
-        audio.onerror = () => { setAudioLoad(false); resolve(); };
+
+        audio.onerror = () => {
+          setAudioLoad(false);
+          /* Even if audio fails, show all words for this verse */
+          setVisWC(capturedOffset + vWords.length);
+          clearTimeout(killTimer);
+          setTimeout(settle, 2000);
+        };
+
+        if (!rawUrl) {
+          setAudioLoad(false);
+          setVisWC(capturedOffset + vWords.length);
+          clearTimeout(killTimer);
+          setTimeout(settle, 1500);
+          return;
+        }
+
+        audio.preload = 'metadata';
         audio.load();
       });
 
       wordOffset += vWords.length;
     }
-    if (!stopped) stop();
-  }, [isPlaying, verses, selectedReciter, selectedSurah]);
 
-  /* ──────────────────────────── Video generation ── */
+    if (!stoppedRef.current) stopPreview();
+  }, [isPlaying, verseTexts, fromAyah, selectedSurah, audioMap, stopPreview]);
+
+  /* ─────────────── Video generation ── */
   const generateVideo = useCallback(async () => {
-    if (verses.length === 0) return;
+    if (verseTexts.length === 0) return;
     setIsRecording(true);
-    setRecordingPct(0);
+    setRecordPct(2);
     setRecordError('');
+    setDoneMsg('');
 
     try {
-      /* ── Load font ── */
       await loadFontForCanvas(
         '_AmiriQS',
         'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.woff2',
@@ -245,267 +285,268 @@ export function QuranStatus() {
       await document.fonts.ready;
       const amiri = '_AmiriQS, Amiri, "Traditional Arabic", serif';
 
-      /* ── Fetch & decode all audio ── */
+      /* ── Fetch & decode all audio buffers ── */
       const audioCtx = new AudioContext();
       const buffers: AudioBuffer[] = [];
-      for (let i = 0; i < verses.length; i++) {
-        setRecordingPct(Math.round((i / verses.length) * 20));
-        const url = audioUrlFor(selectedReciter, selectedSurah, verses[i].ayah);
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Audio fetch failed: ${resp.status}`);
+
+      for (let vi = 0; vi < verseTexts.length; vi++) {
+        setRecordPct(5 + Math.round((vi / verseTexts.length) * 30));
+        const ayah = fromAyah + vi;
+        const vKey = `${selectedSurah}:${ayah}`;
+        const rawUrl = audioMap[vKey];
+        if (!rawUrl) { buffers.push(audioCtx.createBuffer(1, 44100 * 3, 44100)); continue; }
+
+        const resp = await fetch(proxied(rawUrl));
+        if (!resp.ok) throw new Error(`فشل تحميل صوت الآية ${ayah}`);
         const ab = await resp.arrayBuffer();
-        const decoded = await audioCtx.decodeAudioData(ab);
-        buffers.push(decoded);
+        buffers.push(await audioCtx.decodeAudioData(ab));
       }
+
+      setRecordPct(38);
 
       const totalDuration = buffers.reduce((s, b) => s + b.duration, 0);
-      setRecordingPct(25);
 
       /* ── Build word timeline ── */
-      type WordEntry = { word: string; startMs: number; endMs: number };
-      const timeline: WordEntry[] = [];
-      let timeOffset = 0;
-      for (let vi = 0; vi < verses.length; vi++) {
-        const buf = buffers[vi];
-        const words = verses[vi].text.split(' ').filter(Boolean);
-        const msPerWord = (buf.duration * 1000) / words.length;
-        words.forEach((word, wi) => {
-          timeline.push({
-            word,
-            startMs: timeOffset + wi * msPerWord,
-            endMs: timeOffset + (wi + 1) * msPerWord,
-          });
+      type WE = { word: string; startMs: number; endMs: number };
+      const timeline: WE[] = [];
+      let tOffset = 0;
+      for (let vi = 0; vi < verseTexts.length; vi++) {
+        const words = verseTexts[vi].split(' ').filter(Boolean);
+        const dur   = buffers[vi].duration;
+        const msPW  = (dur * 1000) / words.length;
+        words.forEach((w, wi) => {
+          timeline.push({ word: w, startMs: tOffset + wi * msPW, endMs: tOffset + (wi + 1) * msPW });
         });
-        timeOffset += buf.duration * 1000;
+        tOffset += dur * 1000;
       }
 
-      /* ── Setup canvas ── */
+      /* ── Canvas setup ── */
       const W = 1080, H = 1920;
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
-      const ctx2d = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d')!;
 
-      /* Load background image once if image type */
       let bgImg: HTMLImageElement | null = null;
       if (bgObjectUrl && bgType === 'image') {
-        bgImg = new Image();
-        bgImg.src = bgObjectUrl;
-        await new Promise<void>((res, rej) => {
-          bgImg!.onload = () => res();
-          bgImg!.onerror = rej;
-        });
+        const img = new Image(); img.src = bgObjectUrl;
+        await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; });
+        bgImg = img;
       }
-
-      /* Load logo */
       let logoImg: HTMLImageElement | null = null;
       try {
-        const l = new Image();
-        l.crossOrigin = 'anonymous';
-        l.src = `${window.location.origin}/logo.png`;
-        await new Promise<void>(res => { l.onload = () => res(); l.onerror = () => res(); });
+        const l = new Image(); l.crossOrigin = 'anonymous'; l.src = `${window.location.origin}/logo.png`;
+        await new Promise<void>(r => { l.onload = () => r(); l.onerror = () => r(); });
         if (l.complete && l.naturalWidth > 0) logoImg = l;
-      } catch { /* optional */ }
+      } catch { /* ok */ }
 
-      const surahName = surahs.find(s => s.id === selectedSurah)?.name_arabic ?? '';
-      const ayahRange = fromAyah === toAyah ? `آية ${fromAyah}` : `الآيات ${fromAyah}–${toAyah}`;
+      const surahName = currentSurah?.name_arabic ?? '';
+      const FADE_MS   = 180; /* word fade-in duration */
 
-      const drawFrame = (visibleWords: number) => {
+      const drawFrame = (elapsedMs: number) => {
         /* Background */
         if (bgImg) {
-          const scale = Math.max(W / bgImg.naturalWidth, H / bgImg.naturalHeight);
-          const dx = (W - bgImg.naturalWidth * scale) / 2;
-          const dy = (H - bgImg.naturalHeight * scale) / 2;
-          ctx2d.drawImage(bgImg, dx, dy, bgImg.naturalWidth * scale, bgImg.naturalHeight * scale);
+          const sc = Math.max(W / bgImg.naturalWidth, H / bgImg.naturalHeight);
+          const dx = (W - bgImg.naturalWidth * sc) / 2, dy = (H - bgImg.naturalHeight * sc) / 2;
+          ctx.drawImage(bgImg, dx, dy, bgImg.naturalWidth * sc, bgImg.naturalHeight * sc);
         } else if (bgObjectUrl && bgType === 'video' && videoRef.current) {
           const v = videoRef.current;
-          const scale = Math.max(W / v.videoWidth, H / v.videoHeight);
-          const dx = (W - v.videoWidth * scale) / 2;
-          const dy = (H - v.videoHeight * scale) / 2;
-          ctx2d.drawImage(v, dx, dy, v.videoWidth * scale, v.videoHeight * scale);
+          const sc = Math.max(W / v.videoWidth, H / v.videoHeight);
+          const dx = (W - v.videoWidth * sc) / 2, dy = (H - v.videoHeight * sc) / 2;
+          ctx.drawImage(v, dx, dy, v.videoWidth * sc, v.videoHeight * sc);
         } else {
-          const grad = ctx2d.createLinearGradient(0, 0, W, H);
-          grad.addColorStop(0, '#0d1b0a');
-          grad.addColorStop(1, '#060e04');
-          ctx2d.fillStyle = grad;
-          ctx2d.fillRect(0, 0, W, H);
-          ctx2d.fillStyle = 'rgba(200,153,26,0.05)';
-          for (let xi = 0; xi < W; xi += 80)
-            for (let yi = 0; yi < H; yi += 80) {
-              ctx2d.beginPath(); ctx2d.arc(xi, yi, 3, 0, Math.PI * 2); ctx2d.fill();
-            }
+          const g = ctx.createLinearGradient(0, 0, W, H);
+          g.addColorStop(0, '#0d1b0a'); g.addColorStop(1, '#060e04');
+          ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
         }
 
-        /* Dark overlay */
-        const ov = ctx2d.createLinearGradient(0, 0, 0, H);
-        ov.addColorStop(0, 'rgba(0,0,0,0.30)');
-        ov.addColorStop(0.45, 'rgba(0,0,0,0.55)');
+        /* Overlay */
+        const ov = ctx.createLinearGradient(0, 0, 0, H);
+        ov.addColorStop(0, 'rgba(0,0,0,0.28)');
+        ov.addColorStop(0.45, 'rgba(0,0,0,0.52)');
         ov.addColorStop(1, 'rgba(0,0,0,0.78)');
-        ctx2d.fillStyle = ov;
-        ctx2d.fillRect(0, 0, W, H);
+        ctx.fillStyle = ov; ctx.fillRect(0, 0, W, H);
 
         /* Top line */
-        ctx2d.strokeStyle = 'rgba(200,153,26,0.65)';
-        ctx2d.lineWidth = 4;
-        ctx2d.beginPath(); ctx2d.moveTo(140, 290); ctx2d.lineTo(940, 290); ctx2d.stroke();
+        ctx.strokeStyle = 'rgba(200,153,26,0.65)'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(140, 300); ctx.lineTo(940, 300); ctx.stroke();
 
         /* Basmala */
-        ctx2d.font = `60px ${amiri}`;
-        ctx2d.fillStyle = 'rgba(200,153,26,0.90)';
-        ctx2d.textAlign = 'center';
-        ctx2d.direction = 'rtl';
-        ctx2d.fillText('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ', W / 2, 260);
+        ctx.font = `62px ${amiri}`; ctx.fillStyle = 'rgba(200,153,26,0.90)';
+        ctx.textAlign = 'center'; ctx.direction = 'rtl';
+        ctx.fillText('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ', W / 2, 270);
 
-        /* Verse text — visible words only */
-        const visibleText = timeline.slice(0, visibleWords).map(t => t.word).join(' ');
-        const allText = timeline.map(t => t.word).join(' ');
-        const charCount = allText.length;
-        const fontSize = Math.max(50, Math.min(84, Math.round(5000 / Math.sqrt(charCount + 1))));
-        const lineHeight = Math.round(fontSize * 1.8);
+        /* Divider under basmala */
+        ctx.strokeStyle = 'rgba(200,153,26,0.35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(300, 310); ctx.lineTo(780, 310); ctx.stroke();
 
-        ctx2d.font = `bold ${fontSize}px ${amiri}`;
-        ctx2d.fillStyle = fontColor;
-        ctx2d.direction = 'rtl';
-        ctx2d.textAlign = 'center';
+        /* Verse text with per-word opacity fade-in */
+        const charCount = timeline.map(t => t.word).join(' ').length;
+        const fontSize  = Math.max(50, Math.min(84, Math.round(5000 / Math.sqrt(charCount + 1))));
+        const lineH     = Math.round(fontSize * 1.82);
 
-        const lines = wrapTextRTL(ctx2d, visibleText || ' ', W * 0.82);
-        const textH = lines.length * lineHeight;
-        let ty = H / 2 - textH / 2 + 80;
-        for (const line of lines) { ctx2d.fillText(line, W / 2, ty); ty += lineHeight; }
+        /* Build visible text with fade for newest word */
+        ctx.font      = `bold ${fontSize}px ${amiri}`;
+        ctx.direction = 'rtl'; ctx.textAlign = 'center';
+
+        const visible = timeline.filter(t => t.startMs <= elapsedMs);
+
+        /* Render all visible words together for line wrapping */
+        const fullText = timeline.map(t => t.word).join(' ');
+        const allLines = wrapRTL(ctx, fullText, W * 0.82);
+        const textH    = allLines.length * lineH;
+        let ty         = H / 2 - textH / 2 + 90;
+
+        /* Draw each line word by word to allow per-word opacity */
+        let wordsCounted = 0;
+        ctx.save();
+        for (const line of allLines) {
+          const lineWords = line.split(' ');
+          /* Measure positions for RTL line */
+          const totalLineW = ctx.measureText(line).width;
+          let x = W / 2 + totalLineW / 2; /* start from right for RTL */
+          for (const word of lineWords) {
+            const wMeasure = ctx.measureText(word + ' ').width;
+            const wi       = wordsCounted;
+            const entry    = timeline[wi];
+            let opacity    = 1;
+            if (entry) {
+              const sinceStart = elapsedMs - entry.startMs;
+              opacity = entry.startMs > elapsedMs ? 0 : Math.min(1, sinceStart / FADE_MS);
+            }
+            ctx.globalAlpha = opacity;
+            ctx.fillStyle   = fontColor;
+            ctx.fillText(word, x - wMeasure / 2, ty);
+            x -= wMeasure;
+            wordsCounted++;
+          }
+          ty += lineH;
+        }
+        ctx.restore();
 
         /* Surah reference */
-        ctx2d.font = `46px ${amiri}`;
-        ctx2d.fillStyle = 'rgba(200,153,26,0.85)';
-        ctx2d.direction = 'rtl';
-        ctx2d.textAlign = 'center';
-        ctx2d.fillText(`﴿ ${surahName} — ${ayahRange} ﴾`, W / 2, ty + 60);
+        ctx.globalAlpha = 1;
+        ctx.font = `46px ${amiri}`; ctx.fillStyle = 'rgba(200,153,26,0.85)';
+        ctx.direction = 'rtl'; ctx.textAlign = 'center';
+        const refY = H / 2 + textH / 2 + 90 + 60;
+        ctx.fillText(`﴿ ${surahName} — ${ayahRange} ﴾`, W / 2, Math.max(refY, H - 320));
 
-        /* Logo watermark */
+        /* Logo */
         if (logoImg) {
-          ctx2d.globalAlpha = 0.88;
-          ctx2d.drawImage(logoImg, 60, H - 210, 104, 104);
-          ctx2d.globalAlpha = 1;
+          ctx.globalAlpha = 0.88;
+          ctx.drawImage(logoImg, 60, H - 210, 104, 104);
+          ctx.globalAlpha = 1;
         }
-        /* Noor App text — golden */
-        ctx2d.direction = 'ltr';
-        ctx2d.textAlign = 'left';
-        ctx2d.font = `bold 54px 'Segoe UI', sans-serif`;
-        ctx2d.fillStyle = '#C8991A';
-        ctx2d.fillText('Noor App', 182, H - 145);
-        ctx2d.font = `36px 'Tajawal', sans-serif`;
-        ctx2d.fillStyle = 'rgba(200,153,26,0.70)';
-        ctx2d.fillText('تطبيق نور الإسلامي', 182, H - 100);
+        /* Noor App watermark */
+        ctx.direction = 'ltr'; ctx.textAlign = 'left';
+        ctx.font = `bold 52px 'Segoe UI', sans-serif`;
+        ctx.fillStyle = '#C8991A';
+        ctx.fillText('Noor App', 182, H - 145);
+        ctx.font = `34px 'Tajawal', sans-serif`;
+        ctx.fillStyle = 'rgba(200,153,26,0.70)';
+        ctx.fillText('تطبيق نور الإسلامي', 182, H - 100);
       };
 
-      /* ── Setup audio for recording ── */
-      const dest = audioCtx.createMediaStreamDestination();
+      setRecordPct(40);
 
-      /* ── Setup MediaRecorder ── */
-      const videoStream = canvas.captureStream(30);
-      const combined = new MediaStream([
-        ...videoStream.getVideoTracks(),
-        ...dest.stream.getAudioTracks(),
-      ]);
+      /* ── MediaRecorder setup ── */
+      const dest   = audioCtx.createMediaStreamDestination();
+      const vStream = canvas.captureStream(30);
+      const combined = new MediaStream([...vStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
 
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-        ? 'video/webm;codecs=vp9,opus'
-        : MediaRecorder.isTypeSupported('video/webm')
-        ? 'video/webm'
-        : '';
-
+      const mimeTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ];
+      const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) ?? '';
       const recorder = new MediaRecorder(combined, mimeType ? { mimeType } : undefined);
       const chunks: Blob[] = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-
       recorder.start(100);
-      setRecordingPct(30);
 
-      /* ── Schedule audio buffers ── */
-      let scheduleTime = audioCtx.currentTime + 0.1;
+      /* ── Schedule audio ── */
+      let schedTime = audioCtx.currentTime + 0.05;
       for (const buf of buffers) {
         const src = audioCtx.createBufferSource();
         src.buffer = buf;
         src.connect(dest);
         src.connect(audioCtx.destination);
-        src.start(scheduleTime);
-        scheduleTime += buf.duration;
+        src.start(schedTime);
+        schedTime += buf.duration;
       }
 
-      /* ── Animate canvas ── */
-      const startTime = audioCtx.currentTime + 0.1;
-      const totalMs = totalDuration * 1000;
+      const recStart = audioCtx.currentTime + 0.05;
 
+      /* ── Animation loop ── */
       await new Promise<void>(resolve => {
-        let animFrame: number;
+        let raf: number;
         const loop = () => {
-          const elapsed = (audioCtx.currentTime - startTime) * 1000;
-          const pct = Math.min(elapsed / totalMs, 1);
-          setRecordingPct(30 + Math.round(pct * 60));
-
-          const visCount = timeline.filter(t => t.startMs <= elapsed).length;
-          drawFrame(visCount);
-
-          if (elapsed < totalMs + 800) {
-            animFrame = requestAnimationFrame(loop);
+          const elapsed = (audioCtx.currentTime - recStart) * 1000;
+          const pct     = Math.min(elapsed / (totalDuration * 1000), 1);
+          setRecordPct(40 + Math.round(pct * 55));
+          drawFrame(Math.max(0, elapsed));
+          if (elapsed < totalDuration * 1000 + 600) {
+            raf = requestAnimationFrame(loop);
           } else {
+            cancelAnimationFrame(raf);
             resolve();
           }
         };
-        animFrame = requestAnimationFrame(loop);
-        setTimeout(() => { cancelAnimationFrame(animFrame); resolve(); }, totalMs + 2000);
+        raf = requestAnimationFrame(loop);
+        /* Safety: stop after duration + 5s */
+        setTimeout(() => { cancelAnimationFrame(raf); resolve(); }, (totalDuration + 5) * 1000);
       });
 
       recorder.stop();
       await new Promise<void>(r => { recorder.onstop = () => r(); });
       await audioCtx.close();
-      setRecordingPct(95);
+      setRecordPct(98);
 
-      /* ── Export ── */
+      /* ── Download directly ── */
+      const ext  = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
-      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      const file = new File([blob], `noor-ayah.${ext}`, { type: blob.type });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `noor-ayah-${selectedSurah}-${fromAyah}${fromAyah !== toAyah ? `-${toAyah}` : ''}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
 
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'آية قرآنية – Noor App', text: verses.map(v => v.text).join(' ') });
-        setShareSuccess(true);
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = file.name; a.click();
-        URL.revokeObjectURL(url);
-        setShareSuccess(true);
-      }
-      setTimeout(() => setShareSuccess(false), 4000);
+      setDoneMsg('تم تحميل الفيديو!');
+      setTimeout(() => setDoneMsg(''), 5000);
 
     } catch (err: unknown) {
       console.error('[QuranStatus] video error:', err);
       setRecordError(err instanceof Error ? err.message : 'حدث خطأ أثناء إنشاء الفيديو');
     } finally {
       setIsRecording(false);
-      setRecordingPct(0);
+      setRecordPct(0);
     }
-  }, [verses, selectedReciter, selectedSurah, fromAyah, toAyah, surahs, bgObjectUrl, bgType, fontColor]);
+  }, [
+    verseTexts, fromAyah, toAyah, selectedSurah, currentSurah,
+    audioMap, selectedRec, bgObjectUrl, bgType, fontColor, ayahRange,
+  ]);
 
-  /* ──────────────────────────── Cleanup ── */
+  /* ─────────────── Cleanup ── */
   useEffect(() => {
     return () => {
       if (bgObjectUrl) URL.revokeObjectURL(bgObjectUrl);
-      previewStopRef.current?.();
+      stoppedRef.current = true;
+      for (const a of previewAudiosRef.current) try { a.pause(); } catch { /* ok */ }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ──────────────────────────── Derived ── */
-  const currentSurah = surahs.find(s => s.id === selectedSurah);
-  const allWords     = verses.map(v => v.text).join(' ').split(' ').filter(Boolean);
-  const displayWords = visibleWordCount !== null ? allWords.slice(0, visibleWordCount) : allWords;
-  const displayText  = displayWords.join(' ');
-  const ayahRange    = fromAyah === toAyah ? `آية ${fromAyah}` : `الآيات ${fromAyah}–${toAyah}`;
+  /* ─────────────── Derived preview text ── */
+  const displayWords   = visibleWordCount !== null ? allWords.slice(0, visibleWordCount) : allWords;
+  const textForSize    = allWords.join(' ');
+  const ayahFontSizePx = textForSize.length > 200 ? 10
+    : textForSize.length > 130 ? 12
+    : textForSize.length > 80  ? 14
+    : textForSize.length > 50  ? 16
+    : 18;
 
-  const ayahFontSize = (displayText || allWords.join(' ')).length > 130 ? '11px'
-    : (displayText || allWords.join(' ')).length > 80 ? '13px'
-    : (displayText || allWords.join(' ')).length > 50 ? '15px'
-    : '17px';
-
-  /* ════════════════════════════════════════ Render ── */
+  /* ════════════════════════════════════ Render ── */
   return (
     <div
       className="h-screen flex flex-col max-w-lg mx-auto relative overflow-hidden"
@@ -523,17 +564,15 @@ export function QuranStatus() {
           </button>
         </Link>
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #C8991A, #8B6340)' }}
-          >
-            <Film className="w-4.5 h-4.5 text-white" size={18} />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #C8991A, #8B6340)' }}>
+            <Film size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-base leading-tight" style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>
-              إنشاء فيديو
-            </h1>
-            <p className="text-xs leading-tight" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>
+            <h1 className="font-bold text-base leading-tight"
+              style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060' }}>إنشاء فيديو</h1>
+            <p className="text-xs leading-tight"
+              style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>
               فيديو قرآني مع صوت القارئ كلمةً بكلمة
             </p>
           </div>
@@ -546,7 +585,7 @@ export function QuranStatus() {
           className="w-full rounded-3xl overflow-hidden relative flex items-center justify-center"
           style={{ aspectRatio: '9/16', maxHeight: '40vh', border: '1.5px solid rgba(200,153,26,0.35)' }}
         >
-          {/* Background layer */}
+          {/* BG */}
           {bgObjectUrl && bgType === 'image' && (
             <img src={bgObjectUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
@@ -555,57 +594,63 @@ export function QuranStatus() {
               autoPlay loop muted playsInline />
           )}
           {!bgObjectUrl && (
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0e1f0b 0%, #142e10 40%, #060e04 100%)' }} />
+            <div className="absolute inset-0"
+              style={{ background: 'linear-gradient(135deg, #0e1f0b 0%, #142e10 40%, #060e04 100%)' }} />
           )}
-
-          {/* Gradient overlay */}
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.52) 50%, rgba(0,0,0,0.75) 100%)' }} />
+            style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.22) 0%,rgba(0,0,0,0.52) 50%,rgba(0,0,0,0.75) 100%)' }} />
 
-          {/* Basmala — with margin below */}
-          <div className="absolute top-3 inset-x-0 flex flex-col items-center pointer-events-none gap-1.5">
-            <span style={{
-              fontFamily: '"Amiri", "Traditional Arabic", serif',
-              fontSize: '9px',
-              color: 'rgba(200,153,26,0.88)',
-              direction: 'rtl',
-            }}>
+          {/* Basmala + divider */}
+          <div className="absolute top-2.5 inset-x-0 flex flex-col items-center pointer-events-none gap-1">
+            <span style={{ fontFamily: '"Amiri","Traditional Arabic",serif', fontSize: '9px', color: 'rgba(200,153,26,0.88)', direction: 'rtl' }}>
               بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
             </span>
-            <div style={{ width: 40, height: 1, background: 'rgba(200,153,26,0.3)' }} />
+            <div style={{ width: 36, height: 1, background: 'rgba(200,153,26,0.35)' }} />
           </div>
 
-          {/* Verse text */}
-          <div className="relative z-10 px-4 text-center mt-6">
+          {/* Verse text — word by word with fade */}
+          <div className="relative z-10 px-4 text-center mt-4">
             {loadingVerses ? (
-              <div className="w-7 h-7 rounded-full border-2 animate-spin mx-auto"
-                style={{ borderColor: 'rgba(200,153,26,0.25)', borderTopColor: '#C8991A' }} />
+              <Loader2 className="w-7 h-7 animate-spin mx-auto" style={{ color: '#C8991A' }} />
             ) : (
               <p style={{
-                fontFamily: '"Amiri", "Traditional Arabic", serif',
-                fontSize: ayahFontSize,
+                fontFamily: '"Amiri","Traditional Arabic",serif',
+                fontSize: `${ayahFontSizePx}px`,
                 color: fontColor,
                 direction: 'rtl',
                 textShadow: '0 2px 14px rgba(0,0,0,0.95)',
-                lineHeight: 2.1,
+                lineHeight: 2.15,
               }}>
-                {displayText || (verses.length === 0 ? 'اختر سورة وآية لعرضها هنا' : '')}
+                {visibleWordCount !== null
+                  /* Animated mode: each word span with fade */
+                  ? allWords.map((word, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        opacity: i < visibleWordCount ? 1 : 0,
+                        transition: 'opacity 0.18s ease-in',
+                        display: 'inline',
+                      }}
+                    >
+                      {word}{i < allWords.length - 1 ? ' ' : ''}
+                    </span>
+                  ))
+                  /* Static mode: show full text */
+                  : (allWords.length > 0 ? allWords.join(' ') : 'اختر سورة وآية لعرضها هنا')
+                }
               </p>
             )}
           </div>
 
-          {/* Surah reference */}
-          {verses.length > 0 && !loadingVerses && (
+          {/* Surah tag */}
+          {verseTexts.length > 0 && !loadingVerses && (
             <div className="absolute bottom-6 inset-x-0 flex justify-center pointer-events-none">
               <span className="px-2.5 py-0.5 rounded-full text-center" style={{
-                fontFamily: '"Tajawal", sans-serif',
-                fontSize: '8px',
-                background: 'rgba(0,0,0,0.55)',
-                color: 'rgba(200,153,26,0.92)',
-                border: '1px solid rgba(200,153,26,0.3)',
-                backdropFilter: 'blur(4px)',
+                fontFamily: '"Tajawal",sans-serif', fontSize: '8px',
+                background: 'rgba(0,0,0,0.55)', color: 'rgba(200,153,26,0.92)',
+                border: '1px solid rgba(200,153,26,0.3)', backdropFilter: 'blur(4px)',
               }}>
-                ﴿ {currentSurah?.name_arabic ?? ''} — {ayahRange} ﴾
+                ﴿ {currentSurah?.name_arabic} — {ayahRange} ﴾
               </span>
             </div>
           )}
@@ -613,14 +658,9 @@ export function QuranStatus() {
           {/* Watermark */}
           <div className="absolute bottom-1.5 left-2.5 flex items-center gap-1.5 pointer-events-none" style={{ direction: 'ltr' }}>
             <img src="/logo.png" alt="Noor" style={{ width: 20, height: 20, borderRadius: '50%', opacity: 0.9 }} />
-            <span style={{
-              fontFamily: "'Segoe UI', sans-serif",
-              fontSize: '8px',
-              fontWeight: 700,
-              color: '#C8991A',
-              textShadow: '0 1px 6px rgba(0,0,0,1)',
-              letterSpacing: '0.04em',
-            }}>Noor App</span>
+            <span style={{ fontFamily: "'Segoe UI',sans-serif", fontSize: '8px', fontWeight: 700, color: '#C8991A', textShadow: '0 1px 6px rgba(0,0,0,1)' }}>
+              Noor App
+            </span>
           </div>
         </div>
       </div>
@@ -628,121 +668,111 @@ export function QuranStatus() {
       {/* ── Controls ── */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pt-2.5 pb-2 space-y-2">
 
-        {/* Upload Background */}
+        {/* Upload */}
         <button onClick={() => fileInputRef.current?.click()}
-          className="w-full rounded-2xl p-3 flex items-center gap-3 text-right"
-          style={{
-            background: bgFile ? 'rgba(74,222,128,0.07)' : 'rgba(200,153,26,0.07)',
-            border: `1px solid ${bgFile ? 'rgba(74,222,128,0.3)' : 'rgba(200,153,26,0.25)'}`,
-          }}
-        >
+          className="w-full rounded-2xl p-2.5 flex items-center gap-3 text-right"
+          style={{ background: bgFile ? 'rgba(74,222,128,0.07)' : 'rgba(200,153,26,0.07)', border: `1px solid ${bgFile ? 'rgba(74,222,128,0.3)' : 'rgba(200,153,26,0.25)'}` }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: bgFile ? 'rgba(74,222,128,0.15)' : 'rgba(200,153,26,0.15)' }}>
-            <Upload className="w-4.5 h-4.5" style={{ color: bgFile ? '#4ade80' : '#C8991A' }} />
+            <Upload size={17} style={{ color: bgFile ? '#4ade80' : '#C8991A' }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm truncate" style={{ fontFamily: '"Tajawal", sans-serif', color: bgFile ? '#4ade80' : '#E8C060' }}>
+            <p className="font-bold text-sm truncate" style={{ fontFamily: '"Tajawal",sans-serif', color: bgFile ? '#4ade80' : '#E8C060' }}>
               {bgFile ? bgFile.name : 'رفع صورة أو فيديو خلفية'}
             </p>
-            <p className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>
+            <p className="text-xs" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>
               {bgFile ? (bgType === 'video' ? 'فيديو خلفية' : 'صورة خلفية') : 'اختر من جهازك (صورة أو فيديو)'}
             </p>
           </div>
-          <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
         </button>
 
-        {/* Surah, From Ayah, To Ayah */}
+        {/* Surah / From / To */}
         <div className="grid grid-cols-3 gap-2">
-          {/* Surah */}
-          <div className="col-span-1 rounded-2xl p-2.5"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            <p className="text-xs mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>السورة</p>
-            <select value={selectedSurah} onChange={e => setSurah(Number(e.target.value))}
-              className="w-full bg-transparent font-bold text-xs outline-none truncate"
-              style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060', direction: 'rtl' }}>
-              {surahs.map(s => (
-                <option key={s.id} value={s.id} style={{ background: '#0d1b0a', color: '#E8C060' }}>
-                  {s.id}. {s.name_arabic}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* From Ayah */}
-          <div className="rounded-2xl p-2.5"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            <p className="text-xs mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>من آية</p>
-            <select value={fromAyah} onChange={e => setFromAyah(Number(e.target.value))}
-              className="w-full bg-transparent font-bold text-sm outline-none"
-              style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060', direction: 'rtl' }}>
-              {Array.from({ length: maxAyah }, (_, i) => i + 1).map(n => (
-                <option key={n} value={n} style={{ background: '#0d1b0a', color: '#E8C060' }}>{n}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* To Ayah */}
-          <div className="rounded-2xl p-2.5"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            <p className="text-xs mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>إلى آية</p>
-            <select value={toAyah} onChange={e => setToAyah(Number(e.target.value))}
-              className="w-full bg-transparent font-bold text-sm outline-none"
-              style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060', direction: 'rtl' }}>
-              {Array.from({ length: maxAyah - fromAyah + 1 }, (_, i) => fromAyah + i).map(n => (
-                <option key={n} value={n} style={{ background: '#0d1b0a', color: '#E8C060' }}>{n}</option>
-              ))}
-            </select>
-          </div>
+          {[
+            { label: 'السورة', content: (
+              <select value={selectedSurah} onChange={e => setSurah(Number(e.target.value))}
+                className="w-full bg-transparent font-bold text-xs outline-none truncate"
+                style={{ fontFamily: '"Tajawal",sans-serif', color: '#E8C060', direction: 'rtl' }}>
+                {surahs.map(s => <option key={s.id} value={s.id} style={{ background: '#0d1b0a', color: '#E8C060' }}>{s.id}. {s.name_arabic}</option>)}
+              </select>
+            )},
+            { label: 'من آية', content: (
+              <select value={fromAyah} onChange={e => setFromAyah(Number(e.target.value))}
+                className="w-full bg-transparent font-bold text-sm outline-none"
+                style={{ fontFamily: '"Tajawal",sans-serif', color: '#E8C060', direction: 'rtl' }}>
+                {Array.from({ length: maxAyah }, (_, i) => i + 1).map(n => <option key={n} value={n} style={{ background: '#0d1b0a', color: '#E8C060' }}>{n}</option>)}
+              </select>
+            )},
+            { label: 'إلى آية', content: (
+              <select value={toAyah} onChange={e => setToAyah(Number(e.target.value))}
+                className="w-full bg-transparent font-bold text-sm outline-none"
+                style={{ fontFamily: '"Tajawal",sans-serif', color: '#E8C060', direction: 'rtl' }}>
+                {Array.from({ length: maxAyah - fromAyah + 1 }, (_, i) => fromAyah + i).map(n => <option key={n} value={n} style={{ background: '#0d1b0a', color: '#E8C060' }}>{n}</option>)}
+              </select>
+            )},
+          ].map(({ label, content }) => (
+            <div key={label} className="rounded-2xl p-2.5"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
+              <p className="text-xs mb-1" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>{label}</p>
+              {content}
+            </div>
+          ))}
         </div>
 
         {/* Reciter */}
-        <div className="rounded-2xl p-2.5"
+        <div className="rounded-2xl p-2.5 relative"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <p className="text-xs mb-1" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>القارئ</p>
-          <select value={selectedReciter} onChange={e => setReciter(e.target.value)}
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>القارئ</p>
+            {loadingAudio && <Loader2 size={12} className="animate-spin" style={{ color: '#C8991A' }} />}
+          </div>
+          <select value={selectedRec} onChange={e => setSelectedRec(Number(e.target.value))}
             className="w-full bg-transparent font-bold text-sm outline-none"
-            style={{ fontFamily: '"Tajawal", sans-serif', color: '#E8C060', direction: 'rtl' }}>
-            {RECITERS.map(r => (
-              <option key={r.id} value={r.id} style={{ background: '#0d1b0a', color: '#E8C060' }}>{r.name}</option>
-            ))}
+            style={{ fontFamily: '"Tajawal",sans-serif', color: '#E8C060', direction: 'rtl' }}
+            disabled={recitations.length === 0}>
+            {recitations.length === 0
+              ? <option>جارٍ التحميل...</option>
+              : recitations.map(r => <option key={r.id} value={r.id} style={{ background: '#0d1b0a', color: '#E8C060' }}>{r.name}</option>)
+            }
           </select>
         </div>
 
         {/* Font Color */}
         <div className="rounded-2xl p-2.5"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <p className="text-xs mb-1.5" style={{ fontFamily: '"Tajawal", sans-serif', color: '#6B7A60' }}>لون الخط</p>
+          <p className="text-xs mb-1.5" style={{ fontFamily: '"Tajawal",sans-serif', color: '#6B7A60' }}>لون الخط</p>
           <div className="flex items-center gap-2 flex-wrap">
             {PRESET_COLORS.map(c => (
               <button key={c} onClick={() => setFontColor(c)} style={{
-                width: 28, height: 28, borderRadius: '50%', background: c, flexShrink: 0,
+                width: 27, height: 27, borderRadius: '50%', background: c, flexShrink: 0,
                 border: fontColor === c ? '3px solid #C8991A' : '2px solid rgba(255,255,255,0.18)',
-                transform: fontColor === c ? 'scale(1.2)' : 'scale(1)',
-                transition: 'all 0.18s',
+                transform: fontColor === c ? 'scale(1.2)' : 'scale(1)', transition: 'all 0.15s',
               }} />
             ))}
             <label style={{
-              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              width: 27, height: 27, borderRadius: '50%', flexShrink: 0,
               background: 'rgba(255,255,255,0.07)', border: '2px solid rgba(255,255,255,0.18)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', position: 'relative', overflow: 'hidden',
             }}>
-              <Palette style={{ width: 14, height: 14, color: '#9CA3AF', position: 'relative', zIndex: 1 }} />
+              <Palette style={{ width: 13, height: 13, color: '#9CA3AF', position: 'relative', zIndex: 1 }} />
               <input type="color" value={fontColor} onChange={e => setFontColor(e.target.value)}
                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
             </label>
           </div>
         </div>
 
-        {/* Error */}
-        {recordError && (
-          <div className="rounded-2xl p-2.5 text-center text-xs" style={{
-            fontFamily: '"Tajawal", sans-serif',
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.3)',
-            color: '#f87171',
-          }}>
-            {recordError}
+        {/* Error / Success */}
+        {(recordError || doneMsg) && (
+          <div className="rounded-2xl p-2.5 text-center text-xs"
+            style={{
+              fontFamily: '"Tajawal",sans-serif',
+              background: recordError ? 'rgba(239,68,68,0.1)' : 'rgba(74,222,128,0.1)',
+              border: `1px solid ${recordError ? 'rgba(239,68,68,0.3)' : 'rgba(74,222,128,0.3)'}`,
+              color: recordError ? '#f87171' : '#4ade80',
+            }}>
+            {recordError || doneMsg}
           </div>
         )}
       </div>
@@ -751,57 +781,48 @@ export function QuranStatus() {
       <div className="relative z-10 flex-shrink-0 px-4 py-3 flex gap-2 border-t"
         style={{ borderColor: 'rgba(200,153,26,0.15)', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)' }}>
 
-        {/* Preview Play/Stop */}
+        {/* Preview */}
         <button
-          onClick={togglePreviewPlay}
-          disabled={audioLoading || loadingVerses || verses.length === 0 || isRecording}
+          onClick={togglePreview}
+          disabled={audioLoading || loadingVerses || verseTexts.length === 0 || isRecording}
           className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl font-bold text-sm flex-shrink-0 transition-all"
           style={{
-            fontFamily: '"Tajawal", sans-serif',
+            fontFamily: '"Tajawal",sans-serif',
             background: isPlaying ? 'rgba(74,222,128,0.12)' : 'rgba(200,153,26,0.12)',
             border: `1px solid ${isPlaying ? 'rgba(74,222,128,0.4)' : 'rgba(200,153,26,0.35)'}`,
             color: isPlaying ? '#4ade80' : '#C8991A',
             minWidth: 90,
           }}
         >
-          {audioLoading ? (
-            <div className="w-4 h-4 rounded-full border-2 animate-spin"
-              style={{ borderColor: 'rgba(200,153,26,0.25)', borderTopColor: '#C8991A' }} />
-          ) : isPlaying ? (
-            <><Pause className="w-4 h-4" /> إيقاف</>
-          ) : (
-            <><Play className="w-4 h-4" /> معاينة</>
-          )}
+          {audioLoading
+            ? <Loader2 size={16} className="animate-spin" />
+            : isPlaying
+            ? <><Pause size={15} /> إيقاف</>
+            : <><Play size={15} /> معاينة</>
+          }
         </button>
 
         {/* Create Video */}
         <button
           onClick={generateVideo}
-          disabled={isRecording || loadingVerses || verses.length === 0 || isPlaying}
+          disabled={isRecording || loadingVerses || verseTexts.length === 0 || isPlaying || loadingAudio}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all"
           style={{
-            fontFamily: '"Tajawal", sans-serif',
-            background: shareSuccess
-              ? 'linear-gradient(135deg, rgba(74,222,128,0.22), rgba(34,197,94,0.12))'
-              : isRecording
-              ? 'linear-gradient(135deg, rgba(200,153,26,0.2), rgba(139,94,60,0.12))'
-              : 'linear-gradient(135deg, rgba(200,153,26,0.25), rgba(139,94,60,0.15))',
-            border: `1px solid ${shareSuccess ? 'rgba(74,222,128,0.5)' : 'rgba(200,153,26,0.5)'}`,
-            color: shareSuccess ? '#4ade80' : '#E8C060',
-            opacity: (loadingVerses || verses.length === 0) ? 0.4 : 1,
+            fontFamily: '"Tajawal",sans-serif',
+            background: doneMsg
+              ? 'linear-gradient(135deg,rgba(74,222,128,0.22),rgba(34,197,94,0.12))'
+              : 'linear-gradient(135deg,rgba(200,153,26,0.25),rgba(139,94,60,0.15))',
+            border: `1px solid ${doneMsg ? 'rgba(74,222,128,0.5)' : 'rgba(200,153,26,0.5)'}`,
+            color: doneMsg ? '#4ade80' : '#E8C060',
+            opacity: (loadingVerses || verseTexts.length === 0) ? 0.4 : 1,
           }}
         >
-          {isRecording ? (
-            <>
-              <div className="w-4 h-4 rounded-full border-2 animate-spin"
-                style={{ borderColor: 'rgba(200,153,26,0.3)', borderTopColor: '#C8991A' }} />
-              {recordingPct > 0 ? `${recordingPct}%` : 'جار الإنشاء...'}
-            </>
-          ) : shareSuccess ? (
-            <><Check className="w-4 h-4" /> تم التصدير!</>
-          ) : (
-            <><Video className="w-4 h-4" /> إنشاء فيديو</>
-          )}
+          {isRecording
+            ? <><Loader2 size={15} className="animate-spin" /> {recordPct > 0 ? `${recordPct}%` : 'جارٍ الإنشاء...'}</>
+            : doneMsg
+            ? <><Check size={15} /> {doneMsg}</>
+            : <><Download size={15} /> إنشاء فيديو</>
+          }
         </button>
       </div>
     </div>
