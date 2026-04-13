@@ -10,9 +10,19 @@ const PRESET_COLORS = [
   '#86efac', '#93c5fd', '#fca5a5', '#e9d5ff',
 ];
 
+/* ── CDN base for relative audio URLs from api.quran.com ────────────── */
+const QURAN_CDN_BASE = 'https://verses.quran.com/';
+
+function resolveAudioUrl(raw: string): string {
+  if (!raw) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  return QURAN_CDN_BASE + raw.replace(/^\/+/, '');
+}
+
 /* ── Proxied audio URL ──────────────────────────────────────────────── */
 function proxied(url: string) {
-  return `/api/audio-proxy?url=${encodeURIComponent(url)}`;
+  const resolved = resolveAudioUrl(url);
+  return `/api/audio-proxy?url=${encodeURIComponent(resolved)}`;
 }
 
 /* ── Load font into canvas context ─────────────────────────────────── */
@@ -38,9 +48,22 @@ function wrapRTL(ctx: CanvasRenderingContext2D, text: string, maxW: number): str
   return lines;
 }
 
+/* ── Trigger file download safely (works in user-gesture context) ── */
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
+}
+
 type Surah        = { id: number; name_arabic: string; verses_count: number };
 type Recitation   = { id: number; name: string };
-type VerseAudio   = Record<string, string>; /* verse_key → direct CDN url */
+type VerseAudio   = Record<string, string>;               /* verse_key → raw CDN url */
+type WordTiming   = Record<string, number[][]>;           /* verse_key → [[start_ms, end_ms], ...] */
+type CompletedVid = { blob: Blob; filename: string; mimeType: string };
 
 /* ════════════════════════════════════════════════════════════════════
    Main Component
@@ -55,16 +78,20 @@ export function QuranStatus() {
   const [selectedSurah, setSurah]         = useState(1);
   const [fromAyah, setFromAyah]           = useState(1);
   const [toAyah, setToAyah]               = useState(1);
-  const [selectedRec, setSelectedRec]     = useState<number>(7); /* Afasy default */
+  const [selectedRec, setSelectedRec]     = useState<number>(7);
 
   /* ── Verse data ── */
-  const [verseTexts, setVerseTexts]       = useState<string[]>([]);  /* per-ayah text */
+  const [verseTexts, setVerseTexts]       = useState<string[]>([]);
   const [loadingVerses, setLoadingV]      = useState(false);
 
-  /* ── Audio URL map (cached per recitation+surah) ── */
+  /* ── Audio URL map (verse_key → raw url) ── */
   const [audioMap, setAudioMap]           = useState<VerseAudio>({});
   const [loadingAudio, setLoadingAudio]   = useState(false);
-  const audioCacheRef = useRef<Map<string, VerseAudio>>(new Map());
+  const audioCacheRef  = useRef<Map<string, VerseAudio>>(new Map());
+
+  /* ── Word timing map (verse_key → [[start_ms, end_ms] per word]) ── */
+  const [wordTimingMap, setWordTimingMap] = useState<WordTiming>({});
+  const timingCacheRef = useRef<Map<string, WordTiming>>(new Map());
 
   /* ── Background ── */
   const [bgFile, setBgFile]               = useState<File | null>(null);
@@ -82,12 +109,15 @@ export function QuranStatus() {
   const [visibleWordCount, setVisWC]      = useState<number | null>(null);
   const stoppedRef                        = useRef(false);
   const previewAudiosRef                  = useRef<HTMLAudioElement[]>([]);
+  const previewTicksRef                   = useRef<ReturnType<typeof setInterval>[]>([]);
 
   /* ── Recording ── */
   const [isRecording, setIsRecording]     = useState(false);
   const [recordPct, setRecordPct]         = useState(0);
-  const [doneMsg, setDoneMsg]             = useState('');
   const [recordError, setRecordError]     = useState('');
+
+  /* ── Completed video waiting for user-tap download ── */
+  const [completedVid, setCompletedVid]   = useState<CompletedVid | null>(null);
 
   /* ─────────────── Fetch surah list ── */
   useEffect(() => {
@@ -100,7 +130,7 @@ export function QuranStatus() {
     fetch('https://api.quran.com/api/v4/resources/recitations?language=ar')
       .then(r => r.json())
       .then(d => {
-        const list: Recitation[] = (d.recitations ?? []).map((r: { id: number; translated_name?: { name?: string }; reciter_name?: string; style?: string }) => ({
+        const list: Recitation[] = (d.recitations ?? []).map((r: { id: number; translated_name?: { name?: string }; reciter_name?: string }) => ({
           id: r.id,
           name: r.translated_name?.name ?? r.reciter_name ?? `قارئ ${r.id}`,
         }));
@@ -110,10 +140,10 @@ export function QuranStatus() {
   }, []);
 
   /* ─────────────── Derived / helpers ── */
-  const maxAyah = surahs.find(s => s.id === selectedSurah)?.verses_count ?? 286;
+  const maxAyah      = surahs.find(s => s.id === selectedSurah)?.verses_count ?? 286;
   const currentSurah = surahs.find(s => s.id === selectedSurah);
-  const ayahRange = fromAyah === toAyah ? `آية ${fromAyah}` : `الآيات ${fromAyah}–${toAyah}`;
-  const allWords  = verseTexts.join(' ').split(' ').filter(Boolean);
+  const ayahRange    = fromAyah === toAyah ? `آية ${fromAyah}` : `الآيات ${fromAyah}–${toAyah}`;
+  const allWords     = verseTexts.join(' ').split(' ').filter(Boolean);
 
   /* ─────────────── Clamp range on surah change ── */
   useEffect(() => { setFromAyah(1); setToAyah(1); }, [selectedSurah]);
@@ -124,7 +154,7 @@ export function QuranStatus() {
     if (fromAyah > toAyah) return;
     setLoadingV(true);
     setVerseTexts([]);
-    const ctrl = new AbortController();
+    const ctrl  = new AbortController();
     const ayahs = Array.from({ length: toAyah - fromAyah + 1 }, (_, i) => fromAyah + i);
     Promise.all(
       ayahs.map(a =>
@@ -143,7 +173,7 @@ export function QuranStatus() {
   useEffect(() => {
     if (!selectedRec) return;
     const cacheKey = `${selectedRec}:${selectedSurah}`;
-    const cached = audioCacheRef.current.get(cacheKey);
+    const cached   = audioCacheRef.current.get(cacheKey);
     if (cached) { setAudioMap(cached); return; }
     setLoadingAudio(true);
     fetch(`https://api.quran.com/api/v4/recitations/${selectedRec}/by_chapter/${selectedSurah}?per_page=300`)
@@ -158,10 +188,31 @@ export function QuranStatus() {
       .finally(() => setLoadingAudio(false));
   }, [selectedRec, selectedSurah]);
 
-  /* ─────────────── Reset preview on changes ── */
+  /* ─────────────── Fetch word-level timing from qurancdn ── */
   useEffect(() => {
-    stopPreview();
-  }, [selectedSurah, fromAyah, toAyah, selectedRec]);
+    if (!selectedRec) return;
+    const cacheKey = `${selectedRec}:${selectedSurah}`;
+    const cached   = timingCacheRef.current.get(cacheKey);
+    if (cached) { setWordTimingMap(cached); return; }
+
+    fetch(`https://api.qurancdn.com/api/qdc/audio/reciters/${selectedRec}/audio_files?chapter_number=${selectedSurah}&per_page=300&segments=true`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        const map: WordTiming = {};
+        for (const f of (d.audio_files ?? [])) {
+          if (!f.verse_key || !Array.isArray(f.segments)) continue;
+          /* Each segment: [start_ms, end_ms, ...] — one entry per word */
+          map[f.verse_key] = (f.segments as number[][]).map((seg: number[]) => [seg[0], seg[1]]);
+        }
+        timingCacheRef.current.set(cacheKey, map);
+        setWordTimingMap(map);
+      })
+      .catch(() => {}); /* timing is optional — falls back to uniform */
+  }, [selectedRec, selectedSurah]);
+
+  /* ─────────────── Reset on selection change ── */
+  useEffect(() => { stopPreview(); setCompletedVid(null); }, [selectedSurah, fromAyah, toAyah, selectedRec]);
 
   /* ─────────────── Background upload ── */
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,16 +224,18 @@ export function QuranStatus() {
   }, [bgObjectUrl]);
 
   /* ─────────────── Stop preview ── */
-  const stopPreview = useCallback(() => {
+  function stopPreview() {
     stoppedRef.current = true;
-    for (const a of previewAudiosRef.current) { try { a.pause(); } catch { /* ok */ } }
+    for (const t of previewTicksRef.current) clearInterval(t);
+    previewTicksRef.current = [];
+    for (const a of previewAudiosRef.current) { try { a.pause(); a.src = ''; } catch { /* ok */ } }
     previewAudiosRef.current = [];
     setIsPlaying(false);
     setVisWC(null);
     setAudioLoad(false);
-  }, []);
+  }
 
-  /* ─────────────── Preview play (word by word) ── */
+  /* ─────────────── Preview play (word-by-word synced with actual timing) ── */
   const togglePreview = useCallback(async () => {
     if (isPlaying) { stopPreview(); return; }
     if (verseTexts.length === 0) return;
@@ -197,59 +250,17 @@ export function QuranStatus() {
     for (let vi = 0; vi < verseTexts.length; vi++) {
       if (stoppedRef.current) break;
 
-      const ayah = fromAyah + vi;
-      const vKey = `${selectedSurah}:${ayah}`;
+      const ayah   = fromAyah + vi;
+      const vKey   = `${selectedSurah}:${ayah}`;
       const rawUrl = audioMap[vKey];
       const vWords = verseTexts[vi].split(' ').filter(Boolean);
+      const timing = wordTimingMap[vKey]; /* may be undefined → fallback */
       const capturedOffset = wordOffset;
 
       await new Promise<void>(outerResolve => {
         let settled = false;
         const settle = () => { if (!settled) { settled = true; outerResolve(); } };
         const killTimer = setTimeout(settle, 90_000);
-
-        const audio = new Audio(rawUrl ? proxied(rawUrl) : '');
-        previewAudiosRef.current.push(audio);
-
-        /* Get duration, then play */
-        audio.onloadedmetadata = () => {
-          if (stoppedRef.current) { clearTimeout(killTimer); settle(); return; }
-          setAudioLoad(false);
-
-          const dur = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 5;
-          const msPerWord = (dur * 1000) / vWords.length;
-
-          audio.play().then(() => {
-            /* Start word timer exactly when audio starts */
-            const startTime = performance.now();
-            let lastShown = capturedOffset;
-
-            const tick = setInterval(() => {
-              if (stoppedRef.current) { clearInterval(tick); settle(); return; }
-              const elapsed = performance.now() - startTime;
-              const expected = Math.min(
-                capturedOffset + vWords.length,
-                capturedOffset + Math.ceil(elapsed / msPerWord),
-              );
-              if (expected > lastShown) {
-                lastShown = expected;
-                setVisWC(expected);
-              }
-              if (elapsed >= dur * 1000) { clearInterval(tick); }
-            }, 40); /* ~25fps */
-
-            audio.onended = () => { clearInterval(tick); clearTimeout(killTimer); settle(); };
-            audio.onerror = () => { clearInterval(tick); clearTimeout(killTimer); settle(); };
-          }).catch(() => { clearTimeout(killTimer); settle(); });
-        };
-
-        audio.onerror = () => {
-          setAudioLoad(false);
-          /* Even if audio fails, show all words for this verse */
-          setVisWC(capturedOffset + vWords.length);
-          clearTimeout(killTimer);
-          setTimeout(settle, 2000);
-        };
 
         if (!rawUrl) {
           setAudioLoad(false);
@@ -259,7 +270,57 @@ export function QuranStatus() {
           return;
         }
 
-        audio.preload = 'metadata';
+        const audio  = new Audio(proxied(rawUrl));
+        audio.preload = 'auto';
+        previewAudiosRef.current.push(audio);
+
+        audio.onloadedmetadata = () => {
+          if (stoppedRef.current) { clearTimeout(killTimer); settle(); return; }
+          setAudioLoad(false);
+
+          const dur     = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 5;
+          const hasTiming = Array.isArray(timing) && timing.length >= vWords.length;
+
+          audio.play().then(() => {
+            const startTime = performance.now();
+
+            const tick = setInterval(() => {
+              if (stoppedRef.current) { clearInterval(tick); settle(); return; }
+              const elapsed = performance.now() - startTime;
+
+              let expected: number;
+              if (hasTiming) {
+                /* Accurate timing: show word when its start_ms is reached */
+                expected = capturedOffset;
+                for (let wi = 0; wi < vWords.length; wi++) {
+                  if (elapsed >= (timing[wi][0] ?? 0)) expected = capturedOffset + wi + 1;
+                }
+              } else {
+                /* Fallback: uniform distribution */
+                const msPerWord = (dur * 1000) / vWords.length;
+                expected = Math.min(
+                  capturedOffset + vWords.length,
+                  capturedOffset + Math.ceil(elapsed / msPerWord),
+                );
+              }
+
+              setVisWC(expected);
+              if (elapsed >= dur * 1000 + 200) clearInterval(tick);
+            }, 30); /* ~33fps */
+
+            previewTicksRef.current.push(tick);
+            audio.onended  = () => { clearInterval(tick); clearTimeout(killTimer); settle(); };
+            audio.onerror  = () => { clearInterval(tick); clearTimeout(killTimer); settle(); };
+          }).catch(() => { clearTimeout(killTimer); settle(); });
+        };
+
+        audio.onerror = () => {
+          setAudioLoad(false);
+          setVisWC(capturedOffset + vWords.length);
+          clearTimeout(killTimer);
+          setTimeout(settle, 1500);
+        };
+
         audio.load();
       });
 
@@ -267,7 +328,7 @@ export function QuranStatus() {
     }
 
     if (!stoppedRef.current) stopPreview();
-  }, [isPlaying, verseTexts, fromAyah, selectedSurah, audioMap, stopPreview]);
+  }, [isPlaying, verseTexts, fromAyah, selectedSurah, audioMap, wordTimingMap]);
 
   /* ─────────────── Video generation ── */
   const generateVideo = useCallback(async () => {
@@ -275,7 +336,7 @@ export function QuranStatus() {
     setIsRecording(true);
     setRecordPct(2);
     setRecordError('');
-    setDoneMsg('');
+    setCompletedVid(null);
 
     try {
       await loadFontForCanvas(
@@ -291,31 +352,49 @@ export function QuranStatus() {
 
       for (let vi = 0; vi < verseTexts.length; vi++) {
         setRecordPct(5 + Math.round((vi / verseTexts.length) * 30));
-        const ayah = fromAyah + vi;
-        const vKey = `${selectedSurah}:${ayah}`;
+        const ayah   = fromAyah + vi;
+        const vKey   = `${selectedSurah}:${ayah}`;
         const rawUrl = audioMap[vKey];
-        if (!rawUrl) { buffers.push(audioCtx.createBuffer(1, 44100 * 3, 44100)); continue; }
 
-        const resp = await fetch(proxied(rawUrl));
-        if (!resp.ok) throw new Error(`فشل تحميل صوت الآية ${ayah}`);
-        const ab = await resp.arrayBuffer();
-        buffers.push(await audioCtx.decodeAudioData(ab));
+        if (!rawUrl) {
+          buffers.push(audioCtx.createBuffer(1, Math.round(44100 * 3), 44100));
+          continue;
+        }
+        try {
+          const resp = await fetch(proxied(rawUrl));
+          if (!resp.ok) throw new Error(`فشل تحميل صوت الآية ${ayah}`);
+          const ab = await resp.arrayBuffer();
+          buffers.push(await audioCtx.decodeAudioData(ab));
+        } catch {
+          buffers.push(audioCtx.createBuffer(1, Math.round(44100 * 2), 44100));
+        }
       }
 
       setRecordPct(38);
 
       const totalDuration = buffers.reduce((s, b) => s + b.duration, 0);
 
-      /* ── Build word timeline ── */
+      /* ── Build word timeline using actual per-word timing when available ── */
       type WE = { word: string; startMs: number; endMs: number };
       const timeline: WE[] = [];
       let tOffset = 0;
+
       for (let vi = 0; vi < verseTexts.length; vi++) {
-        const words = verseTexts[vi].split(' ').filter(Boolean);
-        const dur   = buffers[vi].duration;
-        const msPW  = (dur * 1000) / words.length;
+        const words   = verseTexts[vi].split(' ').filter(Boolean);
+        const dur     = buffers[vi].duration;
+        const vKey    = `${selectedSurah}:${fromAyah + vi}`;
+        const timing  = wordTimingMap[vKey];
+        const hasTiming = Array.isArray(timing) && timing.length >= words.length;
+
         words.forEach((w, wi) => {
-          timeline.push({ word: w, startMs: tOffset + wi * msPW, endMs: tOffset + (wi + 1) * msPW });
+          if (hasTiming) {
+            const startMs = tOffset + (timing[wi][0] ?? 0);
+            const endMs   = tOffset + (timing[wi][1] ?? (timing[wi][0] ?? 0) + 400);
+            timeline.push({ word: w, startMs, endMs });
+          } else {
+            const msPW = (dur * 1000) / words.length;
+            timeline.push({ word: w, startMs: tOffset + wi * msPW, endMs: tOffset + (wi + 1) * msPW });
+          }
         });
         tOffset += dur * 1000;
       }
@@ -340,7 +419,7 @@ export function QuranStatus() {
       } catch { /* ok */ }
 
       const surahName = currentSurah?.name_arabic ?? '';
-      const FADE_MS   = 180; /* word fade-in duration */
+      const FADE_MS   = 150;
 
       const drawFrame = (elapsedMs: number) => {
         /* Background */
@@ -349,7 +428,7 @@ export function QuranStatus() {
           const dx = (W - bgImg.naturalWidth * sc) / 2, dy = (H - bgImg.naturalHeight * sc) / 2;
           ctx.drawImage(bgImg, dx, dy, bgImg.naturalWidth * sc, bgImg.naturalHeight * sc);
         } else if (bgObjectUrl && bgType === 'video' && videoRef.current) {
-          const v = videoRef.current;
+          const v  = videoRef.current;
           const sc = Math.max(W / v.videoWidth, H / v.videoHeight);
           const dx = (W - v.videoWidth * sc) / 2, dy = (H - v.videoHeight * sc) / 2;
           ctx.drawImage(v, dx, dy, v.videoWidth * sc, v.videoHeight * sc);
@@ -379,35 +458,28 @@ export function QuranStatus() {
         ctx.strokeStyle = 'rgba(200,153,26,0.35)'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(300, 310); ctx.lineTo(780, 310); ctx.stroke();
 
-        /* Verse text with per-word opacity fade-in */
+        /* Verse text – per-word fade in */
         const charCount = timeline.map(t => t.word).join(' ').length;
         const fontSize  = Math.max(50, Math.min(84, Math.round(5000 / Math.sqrt(charCount + 1))));
         const lineH     = Math.round(fontSize * 1.82);
 
-        /* Build visible text with fade for newest word */
         ctx.font      = `bold ${fontSize}px ${amiri}`;
         ctx.direction = 'rtl'; ctx.textAlign = 'center';
 
-        const visible = timeline.filter(t => t.startMs <= elapsedMs);
-
-        /* Render all visible words together for line wrapping */
         const fullText = timeline.map(t => t.word).join(' ');
         const allLines = wrapRTL(ctx, fullText, W * 0.82);
         const textH    = allLines.length * lineH;
         let ty         = H / 2 - textH / 2 + 90;
 
-        /* Draw each line word by word to allow per-word opacity */
         let wordsCounted = 0;
         ctx.save();
         for (const line of allLines) {
-          const lineWords = line.split(' ');
-          /* Measure positions for RTL line */
+          const lineWords  = line.split(' ');
           const totalLineW = ctx.measureText(line).width;
-          let x = W / 2 + totalLineW / 2; /* start from right for RTL */
+          let x = W / 2 + totalLineW / 2;
           for (const word of lineWords) {
             const wMeasure = ctx.measureText(word + ' ').width;
-            const wi       = wordsCounted;
-            const entry    = timeline[wi];
+            const entry    = timeline[wordsCounted];
             let opacity    = 1;
             if (entry) {
               const sinceStart = elapsedMs - entry.startMs;
@@ -436,7 +508,6 @@ export function QuranStatus() {
           ctx.drawImage(logoImg, 60, H - 210, 104, 104);
           ctx.globalAlpha = 1;
         }
-        /* Noor App watermark */
         ctx.direction = 'ltr'; ctx.textAlign = 'left';
         ctx.font = `bold 52px 'Segoe UI', sans-serif`;
         ctx.fillStyle = '#C8991A';
@@ -449,14 +520,15 @@ export function QuranStatus() {
       setRecordPct(40);
 
       /* ── MediaRecorder setup ── */
-      const dest   = audioCtx.createMediaStreamDestination();
-      const vStream = canvas.captureStream(30);
+      const dest     = audioCtx.createMediaStreamDestination();
+      const vStream  = canvas.captureStream(30);
       const combined = new MediaStream([...vStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
 
       const mimeTypes = [
         'video/webm;codecs=vp9,opus',
         'video/webm;codecs=vp8,opus',
         'video/webm',
+        'video/mp4',
       ];
       const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) ?? '';
       const recorder = new MediaRecorder(combined, mimeType ? { mimeType } : undefined);
@@ -482,8 +554,7 @@ export function QuranStatus() {
         let raf: number;
         const loop = () => {
           const elapsed = (audioCtx.currentTime - recStart) * 1000;
-          const pct     = Math.min(elapsed / (totalDuration * 1000), 1);
-          setRecordPct(40 + Math.round(pct * 55));
+          setRecordPct(40 + Math.round(Math.min(elapsed / (totalDuration * 1000), 1) * 55));
           drawFrame(Math.max(0, elapsed));
           if (elapsed < totalDuration * 1000 + 600) {
             raf = requestAnimationFrame(loop);
@@ -493,52 +564,42 @@ export function QuranStatus() {
           }
         };
         raf = requestAnimationFrame(loop);
-        /* Safety: stop after duration + 5s */
-        setTimeout(() => { cancelAnimationFrame(raf); resolve(); }, (totalDuration + 5) * 1000);
+        setTimeout(() => { cancelAnimationFrame(raf); resolve(); }, (totalDuration + 8) * 1000);
       });
 
       recorder.stop();
-      await new Promise<void>(r => { recorder.onstop = () => r(); });
+      await new Promise<void>(r => { recorder.onstop = () => r(); setTimeout(r, 3000); });
       await audioCtx.close();
-      setRecordPct(98);
+      setRecordPct(99);
 
-      /* ── Download directly ── */
-      const ext  = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url;
-      a.download = `noor-ayah-${selectedSurah}-${fromAyah}${fromAyah !== toAyah ? `-${toAyah}` : ''}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+      const ext      = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const blob     = new Blob(chunks, { type: mimeType || 'video/webm' });
+      const filename = `noor-ayah-${selectedSurah}-${fromAyah}${fromAyah !== toAyah ? `-${toAyah}` : ''}.${ext}`;
 
-      setDoneMsg('تم تحميل الفيديو!');
-      setTimeout(() => setDoneMsg(''), 5000);
+      /* Store completed video — user taps to download (keeps user-gesture context) */
+      setCompletedVid({ blob, filename, mimeType: mimeType || 'video/webm' });
+      setRecordPct(100);
 
     } catch (err: unknown) {
       console.error('[QuranStatus] video error:', err);
       setRecordError(err instanceof Error ? err.message : 'حدث خطأ أثناء إنشاء الفيديو');
     } finally {
       setIsRecording(false);
-      setRecordPct(0);
     }
   }, [
     verseTexts, fromAyah, toAyah, selectedSurah, currentSurah,
-    audioMap, selectedRec, bgObjectUrl, bgType, fontColor, ayahRange,
+    audioMap, wordTimingMap, bgObjectUrl, bgType, fontColor, ayahRange,
   ]);
 
   /* ─────────────── Cleanup ── */
   useEffect(() => {
     return () => {
       if (bgObjectUrl) URL.revokeObjectURL(bgObjectUrl);
-      stoppedRef.current = true;
-      for (const a of previewAudiosRef.current) try { a.pause(); } catch { /* ok */ }
+      stopPreview();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ─────────────── Derived preview text ── */
-  const displayWords   = visibleWordCount !== null ? allWords.slice(0, visibleWordCount) : allWords;
   const textForSize    = allWords.join(' ');
   const ayahFontSizePx = textForSize.length > 200 ? 10
     : textForSize.length > 130 ? 12
@@ -608,7 +669,7 @@ export function QuranStatus() {
             <div style={{ width: 36, height: 1, background: 'rgba(200,153,26,0.35)' }} />
           </div>
 
-          {/* Verse text — word by word with fade */}
+          {/* Verse text — word-by-word with smooth fade */}
           <div className="relative z-10 px-4 text-center mt-4">
             {loadingVerses ? (
               <Loader2 className="w-7 h-7 animate-spin mx-auto" style={{ color: '#C8991A' }} />
@@ -622,20 +683,19 @@ export function QuranStatus() {
                 lineHeight: 2.15,
               }}>
                 {visibleWordCount !== null
-                  /* Animated mode: each word span with fade */
                   ? allWords.map((word, i) => (
                     <span
                       key={i}
                       style={{
                         opacity: i < visibleWordCount ? 1 : 0,
-                        transition: 'opacity 0.18s ease-in',
+                        transition: i < visibleWordCount ? 'opacity 0.15s ease-out' : 'none',
                         display: 'inline',
+                        willChange: 'opacity',
                       }}
                     >
                       {word}{i < allWords.length - 1 ? ' ' : ''}
                     </span>
                   ))
-                  /* Static mode: show full text */
                   : (allWords.length > 0 ? allWords.join(' ') : 'اختر سورة وآية لعرضها هنا')
                 }
               </p>
@@ -763,17 +823,35 @@ export function QuranStatus() {
           </div>
         </div>
 
-        {/* Error / Success */}
-        {(recordError || doneMsg) && (
+        {/* Error */}
+        {recordError && (
           <div className="rounded-2xl p-2.5 text-center text-xs"
             style={{
               fontFamily: '"Tajawal",sans-serif',
-              background: recordError ? 'rgba(239,68,68,0.1)' : 'rgba(74,222,128,0.1)',
-              border: `1px solid ${recordError ? 'rgba(239,68,68,0.3)' : 'rgba(74,222,128,0.3)'}`,
-              color: recordError ? '#f87171' : '#4ade80',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              color: '#f87171',
             }}>
-            {recordError || doneMsg}
+            {recordError}
           </div>
+        )}
+
+        {/* Completed video — tap to download */}
+        {completedVid && (
+          <button
+            onClick={() => triggerDownload(completedVid.blob, completedVid.filename)}
+            className="w-full rounded-2xl p-3 flex items-center justify-center gap-2 font-bold text-sm"
+            style={{
+              fontFamily: '"Tajawal",sans-serif',
+              background: 'linear-gradient(135deg,rgba(74,222,128,0.18),rgba(34,197,94,0.10))',
+              border: '1.5px solid rgba(74,222,128,0.55)',
+              color: '#4ade80',
+            }}
+            data-testid="button-download-video"
+          >
+            <Download size={16} />
+            اضغط هنا لتنزيل الفيديو
+          </button>
         )}
       </div>
 
@@ -793,6 +871,7 @@ export function QuranStatus() {
             color: isPlaying ? '#4ade80' : '#C8991A',
             minWidth: 90,
           }}
+          data-testid="button-preview"
         >
           {audioLoading
             ? <Loader2 size={16} className="animate-spin" />
@@ -809,19 +888,20 @@ export function QuranStatus() {
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all"
           style={{
             fontFamily: '"Tajawal",sans-serif',
-            background: doneMsg
-              ? 'linear-gradient(135deg,rgba(74,222,128,0.22),rgba(34,197,94,0.12))'
+            background: completedVid
+              ? 'linear-gradient(135deg,rgba(74,222,128,0.18),rgba(34,197,94,0.10))'
               : 'linear-gradient(135deg,rgba(200,153,26,0.25),rgba(139,94,60,0.15))',
-            border: `1px solid ${doneMsg ? 'rgba(74,222,128,0.5)' : 'rgba(200,153,26,0.5)'}`,
-            color: doneMsg ? '#4ade80' : '#E8C060',
+            border: `1px solid ${completedVid ? 'rgba(74,222,128,0.45)' : 'rgba(200,153,26,0.5)'}`,
+            color: completedVid ? '#4ade80' : '#E8C060',
             opacity: (loadingVerses || verseTexts.length === 0) ? 0.4 : 1,
           }}
+          data-testid="button-generate-video"
         >
           {isRecording
             ? <><Loader2 size={15} className="animate-spin" /> {recordPct > 0 ? `${recordPct}%` : 'جارٍ الإنشاء...'}</>
-            : doneMsg
-            ? <><Check size={15} /> {doneMsg}</>
-            : <><Download size={15} /> إنشاء فيديو</>
+            : completedVid
+            ? <><Check size={15} /> تم الإنشاء</>
+            : <><Film size={15} /> إنشاء فيديو</>
           }
         </button>
       </div>
