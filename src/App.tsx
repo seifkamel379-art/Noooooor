@@ -32,8 +32,6 @@ import { ProphetStories } from "@/pages/ProphetStories";
 import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
 import { Sunnah } from "@/pages/Sunnah";
 import { IslamicTV } from "@/pages/IslamicTV";
-import { QuranStatus } from "@/pages/QuranStatus";
-import { QuranImage } from "@/pages/QuranImage";
 
 import { onAuthStateChanged } from "firebase/auth";
 import { get, ref } from "firebase/database";
@@ -149,12 +147,6 @@ function Router() {
       </Route>
       <Route path="/tv">
         <FullScreenShell><IslamicTV /></FullScreenShell>
-      </Route>
-      <Route path="/quran-status">
-        <FullScreenShell><QuranStatus /></FullScreenShell>
-      </Route>
-      <Route path="/quran-image">
-        <FullScreenShell><QuranImage /></FullScreenShell>
       </Route>
       <Route component={NotFound} />
     </Switch>
