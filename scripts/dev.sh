@@ -1,6 +1,6 @@
 #!/bin/bash
 # Main dev script for the "Start application" workflow.
-# Starts API server and Vite dev server together.
+# Starts Vite dev server first (for fast port open), then API server.
 export BASE_PATH=/
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,12 +20,12 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-# Start the API server in the background
+# Start the API server in the background (after a brief delay so Vite opens port first)
 echo "Starting API server (dev) on port $API_SERVER_PORT..."
-(cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development \
+(sleep 2 && cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development \
   "$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx" ./src/index.ts 2>&1) &
 
-# Start Vite in the foreground
+# Start Vite in the foreground so it opens port 5000 quickly
 echo "Starting Vite dev server on port $VITE_PORT..."
 cd "$ROOT_DIR" && exec env VITE_PORT=$VITE_PORT PORT=$VITE_PORT \
   "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/vite.config.ts"
