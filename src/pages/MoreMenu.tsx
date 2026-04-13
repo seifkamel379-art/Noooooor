@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import {
   ChevronLeft, Sun, Moon, LogOut, Share2,
   Star, Copy, X, Check, Mail, MessageSquare, Settings2, Pencil, Clock,
-  Lock, Eye, EyeOff, ShieldCheck, Film,
+  Lock, Eye, EyeOff, ShieldCheck, Film, ImageIcon,
 } from 'lucide-react';
 import { useUserSetting } from '@/hooks/use-user-setting';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -743,7 +743,8 @@ export function MoreMenu() {
     { Icon: IslamicStarIcon,   label: 'قصص الأنبياء',       path: '/prophets',     desc: 'قصص الأنبياء لابن كثير • تحقيق د. مصطفى عبد الواحد', grad: 'linear-gradient(145deg, #1b4332, #0d2b1e)' },
     { Icon: DuaHandsIcon,      label: 'سنن النبي ﷺ',        path: '/sunnah',       desc: 'اقتداءً بهدي المصطفى في يومك',                  grad: 'linear-gradient(145deg, #1b4332, #0d2b1e)' },
     { Icon: QuranBookIcon,     label: 'الاختبارات الإسلامية', path: '/quizzes',    desc: '5820 سؤال في 6 تخصصات شرعية',                   grad: 'linear-gradient(145deg, #3a1a5c, #1e0d30)' },
-    { Icon: Film,              label: 'إنشاء فيديو',         path: '/quran-status', desc: 'فيديو قرآني مع صوت القارئ كلمةً بكلمة',          grad: 'linear-gradient(145deg, #C8991A, #8B6340)' },
+    { Icon: Film,              label: 'إنشاء فيديو',         path: '/quran-status', desc: 'فيديو قرآني مع صوت القارئ كلمةً بكلمة',          grad: 'linear-gradient(145deg, #7a5230, #4d3018)' },
+    { Icon: ImageIcon,         label: 'إنشاء صورة قرآنية',  path: '/quran-image',  desc: 'صمّم صورة قرآنية واحفظها على جهازك',             grad: 'linear-gradient(145deg, #C8991A, #8B6340)' },
     { Icon: QiblaCompassIcon,  label: 'تحديد القبلة',        path: '/qibla',        desc: 'بوصلة ذكية لاتجاه الكعبة المشرفة',              grad: 'linear-gradient(145deg, #1e4d7b, #0f2d4d)' },
     { Icon: RadioIcon,         label: 'الإذاعات الإسلامية', path: '/radio',        desc: 'إذاعة القرآن الكريم وكبار القراء',               grad: 'linear-gradient(145deg, #5c3a7a, #3a1f52)' },
     { Icon: MoonIcon,          label: 'القنوات الإسلامية',  path: '/tv',           desc: 'بث مباشر لقناة القرآن والسنة وغيرها',            grad: 'linear-gradient(145deg, #0f3d2e, #072218)' },

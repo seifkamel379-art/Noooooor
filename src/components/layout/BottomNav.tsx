@@ -194,6 +194,38 @@ function CounterNav3D({ color }: { color: string }) {
   );
 }
 
+function ImageNav3D({ color }: { color: string }) {
+  const hi = "rgba(255,255,255,0.42)";
+  return (
+    <svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      {/* Frame shadow */}
+      <rect x="2.4" y="3.4" width="19" height="15" rx="2.5" fill={color} fillOpacity="0.13" />
+      {/* Frame */}
+      <rect x="2" y="3" width="19" height="15" rx="2.2"
+        fill={color} fillOpacity="0.1" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      {/* Frame top gloss */}
+      <path d="M4 3.5 Q10.5 3 19 3.5" stroke={hi} strokeWidth="0.8" fill="none" strokeLinecap="round" />
+
+      {/* Sun circle */}
+      <circle cx="7.5" cy="7.5" r="2" fill={color} fillOpacity="0.9" />
+      <circle cx="7" cy="7" r="0.7" fill="white" fillOpacity="0.55" />
+
+      {/* Mountain landscape */}
+      <path d="M2 14 L7 9.5 L11 12.5 L15 7.5 L21 14 Z"
+        fill={color} fillOpacity="0.28" stroke={color} strokeWidth="1.2"
+        strokeLinejoin="round" strokeLinecap="round" />
+      {/* Mountain highlight */}
+      <path d="M7 9.5 L8.5 11 L11 12.5" stroke={hi} strokeWidth="0.6" fill="none" strokeLinecap="round" />
+      <path d="M15 7.5 L17.5 10.5" stroke={hi} strokeWidth="0.6" fill="none" strokeLinecap="round" />
+
+      {/* Bottom text/download arrow */}
+      <path d="M10 20 L14 20" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 18 L12 22 M10.5 20.8 L12 22.3 L13.5 20.8"
+        stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function MoreNav3D({ color }: { color: string }) {
   const hi = "rgba(255,255,255,0.5)";
   const positions = [
@@ -222,12 +254,13 @@ function MoreNav3D({ color }: { color: string }) {
 type NavIconComp = React.ComponentType<{ color: string }>;
 
 const NAV_ITEMS: { id: string; path: string; Icon: NavIconComp; label: string }[] = [
-  { id: "home",    path: "/",        Icon: HomeNav3D,    label: "الرئيسية" },
-  { id: "quran",   path: "/quran",   Icon: QuranNav3D,   label: "القرآن"   },
-  { id: "azkar",   path: "/azkar",   Icon: AzkarNav3D,   label: "الأذكار"  },
-  { id: "tasbih",  path: "/tasbih",  Icon: TasbihNav3D,  label: "التسبيح"  },
-  { id: "counter", path: "/counter", Icon: CounterNav3D, label: "العداد"   },
-  { id: "more",    path: "/more",    Icon: MoreNav3D,    label: "المزيد"   },
+  { id: "home",         path: "/",             Icon: HomeNav3D,    label: "الرئيسية" },
+  { id: "quran",        path: "/quran",        Icon: QuranNav3D,   label: "القرآن"   },
+  { id: "azkar",        path: "/azkar",        Icon: AzkarNav3D,   label: "الأذكار"  },
+  { id: "tasbih",       path: "/tasbih",       Icon: TasbihNav3D,  label: "التسبيح"  },
+  { id: "quran-image",  path: "/quran-image",  Icon: ImageNav3D,   label: "صورة"     },
+  { id: "counter",      path: "/counter",      Icon: CounterNav3D, label: "العداد"   },
+  { id: "more",         path: "/more",         Icon: MoreNav3D,    label: "المزيد"   },
 ];
 
 const ACTIVE_COLOR   = "#C19A6B";
