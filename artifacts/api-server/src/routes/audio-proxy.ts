@@ -2,7 +2,22 @@ import { Router } from "express";
 
 const router = Router();
 
-const ALLOWED_HOSTS = ["everyayah.com", "cdn.islamic.network", "mp3quran.net", "verses.quran.com", "audio.qurancdn.com"];
+/* Base domains — subdomains are also covered via endsWith check below */
+const ALLOWED_HOSTS = [
+  "everyayah.com",
+  "cdn.islamic.network",
+  "mp3quran.net",
+  "verses.quran.com",
+  "qurancdn.com",
+  "quranicaudio.com",
+  "download.quranicaudio.com",
+  "podcasts.qurancentral.com",
+  "qurancentral.com",
+  "archive.org",
+  "quran.ksu.edu.sa",
+  "ksu.edu.sa",
+  "islamic.network",
+];
 
 router.get("/audio-proxy", async (req, res) => {
   const rawUrl = req.query.url as string | undefined;

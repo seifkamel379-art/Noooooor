@@ -119,5 +119,9 @@ channel = "stable-25_05"
 packages = ["zulu17", "zip", "killall"]
 
 [[ports]]
-localPort = 19382
+localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
