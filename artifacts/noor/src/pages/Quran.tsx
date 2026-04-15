@@ -5,7 +5,7 @@ import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { auth } from '@/lib/firebase';
 import { getCacheValue, getCurrentUid, queueRTDBUpdate, getSettingCache, queueSettingSync } from '@/lib/rtdb';
 import { SURAH_NAMES } from '@/lib/constants';
-import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown, Download } from 'lucide-react';
+import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown, Download, Languages, ScrollText, Loader2 } from 'lucide-react';
 import { padZero, cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -75,7 +75,7 @@ const FONT_MIN = 1.2;
 const FONT_MAX = 2.8;
 const FONT_STEP = 0.15;
 
-type Mode = 'normal' | 'listen' | 'tafsir';
+type Mode = 'normal' | 'listen' | 'tafsir' | 'iraab' | 'nuzul';
 
 function getWordAudioUrl(surah: number, ayah: number, wordIdx: number): string {
   return `https://audio.qurancdn.com/wbw/${padZero(surah, 3)}_${padZero(ayah, 3)}_${padZero(wordIdx, 3)}.mp3`;
@@ -121,6 +121,23 @@ export function Quran() {
   const [fontSize, setFontSize] = useUserSetting<number>('quran_font_size', 1.75);
   const [showMoshaf, setShowMoshaf] = useState(false);
 
+  // Quran text search
+  const [searchView, setSearchView] = useState<'surahs' | 'search'>('surahs');
+  const [quranSearch, setQuranSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchCount, setSearchCount] = useState(0);
+
+  // إعراب (word-by-word meanings)
+  const [iraabData, setIraabData] = useState<any[] | null>(null);
+  const [iraabLoading, setIraabLoading] = useState(false);
+  const [iraabAyah, setIraabAyah] = useState<number | null>(null);
+
+  // سبب النزول (tafsir/nuzul)
+  const [nuzulText, setNuzulText] = useState<string | null>(null);
+  const [nuzulLoading, setNuzulLoading] = useState(false);
+  const [nuzulAyah, setNuzulAyah] = useState<number | null>(null);
+
   const trackSurahSelection = useCallback((surahNum: number) => {
     const uid = auth.currentUser?.uid ?? getCurrentUid();
     if (!uid) return;
@@ -144,6 +161,52 @@ export function Quran() {
     }
 
     queueRTDBUpdate(uid, updates);
+  }, []);
+
+  // ── Search Quran text ──
+  const searchQuran = useCallback(async (term: string) => {
+    const t = term.trim();
+    if (!t) { setSearchResults([]); setSearchCount(0); return; }
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(t)}/all/quran-uthmani`);
+      const json = await res.json();
+      setSearchResults(json?.data?.matches ?? []);
+      setSearchCount(json?.data?.count ?? 0);
+    } catch { setSearchResults([]); setSearchCount(0); }
+    setSearchLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { if (searchView === 'search') searchQuran(quranSearch); }, 500);
+    return () => clearTimeout(timer);
+  }, [quranSearch, searchView, searchQuran]);
+
+  // ── إعراب: fetch word-by-word meanings ──
+  const fetchIraab = useCallback(async (surahNum: number, ayahNum: number) => {
+    setIraabLoading(true);
+    setIraabData(null);
+    setIraabAyah(ayahNum);
+    try {
+      const res = await fetch(`https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?words=true&word_fields=text_uthmani,location,transliteration,translation&fields=text_uthmani`);
+      const json = await res.json();
+      const words = (json?.verse?.words ?? []).filter((w: any) => w.char_type_name === 'word');
+      setIraabData(words);
+    } catch { setIraabData([]); }
+    setIraabLoading(false);
+  }, []);
+
+  // ── سبب النزول: fetch tafsir ──
+  const fetchNuzul = useCallback(async (surahNum: number, ayahNum: number) => {
+    setNuzulLoading(true);
+    setNuzulText(null);
+    setNuzulAyah(ayahNum);
+    try {
+      const res = await fetch(`https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-muyassar/${surahNum}/${ayahNum}.json`);
+      const json = await res.json();
+      setNuzulText(json?.text ?? null);
+    } catch { setNuzulText(null); }
+    setNuzulLoading(false);
   }, []);
 
   const increaseFontSize = () => setFontSize(prev => Math.min(prev + FONT_STEP, FONT_MAX));
@@ -218,12 +281,19 @@ export function Quran() {
       setSelectedAyah(prev => prev === ayahNum ? null : ayahNum);
     } else if (mode === 'tafsir') {
       setActiveAyah(ayahNum);
+    } else if (mode === 'iraab') {
+      if (selectedSurah) fetchIraab(selectedSurah, ayahNum);
+    } else if (mode === 'nuzul') {
+      if (selectedSurah) fetchNuzul(selectedSurah, ayahNum);
     }
   };
 
   const handleWordClick = (ayahNum: number, wordIdx: number) => {
-    if (mode !== 'listen' || !selectedSurah) return;
-    playWord(selectedSurah, ayahNum, wordIdx);
+    if (mode === 'listen' && selectedSurah) {
+      playWord(selectedSurah, ayahNum, wordIdx);
+    } else if (mode === 'iraab' && selectedSurah) {
+      fetchIraab(selectedSurah, ayahNum);
+    }
   };
 
   const saveBookmark = (ayahNum: number) => {
@@ -283,7 +353,7 @@ export function Quran() {
         dir="rtl"
         style={{ background: C.pageBg }}
       >
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: C.btnBg, border: `1px solid ${C.btnBorder}` }}>
             <svg width="18" height="18" viewBox="0 0 40 40" fill="#C19A6B"><polygon points="20,2 24,14 37,14 27,22 31,35 20,27 9,35 13,22 3,14 16,14" /></svg>
           </div>
@@ -301,69 +371,184 @@ export function Quran() {
           {showMoshaf && <MoshafSheet dark={dark} onClose={() => setShowMoshaf(false)} />}
         </AnimatePresence>
 
-        <div className="relative mb-4">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#C19A6B', opacity: 0.6 }} />
-          <input
-            type="text"
-            placeholder="ابحث عن سورة..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full py-3 pr-10 pl-4 rounded-2xl outline-none text-sm"
-            style={{
-              background: C.searchBg,
-              border: `1px solid ${C.searchBorder}`,
-              color: C.searchText,
-              fontFamily: '"Tajawal", sans-serif',
-            }}
-          />
-        </div>
-
-        {bookmark && (
+        {/* Tab switcher */}
+        <div className="flex rounded-xl mb-4 overflow-hidden" style={{ border: `1px solid ${C.searchBorder}`, background: C.searchBg }}>
           <button
-            onClick={() => { setSelectedSurah(bookmark.surah); setScrollToAyah(bookmark.ayah); }}
-            className="mb-4 p-4 rounded-2xl flex items-center justify-between transition-all"
-            style={{ background: C.bookmarkBg, border: `1px solid ${C.bookmarkBorder}` }}
+            onClick={() => setSearchView('surahs')}
+            className="flex-1 py-2.5 text-sm font-bold transition-all"
+            style={{
+              fontFamily: '"Tajawal", sans-serif',
+              background: searchView === 'surahs' ? '#C19A6B' : 'transparent',
+              color: searchView === 'surahs' ? '#0f0c07' : C.subtleText,
+            }}
+          >السور</button>
+          <button
+            onClick={() => setSearchView('search')}
+            className="flex-1 py-2.5 text-sm font-bold flex items-center justify-center gap-1.5 transition-all"
+            style={{
+              fontFamily: '"Tajawal", sans-serif',
+              background: searchView === 'search' ? '#C19A6B' : 'transparent',
+              color: searchView === 'search' ? '#0f0c07' : C.subtleText,
+            }}
           >
-            <div className="text-right">
-              <p className="text-xs mb-1 flex items-center gap-1" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
-                <Bookmark className="w-3.5 h-3.5 fill-current" /> علامة محفوظة
-              </p>
-              <p className="font-bold text-sm" style={{ color: C.itemText, fontFamily: '"Tajawal", sans-serif' }}>
-                سورة {SURAH_NAMES[bookmark.surah]} — الآية {bookmark.ayah}
-              </p>
-            </div>
-            <ChevronRight className="w-5 h-5" style={{ color: '#C19A6B' }} />
+            <Search size={13} />
+            بحث في القرآن
           </button>
-        )}
-
-        <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-          {loadingList ? (
-            <div className="text-center py-10 animate-pulse" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>جاري التحميل...</div>
-          ) : (
-            filteredSurahs?.map(s => (
-              <button
-                key={s.number}
-                onClick={() => { trackSurahSelection(s.number); setSelectedSurah(s.number); setMode('normal'); setSelectedAyah(null); setActiveAyah(null); }}
-                className="w-full p-4 rounded-2xl flex items-center justify-between transition-all"
-                style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
-                    style={{ background: 'rgba(193,154,107,0.15)', border: '1px solid rgba(193,154,107,0.3)', color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
-                    {s.number}
-                  </div>
-                  <div className="text-right">
-                    <h3 className="font-bold text-base" style={{ fontFamily: '"Amiri", serif', color: C.itemText }}>{SURAH_NAMES[s.number] ?? s.name}</h3>
-                    <p className="text-xs mt-0.5" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
-                      {s.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {s.numberOfAyahs} آية
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4" style={{ color: 'rgba(193,154,107,0.4)' }} />
-              </button>
-            ))
-          )}
         </div>
+
+        {searchView === 'surahs' ? (
+          <>
+            <div className="relative mb-4">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#C19A6B', opacity: 0.6 }} />
+              <input
+                type="text"
+                placeholder="ابحث عن سورة..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full py-3 pr-10 pl-4 rounded-2xl outline-none text-sm"
+                style={{
+                  background: C.searchBg,
+                  border: `1px solid ${C.searchBorder}`,
+                  color: C.searchText,
+                  fontFamily: '"Tajawal", sans-serif',
+                }}
+              />
+            </div>
+
+            {bookmark && (
+              <button
+                onClick={() => { setSelectedSurah(bookmark.surah); setScrollToAyah(bookmark.ayah); }}
+                className="mb-4 p-4 rounded-2xl flex items-center justify-between transition-all"
+                style={{ background: C.bookmarkBg, border: `1px solid ${C.bookmarkBorder}` }}
+              >
+                <div className="text-right">
+                  <p className="text-xs mb-1 flex items-center gap-1" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
+                    <Bookmark className="w-3.5 h-3.5 fill-current" /> علامة محفوظة
+                  </p>
+                  <p className="font-bold text-sm" style={{ color: C.itemText, fontFamily: '"Tajawal", sans-serif' }}>
+                    سورة {SURAH_NAMES[bookmark.surah]} — الآية {bookmark.ayah}
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5" style={{ color: '#C19A6B' }} />
+              </button>
+            )}
+
+            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
+              {loadingList ? (
+                <div className="text-center py-10 animate-pulse" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>جاري التحميل...</div>
+              ) : (
+                filteredSurahs?.map(s => (
+                  <button
+                    key={s.number}
+                    onClick={() => { trackSurahSelection(s.number); setSelectedSurah(s.number); setMode('normal'); setSelectedAyah(null); setActiveAyah(null); }}
+                    className="w-full p-4 rounded-2xl flex items-center justify-between transition-all"
+                    style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                        style={{ background: 'rgba(193,154,107,0.15)', border: '1px solid rgba(193,154,107,0.3)', color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
+                        {s.number}
+                      </div>
+                      <div className="text-right">
+                        <h3 className="font-bold text-base" style={{ fontFamily: '"Amiri", serif', color: C.itemText }}>{SURAH_NAMES[s.number] ?? s.name}</h3>
+                        <p className="text-xs mt-0.5" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+                          {s.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • {s.numberOfAyahs} آية
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4" style={{ color: 'rgba(193,154,107,0.4)' }} />
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        ) : (
+          /* ── Quran text search ── */
+          <>
+            <div className="relative mb-3">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#C19A6B', opacity: 0.6 }} />
+              {searchLoading && (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin" style={{ color: '#C19A6B' }} />
+              )}
+              <input
+                type="text"
+                placeholder="اكتب كلمة أو جزءاً من آية..."
+                value={quranSearch}
+                onChange={e => setQuranSearch(e.target.value)}
+                className="w-full py-3 pr-10 pl-10 rounded-2xl outline-none text-sm"
+                style={{
+                  background: C.searchBg,
+                  border: `1px solid ${C.searchBorder}`,
+                  color: C.searchText,
+                  fontFamily: '"Tajawal", sans-serif',
+                }}
+                autoFocus
+              />
+            </div>
+
+            {searchCount > 0 && (
+              <p className="text-xs mb-2 text-right" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+                {searchCount} نتيجة
+              </p>
+            )}
+
+            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
+              {!quranSearch.trim() && (
+                <div className="text-center py-12" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+                  <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">ابحث في كلمات القرآن الكريم</p>
+                </div>
+              )}
+              {quranSearch.trim() && !searchLoading && searchResults.length === 0 && (
+                <div className="text-center py-12" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+                  <p className="text-sm">لا توجد نتائج</p>
+                </div>
+              )}
+              {searchResults.slice(0, 50).map((match: any, i: number) => {
+                const surahNum: number = match.surah?.number ?? 0;
+                const ayahNum: number = match.numberInSurah ?? 0;
+                const surahNameAr = SURAH_NAMES[surahNum] ?? match.surah?.name ?? '';
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (surahNum) {
+                        trackSurahSelection(surahNum);
+                        setSelectedSurah(surahNum);
+                        setScrollToAyah(ayahNum);
+                        setMode('normal');
+                        setSelectedAyah(null);
+                        setActiveAyah(null);
+                      }
+                    }}
+                    className="w-full p-4 rounded-2xl text-right transition-all"
+                    style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
+                  >
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(193,154,107,0.4)' }} />
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(193,154,107,0.15)', color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
+                          {surahNameAr}
+                        </span>
+                        <span className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
+                          آية {ayahNum}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-base leading-relaxed" style={{
+                      fontFamily: '"Scheherazade New", "Amiri Quran", serif',
+                      color: C.ayahText,
+                      fontSize: '1.1rem',
+                      lineHeight: '2.2rem',
+                    }}>
+                      {match.text}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -439,8 +624,9 @@ export function Quran() {
             </button>
           )}
           <button
-            onClick={() => { setMode(mode === 'listen' ? 'normal' : 'listen'); setSelectedAyah(null); }}
+            onClick={() => { setMode(mode === 'listen' ? 'normal' : 'listen'); setSelectedAyah(null); setIraabData(null); setNuzulText(null); }}
             className="p-2 rounded-full transition-all"
+            title="الاستماع كلمة بكلمة"
             style={{
               background: mode === 'listen' ? '#C19A6B' : C.btnBg,
               border: `1px solid ${C.btnBorder}`,
@@ -449,14 +635,37 @@ export function Quran() {
             <Headphones className="w-4 h-4" style={{ color: mode === 'listen' ? '#0f0c07' : '#C19A6B' }} />
           </button>
           <button
-            onClick={() => { setMode(mode === 'tafsir' ? 'normal' : 'tafsir'); setSelectedAyah(null); }}
+            onClick={() => { setMode(mode === 'tafsir' ? 'normal' : 'tafsir'); setSelectedAyah(null); setIraabData(null); setNuzulText(null); }}
             className="p-2 rounded-full transition-all"
+            title="التفسير"
             style={{
               background: mode === 'tafsir' ? '#C19A6B' : C.btnBg,
               border: `1px solid ${C.btnBorder}`,
             }}
           >
             <FileText className="w-4 h-4" style={{ color: mode === 'tafsir' ? '#0f0c07' : '#C19A6B' }} />
+          </button>
+          <button
+            onClick={() => { setMode(mode === 'iraab' ? 'normal' : 'iraab'); setSelectedAyah(null); setIraabData(null); setNuzulText(null); }}
+            className="p-2 rounded-full transition-all"
+            title="إعراب الكلمات"
+            style={{
+              background: mode === 'iraab' ? '#C19A6B' : C.btnBg,
+              border: `1px solid ${C.btnBorder}`,
+            }}
+          >
+            <Languages className="w-4 h-4" style={{ color: mode === 'iraab' ? '#0f0c07' : '#C19A6B' }} />
+          </button>
+          <button
+            onClick={() => { setMode(mode === 'nuzul' ? 'normal' : 'nuzul'); setSelectedAyah(null); setIraabData(null); setNuzulText(null); }}
+            className="p-2 rounded-full transition-all"
+            title="سبب النزول"
+            style={{
+              background: mode === 'nuzul' ? '#C19A6B' : C.btnBg,
+              border: `1px solid ${C.btnBorder}`,
+            }}
+          >
+            <ScrollText className="w-4 h-4" style={{ color: mode === 'nuzul' ? '#0f0c07' : '#C19A6B' }} />
           </button>
         </div>
       </div>
@@ -470,6 +679,16 @@ export function Quran() {
       {mode === 'tafsir' && (
         <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
           <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض تفسيرها</p>
+        </div>
+      )}
+      {mode === 'iraab' && (
+        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
+          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض معاني كلماتها</p>
+        </div>
+      )}
+      {mode === 'nuzul' && (
+        <div className="px-4 py-2 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
+          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض تفسيرها وسبب نزولها</p>
         </div>
       )}
       {mode === 'normal' && (
@@ -569,6 +788,8 @@ export function Quran() {
                 const isBookmarked = bookmark?.surah === selectedSurah && bookmark?.ayah === ayah.numberInSurah;
                 const isSelected = selectedAyah === ayah.numberInSurah;
                 const isActive = activeAyah === ayah.numberInSurah;
+                const isIraabActive = iraabAyah === ayah.numberInSurah && mode === 'iraab';
+                const isNuzulActive = nuzulAyah === ayah.numberInSurah && mode === 'nuzul';
 
                 // Listen mode: clickable words
                 if (mode === 'listen') {
@@ -614,14 +835,14 @@ export function Quran() {
                     style={{
                       background: isSelected
                         ? 'rgba(193,154,107,0.18)'
-                        : isActive && mode === 'tafsir'
+                        : (isActive || isIraabActive || isNuzulActive)
                         ? 'rgba(193,154,107,0.22)'
                         : isBookmarked
                         ? 'rgba(193,154,107,0.1)'
                         : 'transparent',
                       borderBottom: isSelected
                         ? '2px solid rgba(193,154,107,0.7)'
-                        : isActive && mode === 'tafsir'
+                        : (isActive || isIraabActive || isNuzulActive)
                         ? '2px solid #C19A6B'
                         : 'none',
                       paddingInline: '2px',
@@ -691,6 +912,120 @@ export function Quran() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* ── إعراب bottom sheet ── */}
+      <AnimatePresence>
+        {mode === 'iraab' && (iraabLoading || iraabData !== null) && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl shadow-2xl"
+            style={{ background: C.modalBg, border: `1px solid ${C.modalBorder}`, borderBottom: 'none', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}
+            dir="rtl"
+          >
+            <div className="w-12 h-1.5 rounded-full mx-auto mt-4 mb-1 flex-shrink-0" style={{ background: 'rgba(193,154,107,0.4)' }} />
+            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${C.modalBorder}` }}>
+              <button
+                onClick={() => { setIraabData(null); setIraabAyah(null); }}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(193,154,107,0.12)' }}
+              >
+                <X size={15} style={{ color: '#C19A6B' }} />
+              </button>
+              <div className="flex items-center gap-2">
+                <Languages size={15} style={{ color: '#C19A6B' }} />
+                <span className="font-bold text-sm" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
+                  معاني كلمات الآية {iraabAyah}
+                </span>
+              </div>
+              <div className="w-8" />
+            </div>
+            <div className="overflow-y-auto flex-1 px-4 py-3 pb-8">
+              {iraabLoading ? (
+                <div className="flex items-center justify-center py-10 gap-2" style={{ color: '#C19A6B' }}>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span style={{ fontFamily: '"Tajawal", sans-serif', fontSize: '0.9rem' }}>جاري التحميل...</span>
+                </div>
+              ) : iraabData && iraabData.length === 0 ? (
+                <p className="text-center py-8 text-sm" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>لا توجد بيانات</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {iraabData?.map((word: any, i: number) => (
+                    <div
+                      key={i}
+                      className="rounded-xl p-3 text-center"
+                      style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
+                    >
+                      <p className="text-xl mb-1" style={{ fontFamily: '"Scheherazade New", "Amiri Quran", serif', color: C.ayahText, lineHeight: '2' }}>
+                        {word.text_uthmani}
+                      </p>
+                      <p className="text-xs font-medium" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
+                        {word.translation?.text ?? '—'}
+                      </p>
+                      {word.transliteration?.text && (
+                        <p className="text-xs mt-0.5" style={{ color: C.subtleText, fontFamily: 'sans-serif', direction: 'ltr' }}>
+                          {word.transliteration.text}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── سبب النزول bottom sheet ── */}
+      <AnimatePresence>
+        {mode === 'nuzul' && (nuzulLoading || nuzulText !== null) && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl shadow-2xl"
+            style={{ background: C.modalBg, border: `1px solid ${C.modalBorder}`, borderBottom: 'none', maxHeight: '72vh', display: 'flex', flexDirection: 'column' }}
+            dir="rtl"
+          >
+            <div className="w-12 h-1.5 rounded-full mx-auto mt-4 mb-1 flex-shrink-0" style={{ background: 'rgba(193,154,107,0.4)' }} />
+            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${C.modalBorder}` }}>
+              <button
+                onClick={() => { setNuzulText(null); setNuzulAyah(null); }}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(193,154,107,0.12)' }}
+              >
+                <X size={15} style={{ color: '#C19A6B' }} />
+              </button>
+              <div className="flex items-center gap-2">
+                <ScrollText size={15} style={{ color: '#C19A6B' }} />
+                <span className="font-bold text-sm" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
+                  تفسير الآية {nuzulAyah} — الميسر
+                </span>
+              </div>
+              <div className="w-8" />
+            </div>
+            <div className="overflow-y-auto flex-1 px-5 py-4 pb-8">
+              {nuzulLoading ? (
+                <div className="flex items-center justify-center py-10 gap-2" style={{ color: '#C19A6B' }}>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span style={{ fontFamily: '"Tajawal", sans-serif', fontSize: '0.9rem' }}>جاري التحميل...</span>
+                </div>
+              ) : nuzulText ? (
+                <p
+                  className="leading-loose text-base"
+                  style={{ fontFamily: '"Amiri", serif', color: C.modalText, lineHeight: '2.2' }}
+                  dangerouslySetInnerHTML={{ __html: nuzulText }}
+                />
+              ) : (
+                <p className="text-center py-8 text-sm" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>لا توجد بيانات لهذه الآية</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
