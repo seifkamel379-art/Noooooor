@@ -593,9 +593,10 @@ export function HifzTest() {
     const correct = choiceIdx === questions[qIndex].correctIndex;
     if (correct) setCorrectAnswers(c => c + 1);
     setAnswers(a => [...a, correct]);
-    // Play audio immediately
-    playAudio(questions[qIndex].audioUrl);
-  }, [selectedChoice, audioPlaying, questions, qIndex, playAudio]);
+    // Play audio immediately — always use the currently selected reciter
+    const url = getAudioUrl(questions[qIndex].surahNum, questions[qIndex].verseNum, currentReciter.baseUrl);
+    playAudio(url);
+  }, [selectedChoice, audioPlaying, questions, qIndex, playAudio, currentReciter]);
 
   // Go to next question
   const handleNext = useCallback(() => {
