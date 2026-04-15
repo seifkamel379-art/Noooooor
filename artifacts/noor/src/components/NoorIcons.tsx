@@ -787,3 +787,48 @@ export function QiblaCompassIcon({ className = '', size = 24 }: P) {
     </svg>
   );
 }
+
+/* ── Hifz / Quran Memorisation ────────────────────────────── */
+export function HifzIcon({ className = '', size = 24, style }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      {/* Shadow */}
+      <circle cx="12.35" cy="13.35" r="7.2" fill="currentColor" fillOpacity="0.18" />
+
+      {/* Mind / head orb */}
+      <circle cx="12" cy="13" r="7.2" fill="currentColor" fillOpacity="0.13" />
+      <circle cx="12" cy="13" r="7.2" stroke="currentColor" strokeWidth="1.55" />
+
+      {/* Orb highlight arc */}
+      <path d="M6.2 10.2 Q8 6.8 13 6.2" stroke="white" strokeWidth="1"
+        strokeOpacity="0.38" fill="none" strokeLinecap="round" />
+
+      {/* Open Quran inside the orb */}
+      {/* Left page */}
+      <path d="M12 10.2 C10.4 10.2 7.2 11 6.4 12.2 L6.4 17.2 C7.2 16 10.4 15.2 12 15.2"
+        fill="currentColor" fillOpacity="0.68" />
+      {/* Right page */}
+      <path d="M12 10.2 C13.6 10.2 16.8 11 17.6 12.2 L17.6 17.2 C16.8 16 13.6 15.2 12 15.2"
+        fill="currentColor" fillOpacity="0.48" />
+      {/* Spine */}
+      <line x1="12" y1="10.2" x2="12" y2="15.2"
+        stroke="currentColor" strokeWidth="1.3" strokeOpacity="0.9" strokeLinecap="round" />
+      <line x1="12" y1="10.2" x2="12" y2="15.2"
+        stroke="white" strokeWidth="0.55" strokeOpacity="0.45" strokeLinecap="round" />
+      {/* Book highlight on left page */}
+      <path d="M12 10.2 L12 11 Q9.5 11.3 7 12.5 L6.8 12.2 C7.6 11 10.5 10.2 12 10.2Z"
+        fill="white" fillOpacity="0.15" />
+
+      {/* Light rays of نور above the orb */}
+      <line x1="12" y1="1" x2="12" y2="3.8" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" />
+      <line x1="8.6" y1="1.9" x2="9.55" y2="4.3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeOpacity="0.75" />
+      <line x1="15.4" y1="1.9" x2="14.45" y2="4.3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeOpacity="0.75" />
+      <line x1="6" y1="3.8" x2="7.4" y2="5.7" stroke="currentColor" strokeWidth="0.85" strokeLinecap="round" strokeOpacity="0.48" />
+      <line x1="18" y1="3.8" x2="16.6" y2="5.7" stroke="currentColor" strokeWidth="0.85" strokeLinecap="round" strokeOpacity="0.48" />
+
+      {/* Glowing source dot at rays origin */}
+      <circle cx="12" cy="2.8" r="1.15" fill="currentColor" />
+      <circle cx="11.55" cy="2.35" r="0.48" fill="white" fillOpacity="0.62" />
+    </svg>
+  );
+}

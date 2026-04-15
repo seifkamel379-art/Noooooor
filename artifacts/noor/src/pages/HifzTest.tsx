@@ -404,6 +404,41 @@ function VerseWithBlank({ words, blankIdx, answered, correct, dark }: {
   );
 }
 
+/* ── Linen SVG texture card background ───────────────────────── */
+function LinenBg({ dark }: { dark: boolean }) {
+  const base = dark ? '#1C1108' : '#D0BC9C';
+  return (
+    <svg
+      aria-hidden="true"
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <defs>
+        <filter id="linen-tex" x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85 0.6" numOctaves="4" seed="12" stitchTiles="stitch" result="n"/>
+          <feColorMatrix in="n" type="matrix"
+            values={dark
+              ? "0 0 0 0 0.12  0 0 0 0 0.09  0 0 0 0 0.04  0 0 0 0.55 0"
+              : "0 0 0 0 0.78  0 0 0 0 0.69  0 0 0 0 0.55  0 0 0 0.48 0"
+            }
+          />
+        </filter>
+        <pattern id="linen-warp" width="3" height="1" patternUnits="userSpaceOnUse">
+          <rect width="3" height="0.45" y="0.28" fill={dark ? 'rgba(80,50,20,0.5)' : 'rgba(140,110,70,0.25)'}/>
+        </pattern>
+        <pattern id="linen-weft" width="1" height="3" patternUnits="userSpaceOnUse">
+          <rect width="0.45" height="3" x="0.28" fill={dark ? 'rgba(80,50,20,0.3)' : 'rgba(140,110,70,0.16)'}/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={base}/>
+      <rect width="100%" height="100%" fill="url(#linen-warp)"/>
+      <rect width="100%" height="100%" fill="url(#linen-weft)"/>
+      <rect width="100%" height="100%" filter="url(#linen-tex)" opacity="0.55"/>
+    </svg>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
@@ -577,7 +612,18 @@ export function HifzTest() {
     'نتيجة الاختبار';
 
   return (
-    <div className="min-h-screen pb-24" dir="rtl" style={{ background: bg }}>
+    <div
+      className="min-h-screen pb-24"
+      dir="rtl"
+      style={{
+        background: screen === 'question' ? (dark ? '#160E05' : '#CCB894') : bg,
+        backgroundImage: screen === 'question'
+          ? (dark
+            ? 'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(55,30,8,0.45) 2px,rgba(55,30,8,0.45) 3px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(55,30,8,0.28) 3px,rgba(55,30,8,0.28) 4px)'
+            : 'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(120,90,50,0.15) 2px,rgba(120,90,50,0.15) 3px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(120,90,50,0.1) 3px,rgba(120,90,50,0.1) 4px)')
+          : 'none',
+      }}
+    >
       {/* Audio element */}
       <audio ref={audioRef} style={{ display: 'none' }} />
 
@@ -816,48 +862,57 @@ export function HifzTest() {
             >
               {/* Verse info */}
               <div className="mb-3 flex items-center justify-between px-1">
-                <span className="text-xs font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
+                <span className="text-xs font-bold" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? 'rgba(193,154,107,0.65)' : 'rgba(70,45,15,0.7)' }}>
                   {SURAH_INFO[questions[qIndex].surahNum - 1]?.name} : {questions[qIndex].verseNum}
                 </span>
-                <span className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
+                <span className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? 'rgba(193,154,107,0.5)' : 'rgba(70,45,15,0.5)' }}>
                   {questions[qIndex].verseKey}
                 </span>
               </div>
 
-              {/* Verse card */}
+              {/* Verse card — linen texture */}
               <div
-                className="p-5 rounded-2xl mb-5"
+                className="rounded-2xl mb-5"
                 style={{
-                  background: cardBg,
-                  border: `1px solid ${border}`,
-                  boxShadow: dark ? 'none' : '0 2px 12px rgba(193,154,107,0.08)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: dark ? '1.5px solid rgba(193,154,107,0.22)' : '1.5px solid rgba(100,70,30,0.32)',
+                  boxShadow: dark ? 'none' : '0 6px 28px rgba(100,70,30,0.18)',
                 }}
               >
-                <p
-                  className="text-xs mb-3 text-center"
-                  style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}
-                >
-                  أكمل الآية الكريمة
-                </p>
-                <VerseWithBlank
-                  words={questions[qIndex].allWords}
-                  blankIdx={questions[qIndex].wordIndex}
-                  answered={selectedChoice !== null}
-                  correct={selectedChoice === questions[qIndex].correctIndex}
-                  dark={dark}
-                />
-                {/* Audio indicator */}
-                {selectedChoice !== null && (
-                  <div className="flex items-center justify-center gap-2 mt-3">
-                    {audioPlaying
-                      ? <Volume2 size={16} className="text-[#C19A6B] animate-pulse" />
-                      : <VolumeX size={16} className="text-[#C19A6B]/40" />
-                    }
-                    <span className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: textSec }}>
-                      {audioPlaying ? 'مشاري العفاسي' : 'انتهى'}
-                    </span>
+                <LinenBg dark={dark} />
+                <div style={{ position: 'relative', zIndex: 1, padding: '1.25rem' }}>
+                  {/* Decorative rule */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <div style={{ flex: 1, height: 1, background: dark ? 'rgba(193,154,107,0.22)' : 'rgba(100,70,30,0.22)' }}/>
+                    <span style={{ fontSize: 10, fontFamily: '"Tajawal", sans-serif', color: dark ? 'rgba(193,154,107,0.6)' : 'rgba(80,50,20,0.6)', letterSpacing: '0.06em' }}>أكمل الآية الكريمة</span>
+                    <div style={{ flex: 1, height: 1, background: dark ? 'rgba(193,154,107,0.22)' : 'rgba(100,70,30,0.22)' }}/>
                   </div>
-                )}
+                  <VerseWithBlank
+                    words={questions[qIndex].allWords}
+                    blankIdx={questions[qIndex].wordIndex}
+                    answered={selectedChoice !== null}
+                    correct={selectedChoice === questions[qIndex].correctIndex}
+                    dark={dark}
+                  />
+                  {/* Audio indicator */}
+                  {selectedChoice !== null && (
+                    <div className="flex items-center justify-center gap-2 mt-3">
+                      {audioPlaying
+                        ? <Volume2 size={16} className="text-[#C19A6B] animate-pulse" />
+                        : <VolumeX size={16} className="text-[#C19A6B]/40" />
+                      }
+                      <span className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? 'rgba(193,154,107,0.55)' : 'rgba(80,50,20,0.55)' }}>
+                        {audioPlaying ? 'مشاري العفاسي' : 'انتهى'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {/* Corner ornaments */}
+                <span aria-hidden="true" style={{ position: 'absolute', top: 7, right: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
+                <span aria-hidden="true" style={{ position: 'absolute', top: 7, left: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
+                <span aria-hidden="true" style={{ position: 'absolute', bottom: 7, right: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
+                <span aria-hidden="true" style={{ position: 'absolute', bottom: 7, left: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
               </div>
 
               {/* Choices */}
@@ -865,20 +920,26 @@ export function HifzTest() {
                 {questions[qIndex].choices.map((choice, idx) => {
                   const isCorrect = idx === questions[qIndex].correctIndex;
                   const isSelected = idx === selectedChoice;
-                  let bgStyle = cardBg;
-                  let borderStyle = border;
-                  let textColor = textPrimary;
+                  let bgStyle: string;
+                  let borderStyle: string;
+                  let textColor: string;
 
-                  if (selectedChoice !== null) {
-                    if (isCorrect) {
-                      bgStyle = 'rgba(34,197,94,0.1)';
-                      borderStyle = 'rgba(34,197,94,0.5)';
-                      textColor = dark ? '#4ade80' : '#166534';
-                    } else if (isSelected) {
-                      bgStyle = 'rgba(239,68,68,0.1)';
-                      borderStyle = 'rgba(239,68,68,0.5)';
-                      textColor = dark ? '#f87171' : '#991b1b';
-                    }
+                  if (selectedChoice === null) {
+                    bgStyle = dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.48)';
+                    borderStyle = dark ? 'rgba(193,154,107,0.22)' : 'rgba(100,70,30,0.3)';
+                    textColor = dark ? '#D4B070' : '#2D1400';
+                  } else if (isCorrect) {
+                    bgStyle = 'rgba(34,197,94,0.18)';
+                    borderStyle = 'rgba(34,197,94,0.5)';
+                    textColor = dark ? '#4ade80' : '#166534';
+                  } else if (isSelected) {
+                    bgStyle = 'rgba(239,68,68,0.15)';
+                    borderStyle = 'rgba(239,68,68,0.5)';
+                    textColor = dark ? '#f87171' : '#991b1b';
+                  } else {
+                    bgStyle = dark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.28)';
+                    borderStyle = dark ? 'rgba(193,154,107,0.12)' : 'rgba(100,70,30,0.15)';
+                    textColor = dark ? 'rgba(193,154,107,0.45)' : 'rgba(80,50,20,0.45)';
                   }
 
                   return (
@@ -891,6 +952,7 @@ export function HifzTest() {
                       style={{
                         background: bgStyle,
                         border: `1.5px solid ${borderStyle}`,
+                        backdropFilter: 'blur(6px)',
                         cursor: selectedChoice !== null ? 'default' : 'pointer',
                       }}
                       data-testid={`button-choice-${idx}`}
