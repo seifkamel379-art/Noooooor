@@ -28,4 +28,4 @@ echo "Starting API server (dev) on port $API_SERVER_PORT..."
 # Start Vite in the foreground
 echo "Starting Vite dev server on port $VITE_PORT..."
 cd "$ROOT_DIR/artifacts/noor" && exec env VITE_PORT=$VITE_PORT PORT=$VITE_PORT \
-  "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/artifacts/noor/vite.config.ts"
+  "$ROOT_DIR/artifacts/noor/node_modules/.bin/vite" --config "$ROOT_DIR/artifacts/noor/vite.config.ts"
