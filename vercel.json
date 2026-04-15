@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "cd /vercel/path0 && pnpm exec vite build --config vite.config.ts",
-  "outputDirectory": "dist/public",
-  "installCommand": "cd /vercel/path0 && pnpm install",
+  "buildCommand": "cd /vercel/path0 && pnpm install --frozen-lockfile=false && cd artifacts/noor && pnpm exec vite build --config vite.config.ts",
+  "outputDirectory": "artifacts/noor/dist/public",
   "env": {
     "BASE_PATH": "/",
     "VITE_FIREBASE_API_KEY": "AIzaSyDOVE54x_j5fldKYwTRAG9QzdRok_pD074",
