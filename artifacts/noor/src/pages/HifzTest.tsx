@@ -3,11 +3,36 @@ import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, BookOpen, RotateCcw, Trophy, CheckCircle, XCircle,
-  Volume2, VolumeX, Star,
+  Volume2, VolumeX, Star, ChevronDown,
 } from 'lucide-react';
 import { useUserSetting } from '@/hooks/use-user-setting';
 import { auth } from '@/lib/firebase';
 import { queueRTDBUpdate, getCacheValue } from '@/lib/rtdb';
+
+/* ═══════════════════════════════════════════════════════════════
+   RECITERS
+═══════════════════════════════════════════════════════════════ */
+const RECITERS = [
+  { id: 'alafasy',    name: 'مشاري العفاسي',          baseUrl: 'https://www.everyayah.com/data/Alafasy_64kbps/' },
+  { id: 'husary',     name: 'محمود خليل الحصري',       baseUrl: 'https://www.everyayah.com/data/Husary_64kbps/' },
+  { id: 'minshawi',   name: 'محمد صديق المنشاوي',      baseUrl: 'https://www.everyayah.com/data/Minshawi_Murattal_128kbps/' },
+  { id: 'basit',      name: 'عبد الباسط عبد الصمد',   baseUrl: 'https://www.everyayah.com/data/Abdul_Basit_Murattal_64kbps/' },
+  { id: 'maher',      name: 'ماهر المعيقلي',           baseUrl: 'https://www.everyayah.com/data/Maher_AlMuaiqly_64kbps/' },
+  { id: 'ghamdi',     name: 'سعد الغامدي',             baseUrl: 'https://www.everyayah.com/data/Ghamadi_64kbps/' },
+  { id: 'shuraym',    name: 'سعود الشريم',             baseUrl: 'https://www.everyayah.com/data/Saood_ash-Shuraym_64kbps/' },
+  { id: 'dussary',    name: 'ياسر الدوسري',            baseUrl: 'https://www.everyayah.com/data/Yasser_Ad-Dussary_128kbps/' },
+  { id: 'banna',      name: 'محمود علي البنا',         baseUrl: 'https://www.everyayah.com/data/Mahmoud_Ali_Al_Banna_64kbps/' },
+  { id: 'hudhaify',   name: 'علي الحذيفي',             baseUrl: 'https://www.everyayah.com/data/Hudhaify_64kbps/' },
+  { id: 'akhdar',     name: 'إبراهيم الأخضر',          baseUrl: 'https://www.everyayah.com/data/Ibrahim_Al_Akhdar_64kbps/' },
+  { id: 'ajmy',       name: 'أحمد بن علي العجمي',     baseUrl: 'https://www.everyayah.com/data/Ahmed_ibn_Ali_al-Ajmy_64kbps/' },
+  { id: 'katamy',     name: 'ناصر القطامي',            baseUrl: 'https://www.everyayah.com/data/Naser_Al_Katamy_128kbps/' },
+  { id: 'shaatree',   name: 'أبو بكر الشاطري',         baseUrl: 'https://www.everyayah.com/data/Abu_Bakr_Ash-Shaatree_64kbps/' },
+  { id: 'basfar',     name: 'عبد الله بصفر',           baseUrl: 'https://www.everyayah.com/data/Abdullah_Basfar_64kbps/' },
+  { id: 'lhaidan',    name: 'محمد اللحيدان',           baseUrl: 'https://www.everyayah.com/data/Mohammad_al_Lhaidan_256kbps/' },
+] as const;
+
+const RECITER_STORAGE_KEY = 'noor_hifz_reciter_id';
+const DEFAULT_RECITER_ID = 'alafasy';
 
 /* ═══════════════════════════════════════════════════════════════
    TYPES
@@ -126,10 +151,10 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function getAudioUrl(surahNum: number, verseNum: number): string {
+function getAudioUrl(surahNum: number, verseNum: number, baseUrl: string): string {
   const s = String(surahNum).padStart(3, '0');
   const v = String(verseNum).padStart(3, '0');
-  return `https://www.everyayah.com/data/Alafasy_64kbps/${s}${v}.mp3`;
+  return `${baseUrl}${s}${v}.mp3`;
 }
 
 function getTestCount(surahNum: number): number {
@@ -147,9 +172,9 @@ function getTestVerseRange(surahNum: number, testIdx: number): [number, number] 
 }
 
 function getRatingLabel(correct: number, total: number): Rating {
-  if (correct <= 3) return 'ضعيف';
-  if (correct <= 5) return 'متوسط';
-  return 'ممتاز';
+  if (correct === total) return 'ممتاز';
+  if (total - correct <= 2) return 'متوسط';
+  return 'ضعيف';
 }
 
 function getRatingColor(rating: Rating | null): { bg: string; text: string; border: string } {
@@ -227,7 +252,7 @@ function buildWordPool(surahVerses: VerseData[], excludeWord: string): string[] 
   return pool.map(p => p.word);
 }
 
-function buildQuestion(verse: VerseData, surahVerses: VerseData[]): TestQuestion {
+function buildQuestion(verse: VerseData, surahVerses: VerseData[], baseUrl: string): TestQuestion {
   const [surahNum, verseNum] = verse.verse_key.split(':').map(Number);
   const words = verse.text_uthmani.split(/\s+/).filter(w => w.length > 0);
 
@@ -303,7 +328,7 @@ function buildQuestion(verse: VerseData, surahVerses: VerseData[]): TestQuestion
     allWords: words,
     choices,
     correctIndex,
-    audioUrl: getAudioUrl(surahNum, verseNum),
+    audioUrl: getAudioUrl(surahNum, verseNum, baseUrl),
   };
 }
 
@@ -457,6 +482,19 @@ export function HifzTest() {
   const [selectedSurah, setSelectedSurah] = useState<number>(1);
   const [selectedTest, setSelectedTest] = useState<number>(0);
 
+  // Reciter state
+  const [reciterId, setReciterId] = useState<string>(() => {
+    try { return localStorage.getItem(RECITER_STORAGE_KEY) ?? DEFAULT_RECITER_ID; } catch { return DEFAULT_RECITER_ID; }
+  });
+  const [reciterPickerOpen, setReciterPickerOpen] = useState(false);
+  const currentReciter = RECITERS.find(r => r.id === reciterId) ?? RECITERS[0];
+
+  const selectReciter = useCallback((id: string) => {
+    setReciterId(id);
+    setReciterPickerOpen(false);
+    try { localStorage.setItem(RECITER_STORAGE_KEY, id); } catch {}
+  }, []);
+
   // Quiz state
   const [questions, setQuestions] = useState<TestQuestion[]>([]);
   const [qIndex, setQIndex] = useState(0);
@@ -534,7 +572,8 @@ export function HifzTest() {
       const vNum = parseInt(v.verse_key.split(':')[1], 10);
       return vNum >= rangeStart && vNum <= rangeEnd;
     });
-    const qs = testVerses.map(v => buildQuestion(v, surahVerses));
+    const reciter = RECITERS.find(r => r.id === reciterId) ?? RECITERS[0];
+    const qs = testVerses.map(v => buildQuestion(v, surahVerses, reciter.baseUrl));
     setQuestions(qs);
     setSelectedSurah(surahNum);
     setSelectedTest(testIdx);
@@ -545,7 +584,7 @@ export function HifzTest() {
     setAudioPlaying(false);
     setAudioEnded(false);
     setScreen('question');
-  }, [quranData]);
+  }, [quranData, reciterId]);
 
   // Handle answer selection
   const handleAnswer = useCallback((choiceIdx: number) => {
@@ -899,11 +938,11 @@ export function HifzTest() {
                   {selectedChoice !== null && (
                     <div className="flex items-center justify-center gap-2 mt-3">
                       {audioPlaying
-                        ? <Volume2 size={16} className="text-[#C19A6B] animate-pulse" />
-                        : <VolumeX size={16} className="text-[#C19A6B]/40" />
+                        ? <Volume2 size={15} className="text-[#C19A6B] animate-pulse" />
+                        : <VolumeX size={15} style={{ color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(80,50,20,0.3)' }} />
                       }
-                      <span className="text-xs" style={{ fontFamily: '"Tajawal", sans-serif', color: dark ? 'rgba(193,154,107,0.55)' : 'rgba(80,50,20,0.55)' }}>
-                        {audioPlaying ? 'مشاري العفاسي' : 'انتهى'}
+                      <span style={{ fontFamily: '"Tajawal", sans-serif', fontSize: 11, color: dark ? 'rgba(193,154,107,0.55)' : 'rgba(80,50,20,0.5)' }}>
+                        {audioPlaying ? currentReciter.name : 'انتهت التلاوة'}
                       </span>
                     </div>
                   )}
@@ -913,6 +952,78 @@ export function HifzTest() {
                 <span aria-hidden="true" style={{ position: 'absolute', top: 7, left: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
                 <span aria-hidden="true" style={{ position: 'absolute', bottom: 7, right: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
                 <span aria-hidden="true" style={{ position: 'absolute', bottom: 7, left: 10, fontSize: 10, color: dark ? 'rgba(193,154,107,0.4)' : 'rgba(100,70,30,0.38)', lineHeight: 1, userSelect: 'none' }}>✦</span>
+              </div>
+
+              {/* Reciter selector */}
+              <div className="relative mb-4">
+                <button
+                  onClick={() => setReciterPickerOpen(o => !o)}
+                  className="flex items-center gap-1.5 mx-auto rounded-full px-3 py-1"
+                  style={{
+                    fontFamily: '"Tajawal", sans-serif',
+                    fontSize: 12,
+                    color: dark ? 'rgba(193,154,107,0.8)' : 'rgba(80,50,20,0.7)',
+                    background: dark ? 'rgba(193,154,107,0.08)' : 'rgba(100,70,30,0.07)',
+                    border: `1px solid ${dark ? 'rgba(193,154,107,0.2)' : 'rgba(100,70,30,0.2)'}`,
+                  }}
+                  data-testid="button-reciter-picker"
+                >
+                  <span>{currentReciter.name}</span>
+                  <ChevronDown size={12} style={{ transform: reciterPickerOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                </button>
+
+                <AnimatePresence>
+                  {reciterPickerOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scaleY: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                      exit={{ opacity: 0, y: -4, scaleY: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        right: '50%',
+                        transform: 'translateX(50%)',
+                        width: 260,
+                        zIndex: 50,
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        background: dark ? '#1e1408' : '#fff8ee',
+                        border: `1px solid ${dark ? 'rgba(193,154,107,0.25)' : 'rgba(100,70,30,0.2)'}`,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+                        maxHeight: 280,
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {RECITERS.map((r, rIdx) => (
+                        <button
+                          key={r.id}
+                          onClick={() => selectReciter(r.id)}
+                          className="w-full text-right px-4 py-2.5 flex items-center justify-between gap-2"
+                          style={{
+                            fontFamily: '"Tajawal", sans-serif',
+                            fontSize: 13,
+                            color: r.id === reciterId
+                              ? (dark ? '#e0c080' : '#5a3800')
+                              : (dark ? 'rgba(193,154,107,0.8)' : 'rgba(80,50,20,0.8)'),
+                            background: r.id === reciterId
+                              ? (dark ? 'rgba(193,154,107,0.14)' : 'rgba(193,154,107,0.12)')
+                              : 'transparent',
+                            borderBottom: rIdx < RECITERS.length - 1
+                              ? `1px solid ${dark ? 'rgba(193,154,107,0.07)' : 'rgba(100,70,30,0.07)'}`
+                              : 'none',
+                          }}
+                          data-testid={`button-reciter-${r.id}`}
+                        >
+                          <span>{r.name}</span>
+                          {r.id === reciterId && (
+                            <CheckCircle size={13} style={{ color: '#C19A6B', flexShrink: 0 }} />
+                          )}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Choices */}
