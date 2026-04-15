@@ -15,20 +15,18 @@ import { queueRTDBUpdate, getCacheValue } from '@/lib/rtdb';
 const RECITERS = [
   { id: 'alafasy',    name: 'مشاري العفاسي',          baseUrl: 'https://www.everyayah.com/data/Alafasy_64kbps/' },
   { id: 'husary',     name: 'محمود خليل الحصري',       baseUrl: 'https://www.everyayah.com/data/Husary_64kbps/' },
-  { id: 'minshawi',   name: 'محمد صديق المنشاوي',      baseUrl: 'https://www.everyayah.com/data/Minshawi_Murattal_128kbps/' },
+  { id: 'minshawi',   name: 'محمد صديق المنشاوي',      baseUrl: 'https://www.everyayah.com/data/Minshawy_Murattal_128kbps/' },
   { id: 'basit',      name: 'عبد الباسط عبد الصمد',   baseUrl: 'https://www.everyayah.com/data/Abdul_Basit_Murattal_64kbps/' },
   { id: 'maher',      name: 'ماهر المعيقلي',           baseUrl: 'https://www.everyayah.com/data/Maher_AlMuaiqly_64kbps/' },
-  { id: 'ghamdi',     name: 'سعد الغامدي',             baseUrl: 'https://www.everyayah.com/data/Ghamadi_64kbps/' },
   { id: 'shuraym',    name: 'سعود الشريم',             baseUrl: 'https://www.everyayah.com/data/Saood_ash-Shuraym_64kbps/' },
   { id: 'dussary',    name: 'ياسر الدوسري',            baseUrl: 'https://www.everyayah.com/data/Yasser_Ad-Dussary_128kbps/' },
-  { id: 'banna',      name: 'محمود علي البنا',         baseUrl: 'https://www.everyayah.com/data/Mahmoud_Ali_Al_Banna_64kbps/' },
+  { id: 'banna',      name: 'محمود علي البنا',         baseUrl: 'https://www.everyayah.com/data/Mahmoud_Ali_Al_Banna_32kbps/' },
   { id: 'hudhaify',   name: 'علي الحذيفي',             baseUrl: 'https://www.everyayah.com/data/Hudhaify_64kbps/' },
-  { id: 'akhdar',     name: 'إبراهيم الأخضر',          baseUrl: 'https://www.everyayah.com/data/Ibrahim_Al_Akhdar_64kbps/' },
-  { id: 'ajmy',       name: 'أحمد بن علي العجمي',     baseUrl: 'https://www.everyayah.com/data/Ahmed_ibn_Ali_al-Ajmy_64kbps/' },
-  { id: 'katamy',     name: 'ناصر القطامي',            baseUrl: 'https://www.everyayah.com/data/Naser_Al_Katamy_128kbps/' },
+  { id: 'akhdar',     name: 'إبراهيم الأخضر',          baseUrl: 'https://www.everyayah.com/data/Ibrahim_Akhdar_32kbps/' },
+  { id: 'ajmy',       name: 'أحمد بن علي العجمي',     baseUrl: 'https://www.everyayah.com/data/ahmed_ibn_ali_al_ajamy_128kbps/' },
+  { id: 'katamy',     name: 'ناصر القطامي',            baseUrl: 'https://www.everyayah.com/data/Nasser_Alqatami_128kbps/' },
   { id: 'shaatree',   name: 'أبو بكر الشاطري',         baseUrl: 'https://www.everyayah.com/data/Abu_Bakr_Ash-Shaatree_64kbps/' },
   { id: 'basfar',     name: 'عبد الله بصفر',           baseUrl: 'https://www.everyayah.com/data/Abdullah_Basfar_64kbps/' },
-  { id: 'lhaidan',    name: 'محمد اللحيدان',           baseUrl: 'https://www.everyayah.com/data/Mohammad_al_Lhaidan_256kbps/' },
 ] as const;
 
 const RECITER_STORAGE_KEY = 'noor_hifz_reciter_id';
