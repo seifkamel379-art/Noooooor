@@ -159,10 +159,48 @@ function getRatingColor(rating: Rating | null): { bg: string; text: string; bord
   return { bg: 'transparent', text: '#C19A6B', border: 'rgba(193,154,107,0.2)' };
 }
 
+/**
+ * Score how similar a candidate word is to the target word.
+ * Higher score = more similar (better distractor).
+ * Uses: length match, shared letters, prefix/suffix similarity.
+ */
+function distractorSimilarityScore(candidate: string, target: string): number {
+  if (candidate.length === 0 || target.length === 0) return 0;
+
+  // Length similarity (0–35 pts) — same length is best
+  const lenDiff = Math.abs(candidate.length - target.length);
+  const lenScore = Math.max(0, 35 - lenDiff * 8);
+
+  // Letter-set overlap (0–35 pts) — share same Arabic root letters
+  const targetChars = new Set(target.split(''));
+  let overlap = 0;
+  for (const ch of candidate) {
+    if (targetChars.has(ch)) overlap++;
+  }
+  const overlapScore = Math.round((overlap / Math.max(target.length, 1)) * 35);
+
+  // Prefix match (0–15 pts) — same morphological prefix (1–3 chars)
+  let prefixMatch = 0;
+  for (let i = 0; i < Math.min(3, candidate.length, target.length); i++) {
+    if (candidate[i] === target[i]) prefixMatch++;
+    else break;
+  }
+  const prefixScore = prefixMatch * 5;
+
+  // Suffix match (0–15 pts) — same grammatical ending (case, gender, number)
+  let suffixMatch = 0;
+  for (let i = 1; i <= Math.min(3, candidate.length, target.length); i++) {
+    if (candidate[candidate.length - i] === target[target.length - i]) suffixMatch++;
+    else break;
+  }
+  const suffixScore = suffixMatch * 5;
+
+  return lenScore + overlapScore + prefixScore + suffixScore;
+}
+
 // Build a word pool from surah words for distractors
 function buildWordPool(surahVerses: VerseData[], excludeWord: string): string[] {
   const strippedExclude = stripDiacritics(excludeWord);
-  const excludeLen = strippedExclude.length;
   const seen = new Set<string>();
   const pool: { word: string; score: number }[] = [];
 
@@ -178,14 +216,14 @@ function buildWordPool(surahVerses: VerseData[], excludeWord: string): string[] 
         STOP_WORDS.has(w)
       ) continue;
       seen.add(stripped);
-      // Score: closer length = better distractor
-      const lenDiff = Math.abs(stripped.length - excludeLen);
-      pool.push({ word: w, score: lenDiff });
+      // Score: higher = more similar in weight/form to the correct word
+      const score = distractorSimilarityScore(stripped, strippedExclude);
+      pool.push({ word: w, score });
     }
   }
 
-  // Sort by closest length first
-  pool.sort((a, b) => a.score - b.score);
+  // Sort by most similar first
+  pool.sort((a, b) => b.score - a.score);
   return pool.map(p => p.word);
 }
 
@@ -221,23 +259,35 @@ function buildQuestion(verse: VerseData, surahVerses: VerseData[]): TestQuestion
 
   const blankWord = words[chosenIdx];
 
-  // Get distractors from surah
+  // Get distractors from surah — pick from the top-scored pool
+  // but ensure the two distractors are sufficiently different from each other
   const wordPool = buildWordPool(surahVerses, blankWord);
-  const distractors = shuffle(wordPool.slice(0, 15)).slice(0, 2);
+  const distractors: string[] = [];
+  for (const candidate of wordPool) {
+    if (distractors.length >= 2) break;
+    const strippedCandidate = stripDiacritics(candidate);
+    // Don't let the two distractors be nearly identical to each other
+    const tooSimilarToChosen = distractors.some(chosen => {
+      const strippedChosen = stripDiacritics(chosen);
+      const sim = distractorSimilarityScore(strippedCandidate, strippedChosen);
+      return sim > 70; // similarity threshold between distractors
+    });
+    if (!tooSimilarToChosen) {
+      distractors.push(candidate);
+    }
+  }
 
-  // Ensure we always have exactly 2 distractors
-  while (distractors.length < 2) {
-    // Fallback: use words from the verse itself
+  // Fallback: use words from the verse itself
+  if (distractors.length < 2) {
     for (const w of shuffle([...words])) {
-      if (stripDiacritics(w) !== stripDiacritics(blankWord) && !distractors.includes(w)) {
+      if (distractors.length >= 2) break;
+      if (stripDiacritics(w) !== stripDiacritics(blankWord) && !distractors.some(d => stripDiacritics(d) === stripDiacritics(w))) {
         distractors.push(w);
-        if (distractors.length >= 2) break;
       }
     }
-    if (distractors.length < 2) {
-      distractors.push('...');
-      break;
-    }
+  }
+  if (distractors.length < 2) {
+    distractors.push('...');
   }
 
   const choices = shuffle([blankWord, ...distractors.slice(0, 2)]);
