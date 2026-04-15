@@ -23,9 +23,9 @@ trap cleanup SIGTERM SIGINT
 # Start the API server in the background (after a brief delay so Vite opens port first)
 echo "Starting API server (dev) on port $API_SERVER_PORT..."
 (sleep 2 && cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development \
-  pnpm exec tsx ./src/index.ts 2>&1) &
+  "$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx" ./src/index.ts 2>&1) &
 
-# Start Vite in the foreground so it opens port 5000 quickly
+# Start Vite in the foreground from the noor artifact directory
 echo "Starting Vite dev server on port $VITE_PORT..."
-cd "$ROOT_DIR" && exec env VITE_PORT=$VITE_PORT PORT=$VITE_PORT \
-  pnpm exec vite --config "$ROOT_DIR/vite.config.ts"
+cd "$ROOT_DIR/artifacts/noor" && exec env VITE_PORT=$VITE_PORT PORT=$VITE_PORT \
+  "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/artifacts/noor/vite.config.ts"
