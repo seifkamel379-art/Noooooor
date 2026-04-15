@@ -1,5 +1,5 @@
 kind = "api"
-previewPath = "/"
+previewPath = "/api-server/"
 title = "Noor App"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
@@ -7,7 +7,7 @@ id = "3B4_FFSkEVBkAeYMFRJ2e"
 [[services]]
 localPort = 19382
 name = "API Server"
-paths = ["/"]
+paths = ["/api-server/"]
 
 [services.development]
 run = "bash /home/runner/workspace/scripts/dev-artifact.sh"

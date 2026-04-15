@@ -1,6 +1,6 @@
 #!/bin/bash
 # Main dev script for the "Start application" workflow.
-# Starts Vite dev server first (for fast port open), then API server.
+# Starts Vite dev server + API server.
 export BASE_PATH=/
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,12 +20,12 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-# Start the API server in the background (after a brief delay so Vite opens port first)
+# Start the API server in the background
 echo "Starting API server (dev) on port $API_SERVER_PORT..."
 (sleep 2 && cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_SERVER_PORT NODE_ENV=development \
   "$ROOT_DIR/artifacts/api-server/node_modules/.bin/tsx" ./src/index.ts 2>&1) &
 
-# Start Vite in the foreground from the noor artifact directory
+# Start Vite in the foreground
 echo "Starting Vite dev server on port $VITE_PORT..."
 cd "$ROOT_DIR/artifacts/noor" && exec env VITE_PORT=$VITE_PORT PORT=$VITE_PORT \
   "$ROOT_DIR/node_modules/.bin/vite" --config "$ROOT_DIR/artifacts/noor/vite.config.ts"

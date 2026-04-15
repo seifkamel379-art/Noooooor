@@ -738,6 +738,7 @@ export function MoreMenu() {
   const userProfile = getProfileCache();
 
   const MENU_ITEMS = [
+    { Icon: TasbihIcon,        label: 'اختبار الحفظ',        path: '/hifz-test',    desc: 'اختبر حفظك لكل آيات القرآن الكريم • 6236 آية', grad: 'linear-gradient(145deg, #1e4d2b, #0d2b16)' },
     { Icon: HadithIcon,        label: 'الأحاديث الشريفة',   path: '/hadith',       desc: 'أحاديث النبي ﷺ من كبار المصادر',                grad: 'linear-gradient(145deg, #2d6a4f, #1b4332)' },
     { Icon: ScrollIcon,        label: 'التاريخ الإسلامي',   path: '/history',      desc: 'من السيرة النبوية حتى الدولة العثمانية',         grad: 'linear-gradient(145deg, #6b3a0f, #3d2008)' },
     { Icon: IslamicStarIcon,   label: 'قصص الأنبياء',       path: '/prophets',     desc: 'قصص الأنبياء لابن كثير • تحقيق د. مصطفى عبد الواحد', grad: 'linear-gradient(145deg, #1b4332, #0d2b1e)' },
