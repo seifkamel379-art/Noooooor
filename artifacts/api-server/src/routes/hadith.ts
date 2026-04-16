@@ -1,5 +1,11 @@
 import { Router } from "express";
 import https from "https";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = Router();
 
@@ -11,20 +17,114 @@ const BASE = "https://hadithapi.com/api";
 
 function httpsGet(url: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        let raw = "";
-        res.on("data", (chunk) => (raw += chunk));
-        res.on("end", () => {
-          try {
-            resolve(JSON.parse(raw));
-          } catch {
-            reject(new Error("Invalid JSON from hadithapi.com"));
-          }
-        });
-      })
-      .on("error", reject);
+    const req = https.get(url, { timeout: 8000 }, (res) => {
+      let raw = "";
+      res.on("data", (chunk) => (raw += chunk));
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(raw));
+        } catch {
+          reject(new Error("Invalid JSON from hadithapi.com"));
+        }
+      });
+    });
+    req.on("timeout", () => { req.destroy(); reject(new Error("Request timed out")); });
+    req.on("error", reject);
   });
+}
+
+/* ── Local Sunnah data for search fallback ── */
+interface LocalHadith {
+  id: string;
+  title: string;
+  hadith: string;
+  source: string;
+  description?: string;
+  reward?: string;
+  category?: string;
+  subcategory?: string;
+}
+
+let _localHadiths: LocalHadith[] | null = null;
+
+function loadLocalHadiths(): LocalHadith[] {
+  if (_localHadiths) return _localHadiths;
+
+  const dataPath = path.resolve(
+    __dirname,
+    "../../../noor/public/data/sunnah.json"
+  );
+
+  try {
+    const raw = fs.readFileSync(dataPath, "utf-8");
+    const data = JSON.parse(raw) as {
+      content: Record<string, Record<string, Array<{
+        id: string; title: string; hadith: string; source: string; description?: string; reward?: string;
+      }>>>;
+    };
+
+    const flattened: LocalHadith[] = [];
+    for (const [cat, subcats] of Object.entries(data.content)) {
+      for (const [subcat, hadiths] of Object.entries(subcats)) {
+        for (const h of hadiths) {
+          flattened.push({ ...h, category: cat, subcategory: subcat });
+        }
+      }
+    }
+    _localHadiths = flattened;
+    return flattened;
+  } catch (e) {
+    console.error("Failed to load local hadiths:", e);
+    _localHadiths = [];
+    return [];
+  }
+}
+
+function sourceToBookSlug(source: string): string {
+  if (source.includes("البخاري")) return "sahih-bukhari";
+  if (source.includes("مسلم")) return "sahih-muslim";
+  if (source.includes("الترمذي")) return "al-tirmidhi";
+  if (source.includes("أبي داود") || source.includes("أبو داود")) return "abu-dawood";
+  if (source.includes("ابن ماجه")) return "ibn-e-majah";
+  if (source.includes("النسائي")) return "sunan-nasai";
+  return "sahih-bukhari";
+}
+
+function localSearch(query: string, paginate = 20, page = 1) {
+  const hadiths = loadLocalHadiths();
+  const q = query.trim().toLowerCase();
+
+  const matches = hadiths.filter(h =>
+    h.hadith.includes(query) ||
+    h.title.includes(query) ||
+    h.hadith.toLowerCase().includes(q) ||
+    h.title.toLowerCase().includes(q) ||
+    (h.description ?? "").includes(query)
+  );
+
+  const start = (page - 1) * paginate;
+  const pageData = matches.slice(start, start + paginate);
+
+  const data = pageData.map((h, i) => ({
+    id: start + i + 1,
+    hadithNumber: String(start + i + 1),
+    hadithArabic: h.hadith,
+    hadithEnglish: h.description ?? "",
+    englishNarrator: h.title,
+    bookSlug: sourceToBookSlug(h.source),
+    book: { bookName: h.source },
+  }));
+
+  return {
+    status: 200,
+    hadiths: {
+      current_page: page,
+      last_page: Math.ceil(matches.length / paginate) || 1,
+      total: matches.length,
+      data,
+    },
+    source: "local",
+  };
 }
 
 router.get("/hadith/books", async (_req, res) => {
@@ -32,7 +132,7 @@ router.get("/hadith/books", async (_req, res) => {
     const data = await httpsGet(`${BASE}/books?apiKey=${encodeURIComponent(API_KEY)}`);
     res.json(data);
   } catch {
-    res.status(500).json({ error: "Failed to fetch books" });
+    res.status(503).json({ error: "الخادم الخارجي غير متاح حالياً" });
   }
 });
 
@@ -45,20 +145,15 @@ router.get("/hadith/hadiths", async (req, res) => {
     const data = await httpsGet(url);
     res.json(data);
   } catch {
-    res.status(500).json({ error: "Failed to fetch hadiths" });
+    res.status(503).json({ error: "الخادم الخارجي غير متاح حالياً" });
   }
 });
 
-router.get("/hadith/search", async (req, res) => {
-  const { query, page = "1", paginate = "15" } = req.query as Record<string, string>;
+router.get("/hadith/search", (req, res) => {
+  const { query, page = "1", paginate = "20" } = req.query as Record<string, string>;
   if (!query?.trim()) { res.status(400).json({ error: "query is required" }); return; }
-  try {
-    const url = `${BASE}/hadiths?apiKey=${encodeURIComponent(API_KEY)}&search=${encodeURIComponent(query.trim())}&paginate=${paginate}&page=${page}`;
-    const data = await httpsGet(url);
-    res.json(data);
-  } catch {
-    res.status(500).json({ error: "Failed to search hadiths" });
-  }
+  const result = localSearch(query.trim(), parseInt(paginate), parseInt(page));
+  res.json(result);
 });
 
 router.get("/hadith/chapters/:book", async (req, res) => {
@@ -69,7 +164,7 @@ router.get("/hadith/chapters/:book", async (req, res) => {
     );
     res.json(data);
   } catch {
-    res.status(500).json({ error: "Failed to fetch chapters" });
+    res.status(503).json({ error: "الخادم الخارجي غير متاح حالياً" });
   }
 });
 
