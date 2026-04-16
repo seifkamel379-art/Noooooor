@@ -10,6 +10,7 @@ const port = rawPort ? Number(rawPort) : 3000;
 if (rawPort && (Number.isNaN(port) || port <= 0)) throw new Error(`Invalid PORT: "${rawPort}"`);
 
 const basePath = process.env.BASE_PATH ?? "/";
+const apiServerPort = process.env.API_SERVER_PORT ?? "3001";
 
 export default defineConfig({
   base: basePath,
@@ -50,7 +51,7 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:3001",
+        target: `http://localhost:${apiServerPort}`,
         changeOrigin: true,
       },
     },

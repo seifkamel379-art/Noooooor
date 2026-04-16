@@ -83,6 +83,7 @@ The primary workflow is **"artifacts/api-server: API Server"** — this is what 
 ### Migration Notes
 - The Replit migration preserves the existing React/Vite frontend, Express API server, pnpm workspace structure, and database schema.
 - Startup scripts now invoke Vite and tsx through pnpm instead of hard-coded `node_modules/.bin` paths, which is more reliable in Replit's workspace layout.
+- Vite dev proxies now read `API_SERVER_PORT`, allowing standalone artifact workflows to use separate backend ports safely.
 - Database initialization now completes before the global counter loads, preventing first-run errors when tables do not exist yet.
 
 ## Firebase
@@ -99,7 +100,7 @@ Single Firebase project: **noooooor-app** (projectId: `noooooor-app`)
 
 ## Key Configuration
 
-- **Vite proxy**: `/api` → `http://localhost:3001`
+- **Vite proxy**: `/api` → `http://localhost:${API_SERVER_PORT:-3001}`
 - **Vite host**: `true` (binds to all interfaces including IPv6)
 - **Firebase**: Configured via `VITE_FIREBASE_*` environment variables in Replit secrets
 
@@ -114,10 +115,10 @@ Single Firebase project: **noooooor-app** (projectId: `noooooor-app`)
 ## Production Build
 
 ```bash
-npm run build && pnpm --filter @workspace/api-server run build
+bash build.sh
 ```
 
-Builds frontend to `dist/public` and bundles api-server to `artifacts/api-server/dist/index.cjs`.
+Builds the web artifact, bundles api-server to `artifacts/api-server/dist/index.cjs`, and copies the web build to `dist/public` for production static serving.
 
 ## UI Design System
 

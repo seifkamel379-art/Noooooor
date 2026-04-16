@@ -27,16 +27,16 @@ function spawnProcess(cmd, args, env = {}, cwd = ROOT_DIR) {
 
 // Start dev API server (for live reload)
 spawnProcess(
-  `${ROOT_DIR}/artifacts/api-server/node_modules/.bin/tsx`,
-  ["./src/index.ts"],
+  "pnpm",
+  ["exec", "tsx", "./src/index.ts"],
   { PORT: API_DEV_PORT, NODE_ENV: "development" },
   `${ROOT_DIR}/artifacts/api-server`
 );
 
 // Start Vite dev server  
 spawnProcess(
-  `${ROOT_DIR}/node_modules/.bin/vite`,
-  ["--config", `${ROOT_DIR}/vite.config.ts`],
+  "pnpm",
+  ["exec", "vite", "--config", `${ROOT_DIR}/vite.config.ts`],
   { PORT: VITE_PORT, BASE_PATH: "/" }
 );
 
