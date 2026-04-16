@@ -42,18 +42,19 @@ interface PublicBookData {
   hadiths: PublicHadith[];
 }
 
-const publicBookCache = new Map<BookSlug, Promise<PublicHadith[]>>();
+const publicBookCache = new Map<BookSlug, PublicHadith[]>();
+const publicBookLoading = new Map<BookSlug, Promise<PublicHadith[]>>();
 
-function httpsGet(url: string): Promise<unknown> {
+function httpsGet(url: string, timeoutMs = 30000): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, { timeout: 8000 }, (res) => {
-      let raw = "";
-      res.on("data", (chunk) => (raw += chunk));
+    const req = https.get(url, { timeout: timeoutMs }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk) => chunks.push(chunk));
       res.on("end", () => {
         try {
-          resolve(JSON.parse(raw));
+          resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
         } catch {
-          reject(new Error("Invalid JSON from hadithapi.com"));
+          reject(new Error("Invalid JSON from hadith CDN"));
         }
       });
     });
@@ -75,16 +76,36 @@ async function loadPublicBook(bookSlug: BookSlug): Promise<PublicHadith[]> {
   const cached = publicBookCache.get(bookSlug);
   if (cached) return cached;
 
+  const inflight = publicBookLoading.get(bookSlug);
+  if (inflight) return inflight;
+
   const book = getBook(bookSlug);
   if (!book) return [];
 
-  const request = httpsGet(`${PUBLIC_BASE}/${book.edition}.json`).then((data) => {
-    const parsed = data as PublicBookData;
-    return Array.isArray(parsed.hadiths) ? parsed.hadiths : [];
-  });
+  const request = httpsGet(`${PUBLIC_BASE}/${book.edition}.json`, 60000)
+    .then((data) => {
+      const parsed = data as PublicBookData;
+      const hadiths = Array.isArray(parsed.hadiths) ? parsed.hadiths : [];
+      publicBookCache.set(bookSlug, hadiths);
+      publicBookLoading.delete(bookSlug);
+      console.log(`[Hadith] Cached ${book.name}: ${hadiths.length} hadiths`);
+      return hadiths;
+    })
+    .catch((err) => {
+      publicBookLoading.delete(bookSlug);
+      console.error(`[Hadith] Failed to load ${book.name}:`, err.message);
+      return [] as PublicHadith[];
+    });
 
-  publicBookCache.set(bookSlug, request);
+  publicBookLoading.set(bookSlug, request);
   return request;
+}
+
+export async function prewarmHadithCache(): Promise<void> {
+  console.log("[Hadith] Pre-warming book cache in background...");
+  for (const book of BOOKS) {
+    loadPublicBook(book.slug).catch(() => {});
+  }
 }
 
 function toHadithItem(bookSlug: BookSlug, hadith: PublicHadith) {
@@ -288,10 +309,20 @@ router.get("/hadith/hadiths", async (req, res) => {
 router.get("/hadith/search", async (req, res) => {
   const { query, page = "1", paginate = "20" } = req.query as Record<string, string>;
   if (!query?.trim()) { res.status(400).json({ error: "query is required" }); return; }
+
+  const cachedBooksCount = publicBookCache.size;
   try {
     const result = await publicSearch(query.trim(), parseInt(paginate), parseInt(page));
     if (result.hadiths.total > 0) {
       res.json(result);
+      return;
+    }
+    if (cachedBooksCount === 0) {
+      res.json({
+        status: 200,
+        hadiths: { current_page: 1, last_page: 1, total: 0, data: [] },
+        loading: true,
+      });
       return;
     }
   } catch (err) {

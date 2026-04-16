@@ -49,6 +49,7 @@ interface HadithResponse {
     data: HadithItem[];
   };
   error?: string;
+  loading?: boolean;
 }
 
 const PAGE_SIZE = 10;
@@ -326,7 +327,7 @@ function HadithSearch({ isDark, onNavigate }: {
     return () => clearTimeout(t);
   }, [query]);
 
-  const { data, isLoading, isFetching, isError, error } = useQuery<HadithResponse>({
+  const { data, isLoading, isFetching, isError } = useQuery<HadithResponse>({
     queryKey: ['/api/hadith/search', debouncedQuery],
     queryFn: async () => {
       const res = await fetch(`/api/hadith/search?query=${encodeURIComponent(debouncedQuery)}&paginate=20`);
@@ -341,12 +342,14 @@ function HadithSearch({ isDark, onNavigate }: {
       return payload;
     },
     enabled: debouncedQuery.length >= 2,
-    retry: 1,
+    retry: 2,
+    retryDelay: 3000,
     staleTime: 2 * 60 * 1000,
   });
 
   const results = data?.hadiths?.data ?? [];
   const total = data?.hadiths?.total ?? 0;
+  const isWarmingUp = !!(data?.loading && results.length === 0);
   const searching = isLoading || isFetching;
 
   const itemBg = isDark ? 'rgba(193,154,107,0.05)' : 'rgba(193,154,107,0.04)';
@@ -395,23 +398,33 @@ function HadithSearch({ isDark, onNavigate }: {
         </div>
       )}
 
-      {/* Results */}
-      {isError && debouncedQuery.length >= 2 && (
+      {/* Warming up state */}
+      {isWarmingUp && !searching && (
+        <div className="flex flex-col items-center justify-center py-10 gap-3" data-testid="status-hadith-warming">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#C19A6B' }} />
+          <p className="text-sm text-center" style={{ fontFamily: '"Tajawal", sans-serif', color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}>
+            جاري تحميل بيانات الكتب، حاول البحث مرة أخرى بعد لحظات...
+          </p>
+        </div>
+      )}
+
+      {/* Error state - don't show if we have results or warming up */}
+      {isError && debouncedQuery.length >= 2 && !isWarmingUp && (
         <div
           className="text-center py-10 rounded-2xl"
           style={{ background: itemBg, border: `1px solid ${itemBorder}`, color: isDark ? 'rgba(255,255,255,0.72)' : 'rgba(30,20,10,0.72)' }}
           data-testid="status-hadith-search-error"
         >
           <p className="text-sm font-bold mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            حدث خطأ أثناء البحث
+            جاري تحميل بيانات الكتب...
           </p>
           <p className="text-xs opacity-70" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            {(error as Error)?.message || 'حاول مرة أخرى بعد لحظات'}
+            حاول البحث مرة أخرى بعد لحظات
           </p>
         </div>
       )}
 
-      {!searching && !isError && debouncedQuery.length >= 2 && (
+      {!searching && !isError && !isWarmingUp && debouncedQuery.length >= 2 && (
         <>
           {total > 0 && (
             <p className="text-xs text-right text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
