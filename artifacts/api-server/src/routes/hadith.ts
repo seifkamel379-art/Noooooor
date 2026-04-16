@@ -80,6 +80,11 @@ function loadLocalHadiths(): LocalHadith[] {
   }
 }
 
+/** Strip Arabic diacritics (tashkeel) so search works without them */
+function stripTashkeel(text: string): string {
+  return text.replace(/[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g, "");
+}
+
 function sourceToBookSlug(source: string): string {
   if (source.includes("البخاري")) return "sahih-bukhari";
   if (source.includes("مسلم")) return "sahih-muslim";
@@ -92,14 +97,12 @@ function sourceToBookSlug(source: string): string {
 
 function localSearch(query: string, paginate = 20, page = 1) {
   const hadiths = loadLocalHadiths();
-  const q = query.trim().toLowerCase();
+  const q = stripTashkeel(query.trim());
 
   const matches = hadiths.filter(h =>
-    h.hadith.includes(query) ||
-    h.title.includes(query) ||
-    h.hadith.toLowerCase().includes(q) ||
-    h.title.toLowerCase().includes(q) ||
-    (h.description ?? "").includes(query)
+    stripTashkeel(h.hadith).includes(q) ||
+    stripTashkeel(h.title).includes(q) ||
+    stripTashkeel(h.description ?? "").includes(q)
   );
 
   const start = (page - 1) * paginate;

@@ -419,7 +419,7 @@ export function Quran() {
   if (!selectedSurah) {
     return (
       <div
-        className="pb-24 pt-6 px-4 max-w-lg mx-auto h-screen flex flex-col"
+        className="pt-6 px-4 max-w-lg mx-auto h-screen flex flex-col"
         dir="rtl"
         style={{ background: C.pageBg }}
       >
