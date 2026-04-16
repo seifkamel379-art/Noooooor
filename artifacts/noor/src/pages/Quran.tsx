@@ -12,6 +12,95 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 type MoshafType = { id: number; name: string; description: string; img_src: string; download_link: string };
 
+// ── Arabic text normalizer (removes tashkeel, normalises alef variants) ──
+function normalizeArabic(text: string): string {
+  return text
+    .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي');
+}
+
+// ── Module-level caches for local JSON data ──
+type QuranEntry = { s: number; a: number; t: string; n: string };
+let _quranCache: QuranEntry[] | null = null;
+let _tafsirCache: Record<string, string> | null = null;
+const _iraabCache: Record<number, Record<number, { w: string; m: string; r: string }[]>> = {};
+
+async function getQuranIndex(): Promise<QuranEntry[]> {
+  if (_quranCache) return _quranCache;
+  // quran-search.json uses quran-simple edition (modern Arabic spelling, no tashkeel)
+  // This makes searching with normal user-typed Arabic work correctly.
+  const tryUrls = ['/data/quran-search.json', '/data/quran-uthmani.json'];
+  for (const url of tryUrls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const raw: { s: number; a: number; t: string }[] = await res.json();
+      _quranCache = raw.map(e => ({ ...e, n: normalizeArabic(e.t) }));
+      return _quranCache!;
+    } catch { /* try next */ }
+  }
+  // Final fallback: API
+  const res = await fetch('https://api.alquran.cloud/v1/quran/quran-simple');
+  const json = await res.json();
+  _quranCache = [];
+  for (const surah of json.data.surahs) {
+    for (const ayah of surah.ayahs) {
+      const t = ayah.text as string;
+      _quranCache.push({ s: surah.number, a: ayah.numberInSurah, t, n: normalizeArabic(t) });
+    }
+  }
+  return _quranCache!;
+}
+
+async function getTafsirIndex(): Promise<Record<string, string>> {
+  if (_tafsirCache) return _tafsirCache;
+  try {
+    const res = await fetch('/data/tafsir-muyassar.json');
+    if (!res.ok) throw new Error('local not ready');
+    _tafsirCache = await res.json();
+    return _tafsirCache!;
+  } catch {
+    const res = await fetch('https://api.alquran.cloud/v1/quran/ar.muyassar');
+    const json = await res.json();
+    _tafsirCache = {};
+    for (const surah of json.data.surahs) {
+      for (const ayah of surah.ayahs) {
+        _tafsirCache[`${surah.number}:${ayah.numberInSurah}`] = ayah.text;
+      }
+    }
+    return _tafsirCache!;
+  }
+}
+
+async function getIraabAyah(
+  surahNum: number, ayahNum: number
+): Promise<{ text_uthmani: string; translation: { text: string }; transliteration: { text: string } }[]> {
+  if (_iraabCache[surahNum]?.[ayahNum]) {
+    return _iraabCache[surahNum][ayahNum].map(w => ({
+      text_uthmani: w.w,
+      translation: { text: w.m },
+      transliteration: { text: w.r },
+    }));
+  }
+  try {
+    const res = await fetch(`/data/iraab/${surahNum}.json`);
+    if (!res.ok) throw new Error('local not ready');
+    const data: Record<number, { w: string; m: string; r: string }[]> = await res.json();
+    _iraabCache[surahNum] = data;
+    return (data[ayahNum] ?? []).map(w => ({
+      text_uthmani: w.w, translation: { text: w.m }, transliteration: { text: w.r },
+    }));
+  } catch {
+    const res = await fetch(
+      `https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?words=true&word_fields=text_uthmani,transliteration,translation&fields=text_uthmani`
+    );
+    const json = await res.json();
+    return (json?.verse?.words ?? []).filter((w: any) => w.char_type_name === 'word');
+  }
+}
+
 function MoshafSheet({ dark, onClose }: { dark: boolean; onClose: () => void }) {
   const [moshafList, setMoshafList] = useState<MoshafType[]>([]);
   useEffect(() => {
@@ -163,16 +252,17 @@ export function Quran() {
     queueRTDBUpdate(uid, updates);
   }, []);
 
-  // ── Search Quran text ──
+  // ── Search Quran text (local JSON + API fallback, with Arabic normalization) ──
   const searchQuran = useCallback(async (term: string) => {
     const t = term.trim();
     if (!t) { setSearchResults([]); setSearchCount(0); return; }
     setSearchLoading(true);
     try {
-      const res = await fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(t)}/all/quran-uthmani`);
-      const json = await res.json();
-      setSearchResults(json?.data?.matches ?? []);
-      setSearchCount(json?.data?.count ?? 0);
+      const data = await getQuranIndex();
+      const normalized = normalizeArabic(t);
+      const results = data.filter(e => e.n.includes(normalized));
+      setSearchResults(results);
+      setSearchCount(results.length);
     } catch { setSearchResults([]); setSearchCount(0); }
     setSearchLoading(false);
   }, []);
@@ -182,29 +272,26 @@ export function Quran() {
     return () => clearTimeout(timer);
   }, [quranSearch, searchView, searchQuran]);
 
-  // ── إعراب: fetch word-by-word meanings ──
+  // ── إعراب: fetch word-by-word (local JSON + API fallback) ──
   const fetchIraab = useCallback(async (surahNum: number, ayahNum: number) => {
     setIraabLoading(true);
     setIraabData(null);
     setIraabAyah(ayahNum);
     try {
-      const res = await fetch(`https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?words=true&word_fields=text_uthmani,location,transliteration,translation&fields=text_uthmani`);
-      const json = await res.json();
-      const words = (json?.verse?.words ?? []).filter((w: any) => w.char_type_name === 'word');
+      const words = await getIraabAyah(surahNum, ayahNum);
       setIraabData(words);
     } catch { setIraabData([]); }
     setIraabLoading(false);
   }, []);
 
-  // ── سبب النزول: fetch tafsir ──
+  // ── سبب النزول: fetch tafsir (local JSON + API fallback) ──
   const fetchNuzul = useCallback(async (surahNum: number, ayahNum: number) => {
     setNuzulLoading(true);
     setNuzulText(null);
     setNuzulAyah(ayahNum);
     try {
-      const res = await fetch(`https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-muyassar/${surahNum}/${ayahNum}.json`);
-      const json = await res.json();
-      setNuzulText(json?.text ?? null);
+      const tafsir = await getTafsirIndex();
+      setNuzulText(tafsir[`${surahNum}:${ayahNum}`] ?? null);
     } catch { setNuzulText(null); }
     setNuzulLoading(false);
   }, []);
@@ -504,22 +591,19 @@ export function Quran() {
                   <p className="text-sm">لا توجد نتائج</p>
                 </div>
               )}
-              {searchResults.slice(0, 50).map((match: any, i: number) => {
-                const surahNum: number = match.surah?.number ?? 0;
-                const ayahNum: number = match.numberInSurah ?? 0;
-                const surahNameAr = SURAH_NAMES[surahNum] ?? match.surah?.name ?? '';
+              {(searchResults as QuranEntry[]).slice(0, 60).map((match, i) => {
+                const surahNameAr = SURAH_NAMES[match.s] ?? `سورة ${match.s}`;
                 return (
                   <button
                     key={i}
                     onClick={() => {
-                      if (surahNum) {
-                        trackSurahSelection(surahNum);
-                        setSelectedSurah(surahNum);
-                        setScrollToAyah(ayahNum);
-                        setMode('normal');
-                        setSelectedAyah(null);
-                        setActiveAyah(null);
-                      }
+                      trackSurahSelection(match.s);
+                      setSelectedSurah(match.s);
+                      setScrollToAyah(match.a);
+                      setMode('normal');
+                      setSelectedAyah(null);
+                      setActiveAyah(null);
+                      setSearchView('surahs');
                     }}
                     className="w-full p-4 rounded-2xl text-right transition-all"
                     style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
@@ -531,7 +615,7 @@ export function Quran() {
                           {surahNameAr}
                         </span>
                         <span className="text-xs" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>
-                          آية {ayahNum}
+                          آية {match.a}
                         </span>
                       </div>
                     </div>
@@ -541,7 +625,7 @@ export function Quran() {
                       fontSize: '1.1rem',
                       lineHeight: '2.2rem',
                     }}>
-                      {match.text}
+                      {match.t}
                     </p>
                   </button>
                 );

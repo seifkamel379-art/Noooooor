@@ -2,8 +2,12 @@
 
 A cross-platform Islamic companion app built with React, Vite, and Express, supporting web and Android (via Capacitor).
 
-## Features (v2.1+)
+## Features (v2.2+)
 - **القرآن الكريم** — Quran reader with tafsir, word-by-word audio, bookmarks, and Moshaf PDF downloader (8 types)
+  - **بحث في القرآن** — Full-text search across all 6236 ayahs using local JSON (quran-search.json, quran-simple edition), Arabic normalization for user input, tap result to navigate
+  - **إعراب (معاني الكلمات)** — Word-by-word meanings from local JSON (iraab/{surah}.json, quran.com data), fallback to API if not yet downloaded
+  - **سبب النزول (تفسير ميسر)** — Tafsir Muyassar per ayah from local JSON (tafsir-muyassar.json, alquran.cloud data), fallback to API
+- **الأحاديث الشريفة** — Paginated reader across 6 hadith books with cross-book search (hadith.ts search endpoint proxies hadithapi.com), search results navigate to exact page+highlight
 - **التاريخ الإسلامي** — 4975 Islamic history events across 5 eras (Seerah → Ottoman), lazy-loaded per era with pagination
 - **الاختبارات الإسلامية** — 5820 MCQ questions across 6 Islamic science categories, 3 levels each
 - **سنن النبي ﷺ** — Prophetic Sunnah browser across 5 categories with hadith sources
@@ -17,14 +21,15 @@ A cross-platform Islamic companion app built with React, Vite, and Express, supp
 
 ## Static Data Strategy
 All large content is in `public/data/` and lazy-fetched on page visit:
-- `public/data/history-seerah.json` — 317KB, 128 events (lazy-loaded per era)
-- `public/data/history-rashidun.json` — 269KB, 126 events
-- `public/data/history-umayyad.json` — 416KB, 223 events
-- `public/data/history-abbasid.json` — 4.6MB, 2160 events
-- `public/data/history-ottoman.json` — 4.8MB, 2338 events
+- `public/data/history-*.json` — Islamic history events (seerah/rashidun/umayyad/abbasid/ottoman), lazy-loaded per era
 - `public/data/quizzes.json` — 4.4MB, full quiz data
 - `public/data/sunnah.json` — 40KB, prophetic sunnah
 - `public/data/moshaf.json` — 3.3KB, moshaf PDF links
+- `public/data/quran-search.json` — 1.4MB, 6236 ayahs in quran-simple (for text search, no tashkeel)
+- `public/data/tafsir-muyassar.json` — 2.5MB, Tafsir Muyassar keyed by "surah:ayah"
+- `public/data/iraab/{1-114}.json` — Word-by-word meanings per surah (quran.com API), fetched by scripts/fetch-quran-json.mjs
+
+**Data generation**: Run `node scripts/fetch-quran-json.mjs` to regenerate/update the quran JSON files.
 
 ## Project Structure
 

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Search, X, Loader2, BookOpen } from 'lucide-react';
 import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,44 +18,14 @@ function useDarkMode() {
   return isDark;
 }
 
-/* ── Book definitions with bold colors matching reference design ── */
+/* ── Book definitions ── */
 const BOOKS = [
-  {
-    slug: 'sahih-bukhari',
-    name: 'صحيح البخاري',
-    iconBg: '#8B1A1A',
-    total: 6638,
-  },
-  {
-    slug: 'sahih-muslim',
-    name: 'صحيح مسلم',
-    iconBg: '#1A3A7A',
-    total: 4930,
-  },
-  {
-    slug: 'al-tirmidhi',
-    name: 'جامع الترمذي',
-    iconBg: '#1C2F6E',
-    total: 3625,
-  },
-  {
-    slug: 'abu-dawood',
-    name: 'سنن أبي داود',
-    iconBg: '#6B3010',
-    total: 4419,
-  },
-  {
-    slug: 'ibn-e-majah',
-    name: 'سنن ابن ماجه',
-    iconBg: '#7A5010',
-    total: 4285,
-  },
-  {
-    slug: 'sunan-nasai',
-    name: 'سنن النسائي',
-    iconBg: '#9B1515',
-    total: 5364,
-  },
+  { slug: 'sahih-bukhari',  name: 'صحيح البخاري',    iconBg: '#8B1A1A', total: 6638 },
+  { slug: 'sahih-muslim',   name: 'صحيح مسلم',       iconBg: '#1A3A7A', total: 4930 },
+  { slug: 'al-tirmidhi',   name: 'جامع الترمذي',     iconBg: '#1C2F6E', total: 3625 },
+  { slug: 'abu-dawood',    name: 'سنن أبي داود',     iconBg: '#6B3010', total: 4419 },
+  { slug: 'ibn-e-majah',   name: 'سنن ابن ماجه',     iconBg: '#7A5010', total: 4285 },
+  { slug: 'sunan-nasai',   name: 'سنن النسائي',      iconBg: '#9B1515', total: 5364 },
 ];
 
 type Book = typeof BOOKS[0];
@@ -66,6 +36,8 @@ interface HadithItem {
   hadithArabic: string;
   hadithEnglish?: string;
   englishNarrator?: string;
+  bookSlug?: string;
+  book?: { bookName?: string };
 }
 
 interface HadithResponse {
@@ -81,7 +53,6 @@ interface HadithResponse {
 
 const PAGE_SIZE = 10;
 
-/* ── Book icon SVG (open book in white) ── */
 function BookSvg() {
   return (
     <svg viewBox="0 0 40 40" fill="none" className="w-6 h-6">
@@ -99,21 +70,39 @@ function BookSvg() {
   );
 }
 
-/* ── Single Hadith card ────────────────────────────────────────── */
-function HadithCard({ hadith, book }: { hadith: HadithItem; book: Book }) {
+/* ── Single Hadith card ── */
+function HadithCard({
+  hadith,
+  book,
+  highlighted = false,
+}: {
+  hadith: HadithItem;
+  book: Book;
+  highlighted?: boolean;
+}) {
   const isDark = useDarkMode();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlighted && ref.current) {
+      setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    }
+  }, [highlighted]);
+
   return (
     <div
-      className="rounded-2xl overflow-hidden"
+      ref={ref}
+      className="rounded-2xl overflow-hidden transition-all"
       style={{
-        background: isDark ? 'rgba(193,154,107,0.04)' : 'rgba(193,154,107,0.03)',
-        border: `1px solid rgba(193,154,107,${isDark ? '0.18' : '0.2'})`,
+        background: highlighted
+          ? isDark ? 'rgba(193,154,107,0.12)' : 'rgba(193,154,107,0.1)'
+          : isDark ? 'rgba(193,154,107,0.04)' : 'rgba(193,154,107,0.03)',
+        border: `1px solid rgba(193,154,107,${highlighted ? (isDark ? '0.45' : '0.4') : (isDark ? '0.18' : '0.2')})`,
+        boxShadow: highlighted ? '0 0 0 2px rgba(193,154,107,0.25)' : 'none',
       }}
     >
-      {/* شريط لوني رفيع للتمييز بين الكتب */}
       <div className="h-[3px] w-full" style={{ background: book.iconBg, opacity: isDark ? 0.8 : 0.7 }} />
       <div className="p-4">
-        {/* رقم الحديث بألوان التطبيق */}
         <div
           className="text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3"
           style={{
@@ -151,9 +140,19 @@ function HadithCard({ hadith, book }: { hadith: HadithItem; book: Book }) {
   );
 }
 
-/* ── Hadith reader ─────────────────────────────────────────────── */
-function HadithReader({ book, onBack }: { book: Book; onBack: () => void }) {
-  const [page, setPage] = useState(1);
+/* ── Hadith reader ── */
+function HadithReader({
+  book,
+  onBack,
+  initialPage = 1,
+  highlightId,
+}: {
+  book: Book;
+  onBack: () => void;
+  initialPage?: number;
+  highlightId?: number;
+}) {
+  const [page, setPage] = useState(initialPage);
 
   const { data, isLoading, isError } = useQuery<HadithResponse>({
     queryKey: ['/api/hadith/hadiths', book.slug, page],
@@ -215,9 +214,6 @@ function HadithReader({ book, onBack }: { book: Book; onBack: () => void }) {
           <p className="text-destructive text-sm font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>
             حدث خطأ أثناء التحميل
           </p>
-          <p className="text-muted-foreground text-xs mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-            تحقق من اتصال الإنترنت وأعد المحاولة
-          </p>
         </div>
       )}
 
@@ -232,7 +228,12 @@ function HadithReader({ book, onBack }: { book: Book; onBack: () => void }) {
             className="space-y-3"
           >
             {hadiths.map((h) => (
-              <HadithCard key={h.id} hadith={h} book={book} />
+              <HadithCard
+                key={h.id}
+                hadith={h}
+                book={book}
+                highlighted={highlightId !== undefined && h.id === highlightId}
+              />
             ))}
           </motion.div>
         </AnimatePresence>
@@ -251,10 +252,7 @@ function HadithReader({ book, onBack }: { book: Book; onBack: () => void }) {
             التالي
           </button>
 
-          <span
-            className="text-xs text-muted-foreground whitespace-nowrap px-1"
-            style={{ fontFamily: '"Tajawal", sans-serif' }}
-          >
+          <span className="text-xs text-muted-foreground whitespace-nowrap px-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
             {page} / {totalPages.toLocaleString('ar-EG')}
           </span>
 
@@ -274,7 +272,7 @@ function HadithReader({ book, onBack }: { book: Book; onBack: () => void }) {
   );
 }
 
-/* ── Book list ─────────────────────────────────────────────────── */
+/* ── Book list ── */
 function BookList({ onSelect }: { onSelect: (b: Book) => void }) {
   return (
     <div className="flex flex-col gap-3" dir="rtl">
@@ -289,10 +287,7 @@ function BookList({ onSelect }: { onSelect: (b: Book) => void }) {
           data-testid={`button-book-${book.slug}`}
         >
           <div className="p-4 flex items-center gap-4">
-            {/* Left arrow */}
             <ChevronLeft className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-
-            {/* Name + count — center */}
             <div className="flex-1 min-w-0 text-right">
               <p className="font-bold text-base text-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                 {book.name}
@@ -304,8 +299,6 @@ function BookList({ onSelect }: { onSelect: (b: Book) => void }) {
                 {book.total.toLocaleString('ar-EG')} حديث
               </p>
             </div>
-
-            {/* Colored icon — right side */}
             <div
               className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
               style={{ background: book.iconBg }}
@@ -319,9 +312,187 @@ function BookList({ onSelect }: { onSelect: (b: Book) => void }) {
   );
 }
 
-/* ── Main page ─────────────────────────────────────────────────── */
+/* ── Search results ── */
+function HadithSearch({ isDark, onNavigate }: {
+  isDark: boolean;
+  onNavigate: (book: Book, page: number, hadithId: number) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 600);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const { data, isLoading, isFetching } = useQuery<HadithResponse>({
+    queryKey: ['/api/hadith/search', debouncedQuery],
+    queryFn: async () => {
+      const res = await fetch(`/api/hadith/search?query=${encodeURIComponent(debouncedQuery)}&paginate=20`);
+      if (!res.ok) throw new Error('search failed');
+      return res.json();
+    },
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const results = data?.hadiths?.data ?? [];
+  const total = data?.hadiths?.total ?? 0;
+  const searching = isLoading || isFetching;
+
+  const itemBg = isDark ? 'rgba(193,154,107,0.05)' : 'rgba(193,154,107,0.04)';
+  const itemBorder = isDark ? 'rgba(193,154,107,0.18)' : 'rgba(193,154,107,0.2)';
+
+  return (
+    <div dir="rtl" className="space-y-4">
+      {/* Search input */}
+      <div
+        className="flex items-center gap-2 px-3 py-2 rounded-2xl"
+        style={{ background: itemBg, border: `1px solid ${itemBorder}` }}
+      >
+        <Search className="w-4 h-4 flex-shrink-0" style={{ color: isDark ? 'rgba(193,154,107,0.6)' : 'rgba(122,79,30,0.5)' }} />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="ابحث في الأحاديث النبوية..."
+          className="flex-1 bg-transparent outline-none text-sm text-right text-foreground placeholder:text-muted-foreground/50"
+          style={{ fontFamily: '"Tajawal", sans-serif', direction: 'rtl' }}
+          data-testid="input-hadith-search"
+          autoFocus
+        />
+        {query && (
+          <button onClick={() => setQuery('')} className="flex-shrink-0" data-testid="button-clear-hadith-search">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+
+      {/* Hint */}
+      {!debouncedQuery && (
+        <div className="text-center py-12" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' }}>
+          <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            اكتب كلمة للبحث في الكتب الستة
+          </p>
+        </div>
+      )}
+
+      {/* Loading */}
+      {searching && debouncedQuery && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#C19A6B' }} />
+        </div>
+      )}
+
+      {/* Results */}
+      {!searching && debouncedQuery.length >= 2 && (
+        <>
+          {total > 0 && (
+            <p className="text-xs text-right text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+              {total.toLocaleString('ar-EG')} نتيجة
+            </p>
+          )}
+          {results.length === 0 && (
+            <div className="text-center py-12" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' }}>
+              <p className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>لا توجد نتائج</p>
+            </div>
+          )}
+          <div className="space-y-3">
+            {results.map((hadith) => {
+              const bookSlug = hadith.bookSlug ?? '';
+              const book = BOOKS.find(b => b.slug === bookSlug) ?? BOOKS[0];
+              const hadithNum = parseInt(hadith.hadithNumber) || 1;
+              const targetPage = Math.ceil(hadithNum / PAGE_SIZE);
+
+              return (
+                <motion.button
+                  key={hadith.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => onNavigate(book, targetPage, hadith.id)}
+                  className="w-full text-right rounded-2xl overflow-hidden"
+                  style={{ background: itemBg, border: `1px solid ${itemBorder}` }}
+                  data-testid={`button-hadith-result-${hadith.id}`}
+                >
+                  {/* Colored top bar */}
+                  <div className="h-[3px] w-full" style={{ background: book.iconBg, opacity: 0.8 }} />
+                  <div className="p-4">
+                    {/* Book + number badge row */}
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                      <ChevronLeft className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(193,154,107,0.4)' }} />
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{
+                            background: isDark ? 'rgba(193,154,107,0.15)' : 'rgba(193,154,107,0.12)',
+                            border: '1px solid rgba(193,154,107,0.3)',
+                            color: isDark ? '#E8C98A' : '#7A4F1E',
+                            fontFamily: '"Tajawal", sans-serif',
+                          }}
+                        >
+                          حديث {hadithNum.toLocaleString('ar-EG')}
+                        </span>
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            background: `${book.iconBg}22`,
+                            border: `1px solid ${book.iconBg}44`,
+                            color: book.iconBg,
+                            fontFamily: '"Tajawal", sans-serif',
+                          }}
+                        >
+                          {book.name}
+                        </span>
+                      </div>
+                    </div>
+                    <p
+                      className="text-sm leading-loose text-right"
+                      style={{
+                        fontFamily: '"Amiri", serif',
+                        lineHeight: '2rem',
+                        color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(30,20,10,0.85)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 4,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      } as any}
+                    >
+                      {hadith.hadithArabic}
+                    </p>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Main page ── */
 export function Hadith() {
+  const isDark = useDarkMode();
   const [selected, setSelected] = useState<Book | null>(null);
+  const [activeTab, setActiveTab] = useState<'books' | 'search'>('books');
+  const [navState, setNavState] = useState<{ page: number; hadithId?: number } | null>(null);
+
+  const tabBg = isDark ? 'rgba(193,154,107,0.12)' : 'rgba(193,154,107,0.1)';
+  const tabActiveBg = isDark ? 'rgba(193,154,107,0.25)' : 'rgba(193,154,107,0.2)';
+  const tabColor = isDark ? '#E8C98A' : '#7A4F1E';
+
+  function handleNavigate(book: Book, page: number, hadithId: number) {
+    setNavState({ page, hadithId });
+    setSelected(book);
+  }
+
+  function handleBack() {
+    setSelected(null);
+    setNavState(null);
+  }
 
   return (
     <div className="h-screen flex flex-col max-w-lg mx-auto bg-background" dir="rtl">
@@ -329,7 +500,7 @@ export function Hadith() {
       <div className="px-4 py-4 flex items-center gap-4 bg-card shadow-sm border-b border-border flex-shrink-0 sticky top-0 z-50">
         {selected ? (
           <button
-            onClick={() => setSelected(null)}
+            onClick={handleBack}
             className="p-2 bg-secondary rounded-full hover-elevate"
             data-testid="button-back-to-books"
           >
@@ -360,34 +531,69 @@ export function Hadith() {
           <AnimatePresence mode="wait">
             {!selected ? (
               <motion.div
-                key="books"
+                key="home"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <div className="mb-5 text-center">
-                  <p
-                    className="text-2xl font-black text-primary"
-                    style={{ fontFamily: '"Amiri", serif' }}
+                {/* Tab switcher */}
+                <div
+                  className="flex mb-5 p-1 rounded-2xl gap-1"
+                  style={{ background: tabBg }}
+                >
+                  <button
+                    onClick={() => setActiveTab('books')}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-all"
+                    style={{
+                      fontFamily: '"Tajawal", sans-serif',
+                      background: activeTab === 'books' ? tabActiveBg : 'transparent',
+                      color: tabColor,
+                    }}
+                    data-testid="tab-hadith-books"
                   >
-                    الأحاديث النبوية الشريفة
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    اختر كتاباً للقراءة
-                  </p>
+                    الكتب
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('search')}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-all"
+                    style={{
+                      fontFamily: '"Tajawal", sans-serif',
+                      background: activeTab === 'search' ? tabActiveBg : 'transparent',
+                      color: tabColor,
+                    }}
+                    data-testid="tab-hadith-search"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    بحث
+                  </button>
                 </div>
-                <BookList onSelect={setSelected} />
-                <div className="mt-5 text-center">
-                  <p className="text-xs text-muted-foreground/50" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                    المصدر: hadithapi.com
-                  </p>
-                </div>
-                <div className="mt-6 mb-4 text-center px-2">
-                  <div className="h-px mb-4 opacity-20" style={{ background: 'linear-gradient(to left, transparent, currentColor, transparent)' }} />
-                  <p className="text-sm leading-loose text-muted-foreground" style={{ fontFamily: '"Amiri", serif' }}>
-                    إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى ۝ متفق عليه
-                  </p>
-                </div>
+
+                {activeTab === 'books' ? (
+                  <motion.div key="books-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <div className="mb-5 text-center">
+                      <p
+                        className="text-2xl font-black text-primary"
+                        style={{ fontFamily: '"Amiri", serif' }}
+                      >
+                        الأحاديث النبوية الشريفة
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                        اختر كتاباً للقراءة
+                      </p>
+                    </div>
+                    <BookList onSelect={(b) => { setNavState(null); setSelected(b); }} />
+                    <div className="mt-6 mb-4 text-center px-2">
+                      <div className="h-px mb-4 opacity-20" style={{ background: 'linear-gradient(to left, transparent, currentColor, transparent)' }} />
+                      <p className="text-sm leading-loose text-muted-foreground" style={{ fontFamily: '"Amiri", serif' }}>
+                        إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى ۝ متفق عليه
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div key="search-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <HadithSearch isDark={isDark} onNavigate={handleNavigate} />
+                  </motion.div>
+                )}
               </motion.div>
             ) : (
               <motion.div
@@ -396,7 +602,12 @@ export function Hadith() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
               >
-                <HadithReader book={selected} onBack={() => setSelected(null)} />
+                <HadithReader
+                  book={selected}
+                  onBack={handleBack}
+                  initialPage={navState?.page ?? 1}
+                  highlightId={navState?.hadithId}
+                />
               </motion.div>
             )}
           </AnimatePresence>

@@ -49,6 +49,18 @@ router.get("/hadith/hadiths", async (req, res) => {
   }
 });
 
+router.get("/hadith/search", async (req, res) => {
+  const { query, page = "1", paginate = "15" } = req.query as Record<string, string>;
+  if (!query?.trim()) { res.status(400).json({ error: "query is required" }); return; }
+  try {
+    const url = `${BASE}/hadiths?apiKey=${encodeURIComponent(API_KEY)}&search=${encodeURIComponent(query.trim())}&paginate=${paginate}&page=${page}`;
+    const data = await httpsGet(url);
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: "Failed to search hadiths" });
+  }
+});
+
 router.get("/hadith/chapters/:book", async (req, res) => {
   const { book } = req.params;
   try {
