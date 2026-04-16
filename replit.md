@@ -7,7 +7,7 @@ A cross-platform Islamic companion app built with React, Vite, and Express, supp
   - **بحث في القرآن** — Full-text search across all 6236 ayahs using local JSON (quran-search.json, quran-simple edition), Arabic normalization for user input, tap result to navigate
   - **إعراب (معاني الكلمات)** — Word-by-word meanings from local JSON (iraab/{surah}.json, quran.com data), fallback to API if not yet downloaded
   - **سبب النزول (تفسير ميسر)** — Tafsir Muyassar per ayah from local JSON (tafsir-muyassar.json, alquran.cloud data), fallback to API
-- **الأحاديث الشريفة** — Paginated reader across 6 hadith books with cross-book search (hadith.ts search endpoint proxies hadithapi.com), search results navigate to exact page+highlight
+- **الأحاديث الشريفة** — Paginated reader across 6 hadith books with cross-book search using a public Arabic hadith dataset with in-memory caching, Arabic normalization, and search results that navigate to exact page+highlight
 - **التاريخ الإسلامي** — 4975 Islamic history events across 5 eras (Seerah → Ottoman), lazy-loaded per era with pagination
 - **الاختبارات الإسلامية** — 5820 MCQ questions across 6 Islamic science categories, 3 levels each
 - **سنن النبي ﷺ** — Prophetic Sunnah browser across 5 categories with hadith sources
@@ -85,6 +85,7 @@ The primary workflow is **"artifacts/api-server: API Server"** — this is what 
 - Startup scripts now invoke Vite and tsx through pnpm instead of hard-coded `node_modules/.bin` paths, which is more reliable in Replit's workspace layout.
 - Vite dev proxies now read `API_SERVER_PORT`, allowing standalone artifact workflows to use separate backend ports safely.
 - Database initialization now completes before the global counter loads, preventing first-run errors when tables do not exist yet.
+- Hadith reading/search no longer depends on the invalid hadithapi.com key; it uses the public Arabic hadith dataset for the six books and keeps the old local Sunnah search as a final fallback.
 
 ## Firebase
 
