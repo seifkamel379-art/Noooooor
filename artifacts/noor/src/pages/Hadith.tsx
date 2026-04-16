@@ -326,14 +326,22 @@ function HadithSearch({ isDark, onNavigate }: {
     return () => clearTimeout(t);
   }, [query]);
 
-  const { data, isLoading, isFetching } = useQuery<HadithResponse>({
+  const { data, isLoading, isFetching, isError, error } = useQuery<HadithResponse>({
     queryKey: ['/api/hadith/search', debouncedQuery],
     queryFn: async () => {
       const res = await fetch(`/api/hadith/search?query=${encodeURIComponent(debouncedQuery)}&paginate=20`);
-      if (!res.ok) throw new Error('search failed');
-      return res.json();
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || 'search failed');
+      }
+      const payload = await res.json();
+      if (!payload?.hadiths?.data) {
+        throw new Error('invalid search response');
+      }
+      return payload;
     },
     enabled: debouncedQuery.length >= 2,
+    retry: 1,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -388,7 +396,22 @@ function HadithSearch({ isDark, onNavigate }: {
       )}
 
       {/* Results */}
-      {!searching && debouncedQuery.length >= 2 && (
+      {isError && debouncedQuery.length >= 2 && (
+        <div
+          className="text-center py-10 rounded-2xl"
+          style={{ background: itemBg, border: `1px solid ${itemBorder}`, color: isDark ? 'rgba(255,255,255,0.72)' : 'rgba(30,20,10,0.72)' }}
+          data-testid="status-hadith-search-error"
+        >
+          <p className="text-sm font-bold mb-1" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            حدث خطأ أثناء البحث
+          </p>
+          <p className="text-xs opacity-70" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+            {(error as Error)?.message || 'حاول مرة أخرى بعد لحظات'}
+          </p>
+        </div>
+      )}
+
+      {!searching && !isError && debouncedQuery.length >= 2 && (
         <>
           {total > 0 && (
             <p className="text-xs text-right text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
@@ -396,7 +419,7 @@ function HadithSearch({ isDark, onNavigate }: {
             </p>
           )}
           {results.length === 0 && (
-            <div className="text-center py-12" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' }}>
+            <div className="text-center py-12" style={{ color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' }} data-testid="status-hadith-search-empty">
               <p className="text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>لا توجد نتائج</p>
             </div>
           )}

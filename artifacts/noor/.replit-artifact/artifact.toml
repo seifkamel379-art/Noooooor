@@ -15,7 +15,7 @@ paths = [ "/" ]
 localPort = 8080
 
 [services.development]
-run = "pnpm --filter @workspace/noor run dev"
+run = "node ../../scripts/proxy.js"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/noor", "run", "build" ]
@@ -28,4 +28,5 @@ to = "/index.html"
 
 [services.env]
 PORT = "8080"
+TARGET_PORT = "5000"
 BASE_PATH = "/"

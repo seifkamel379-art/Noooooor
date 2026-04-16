@@ -86,6 +86,7 @@ The primary workflow is **"artifacts/api-server: API Server"** — this is what 
 - Vite dev proxies now read `API_SERVER_PORT`, allowing standalone artifact workflows to use separate backend ports safely.
 - Database initialization now completes before the global counter loads, preventing first-run errors when tables do not exist yet.
 - Hadith reading/search no longer depends on the invalid hadithapi.com key; it uses the public Arabic hadith dataset for the six books and keeps the old local Sunnah search as a final fallback.
+- The duplicated root and artifact Hadith pages are kept in sync so the preview cannot show an older version without the working search tab.
 
 ## Firebase
 
