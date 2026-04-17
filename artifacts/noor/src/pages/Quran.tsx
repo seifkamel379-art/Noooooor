@@ -5,7 +5,7 @@ import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { auth } from '@/lib/firebase';
 import { getCacheValue, getCurrentUid, queueRTDBUpdate, getSettingCache, queueSettingSync } from '@/lib/rtdb';
 import { SURAH_NAMES } from '@/lib/constants';
-import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown, Download, Languages, Loader2 } from 'lucide-react';
+import { Search, Headphones, FileText, Bookmark, X, ChevronRight, AArrowUp, AArrowDown, Download, Loader2 } from 'lucide-react';
 import { padZero, cn } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,184 +21,10 @@ function normalizeArabic(text: string): string {
     .replace(/ى/g, 'ي');
 }
 
-// ── Arabic Grammar Analyzer ──────────────────────────────────────────────────
-// Uses text_uthmani (fully-voweled Quranic script) to derive إعراب descriptions.
-// Diacritics in Uthmani text are linguistically authoritative → case detection is reliable.
-
-const _DAMMA = '\u064F';       // ُ
-const _KASRA = '\u0650';       // ِ
-const _FATHA = '\u064E';       // َ
-const _TW_DAMM = '\u064C';     // ٌ
-const _TW_KASR = '\u064D';     // ٍ
-const _TW_FATH = '\u064B';     // ً
-const _SUKUN = '\u0652';       // ْ
-const _SHADDA = '\u0651';      // ّ
-const _TATWEEL = '\u0640';     // ـ
-
-// Normalized (no diacritics) particle dictionary → Arabic grammar label
-const _PARTICLES: Record<string, string> = {
-  // حروف الجر
-  'من': 'حرف جر', 'الى': 'حرف جر', 'علي': 'حرف جر', 'علا': 'حرف جر',
-  'على': 'حرف جر', 'عن': 'حرف جر', 'في': 'حرف جر', 'حتى': 'حرف جر',
-  'منذ': 'حرف جر', 'مذ': 'حرف جر', 'رب': 'حرف جر', 'مع': 'حرف جر',
-  'خلا': 'حرف جر', 'عدا': 'حرف جر', 'حاشا': 'حرف جر',
-  // حروف العطف
-  'ثم': 'حرف عطف', 'او': 'حرف عطف', 'بل': 'حرف عطف', 'ام': 'حرف عطف',
-  'لكن': 'حرف عطف', 'لا': 'حرف نفي',
-  // حروف النفي والجزم
-  'لن': 'حرف نفي ونصب', 'لم': 'حرف جزم', 'لما': 'حرف جزم',
-  'لات': 'حرف نفي',
-  // حروف الاستفهام
-  'هل': 'حرف استفهام',
-  // حروف التوكيد والنسخ
-  'ان': 'حرف توكيد ونصب', 'كان': 'فعل ناسخ', 'كانت': 'فعل ناسخ',
-  'كانوا': 'فعل ناسخ', 'ليت': 'حرف تمني', 'لعل': 'حرف ترجي',
-  'كا': 'حرف تشبيه',
-  // حروف المصدرية
-  'سوف': 'حرف استقبال',
-  // حروف الشرط
-  'لو': 'حرف شرط', 'لولا': 'حرف امتناع', 'اذا': 'ظرف شرط',
-  'اذ': 'ظرف زمان', 'متى': 'ظرف شرط', 'اين': 'ظرف شرط',
-  // أدوات الاستثناء
-  'الا': 'أداة استثناء', 'غير': 'أداة استثناء',
-  // أسماء إشارة
-  'هذا': 'اسم إشارة', 'هذه': 'اسم إشارة', 'هذان': 'اسم إشارة',
-  'هاتان': 'اسم إشارة', 'هؤلاء': 'اسم إشارة',
-  'ذلك': 'اسم إشارة', 'تلك': 'اسم إشارة', 'اولئك': 'اسم إشارة',
-  'ذانك': 'اسم إشارة', 'ذين': 'اسم إشارة',
-  'هنا': 'اسم إشارة', 'هناك': 'اسم إشارة', 'هنالك': 'اسم إشارة',
-  // أسماء موصولة
-  'الذي': 'اسم موصول', 'التي': 'اسم موصول', 'الذين': 'اسم موصول',
-  'اللاتي': 'اسم موصول', 'اللائي': 'اسم موصول', 'اللواتي': 'اسم موصول',
-  'الذيان': 'اسم موصول', 'اللتان': 'اسم موصول',
-  // حروف الإيجاب
-  'نعم': 'حرف إيجاب', 'بلى': 'حرف إيجاب', 'إي': 'حرف إيجاب',
-  // أخرى
-  'قد': 'حرف توقع', 'إذن': 'حرف جواب وجزاء',
-  'ألا': 'حرف تنبيه', 'إلا': 'أداة استثناء',
-  'كل': 'اسم مضاف', 'بعض': 'اسم',
-  'لله': 'جار ومجرور', 'بالله': 'جار ومجرور', 'والله': 'قسم',
-};
-
-// Normalize: strip diacritics + normalize alef variants for particle lookup
-function _stripDiac(word: string): string {
-  return word
-    .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ة$/g, 'ه')
-    .replace(/ى/g, 'ا')
-    .trim();
-}
-
-// Check if word appears to be a muḍāriʿ (present/imperfect) verb
-function _isMudari(word: string): boolean {
-  if (word.length < 5) return false;
-  // Must start with يَ يُ يِ تَ تُ نَ نُ أَ أُ
-  const first = word[0];
-  const second = word[1];
-  const mudariLetters = ['ي', 'ت', 'ن', 'أ'];
-  const mudariVowels = [_DAMMA, _FATHA, _KASRA];
-  return mudariLetters.includes(first) && mudariVowels.includes(second);
-}
-
-// Check if word is likely a past-tense verb (فعل ماضٍ)
-// Heuristic: 3-5 letters, ends in َ or ْ (sukun), doesn't have the definite article ال
-function _isMadi(word: string, stripped: string): boolean {
-  if (stripped.startsWith('ال')) return false;
-  if (stripped.length < 3 || stripped.length > 8) return false;
-  // Past tense verbs typically end in fatha (3rd person singular masculine)
-  // or sukun (3rd person singular feminine with ت)
-  const last = word[word.length - 1];
-  const secondLast = word[word.length - 2];
-  // Verb ending: ...َ or past-tense conjugation
-  if (last === _FATHA && !stripped.endsWith('ا') && !stripped.endsWith('ى')) return true;
-  // Common past-tense suffix ت (تاء التأنيث الساكنة)
-  if (secondLast === 'ت' && last === _SUKUN) return true;
-  // ُوا ending (third person plural masculine past)
-  if (stripped.endsWith('وا')) return true;
-  // نَ ending (third person plural feminine past)
-  if (secondLast === 'نَ'[0] && last === _FATHA) return true;
-  return false;
-}
-
-// Determine the grammatical case from the last meaningful vowel mark
-function _getCase(word: string): string | null {
-  for (let i = word.length - 1; i >= 0; i--) {
-    const c = word[i];
-    if (c === _DAMMA || c === _TW_DAMM) return 'مرفوع';
-    if (c === _KASRA || c === _TW_KASR) return 'مجرور';
-    if (c === _FATHA || c === _TW_FATH) return 'منصوب';
-    if (c === _SUKUN) return 'مجزوم';
-    if (c !== _SHADDA && c !== _TATWEEL && c.charCodeAt(0) >= 0x0600 && c.charCodeAt(0) <= 0x06FF) {
-      break; // Reached a letter without a vowel → مبني
-    }
-  }
-  return null;
-}
-
-// Main entry: derives Arabic إعراب label from a fully-voweled Uthmani word
-function analyzeArabicGrammar(textUthmani: string): string {
-  if (!textUthmani) return '';
-  const stripped = _stripDiac(textUthmani);
-
-  // 1. Single-letter particles attached as prefixes (ب، ل، ك، و، ف)
-  if (stripped.length === 1) {
-    const singleMap: Record<string, string> = {
-      'و': 'حرف عطف', 'ف': 'حرف عطف', 'ب': 'حرف جر',
-      'ل': 'حرف جر', 'ك': 'حرف تشبيه',
-    };
-    if (singleMap[stripped]) return singleMap[stripped];
-  }
-
-  // 2. Interrogative ا (hamza istifham)
-  if (textUthmani.startsWith('أَ') && stripped.length === 1) return 'حرف استفهام';
-
-  // 3. Particle dictionary lookup
-  if (_PARTICLES[stripped]) return _PARTICLES[stripped];
-
-  // 4. Common pronoun patterns (ضمائر)
-  const pronouns: Record<string, string> = {
-    'هو': 'ضمير منفصل', 'هي': 'ضمير منفصل', 'هم': 'ضمير منفصل',
-    'هن': 'ضمير منفصل', 'انت': 'ضمير منفصل', 'انتم': 'ضمير منفصل',
-    'انتن': 'ضمير منفصل', 'انا': 'ضمير منفصل', 'نحن': 'ضمير منفصل',
-    'انتما': 'ضمير منفصل', 'هما': 'ضمير منفصل',
-  };
-  if (pronouns[stripped]) return pronouns[stripped];
-
-  // 5. Verb detection: muḍāriʿ (present/imperfect)
-  if (_isMudari(textUthmani)) {
-    const grammaticalCase = _getCase(textUthmani);
-    if (grammaticalCase === 'مجزوم') return 'فعل مضارع مجزوم';
-    if (grammaticalCase === 'منصوب') return 'فعل مضارع منصوب';
-    return 'فعل مضارع مرفوع';
-  }
-
-  // 6. Verb detection: māḍī (past tense)
-  if (_isMadi(textUthmani, stripped)) {
-    return 'فعل ماضٍ';
-  }
-
-  // 7. Default → اسم with case from final diacritic
-  const grammaticalCase = _getCase(textUthmani);
-  if (grammaticalCase === 'مجزوم') {
-    // Sukun on a noun is unusual → it's likely مبني على السكون
-    return 'اسم مبني';
-  }
-  if (grammaticalCase) return `اسم ${grammaticalCase}`;
-
-  // Alif maqsura / alif mamduda endings → مبني
-  if (stripped.endsWith('ى') || stripped.endsWith('ا') || stripped.endsWith('ي')) {
-    return 'اسم مبني';
-  }
-
-  return 'اسم';
-}
-
 // ── Module-level caches for local JSON data ──
 type QuranEntry = { s: number; a: number; t: string; n: string };
 let _quranCache: QuranEntry[] | null = null;
 let _tafsirCache: Record<string, string> | null = null;
-const _iraabCache: Record<number, Record<number, { w: string; m: string; r: string }[]>> = {};
 
 async function getQuranIndex(): Promise<QuranEntry[]> {
   if (_quranCache) return _quranCache;
@@ -247,38 +73,6 @@ async function getTafsirIndex(): Promise<Record<string, string>> {
   }
 }
 
-type IraabWord = {
-  text_uthmani: string;
-  grammar: string;
-  transliteration: string;
-};
-
-async function getIraabAyah(surahNum: number, ayahNum: number): Promise<IraabWord[]> {
-  const toIraabWord = (w: string, r: string): IraabWord => ({
-    text_uthmani: w,
-    grammar: analyzeArabicGrammar(w),
-    transliteration: r,
-  });
-
-  if (_iraabCache[surahNum]?.[ayahNum]) {
-    return _iraabCache[surahNum][ayahNum].map(w => toIraabWord(w.w, w.r));
-  }
-  try {
-    const res = await fetch(`/data/iraab/${surahNum}.json`);
-    if (!res.ok) throw new Error('local not ready');
-    const data: Record<number, { w: string; m: string; r: string }[]> = await res.json();
-    _iraabCache[surahNum] = data;
-    return (data[ayahNum] ?? []).map(w => toIraabWord(w.w, w.r));
-  } catch {
-    const res = await fetch(
-      `https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?words=true&word_fields=text_uthmani,transliteration&fields=text_uthmani`
-    );
-    const json = await res.json();
-    return (json?.verse?.words ?? [])
-      .filter((w: any) => w.char_type_name === 'word')
-      .map((w: any) => toIraabWord(w.text_uthmani ?? w.text ?? '', w.transliteration?.text ?? ''));
-  }
-}
 
 function MoshafSheet({ dark, onClose }: { dark: boolean; onClose: () => void }) {
   const [moshafList, setMoshafList] = useState<MoshafType[]>([]);
@@ -343,7 +137,7 @@ const FONT_MIN = 1.2;
 const FONT_MAX = 2.8;
 const FONT_STEP = 0.15;
 
-type Mode = 'normal' | 'listen' | 'tafsir' | 'iraab';
+type Mode = 'normal' | 'listen' | 'tafsir';
 
 function getWordAudioUrl(surah: number, ayah: number, wordIdx: number): string {
   return `https://audio.qurancdn.com/wbw/${padZero(surah, 3)}_${padZero(ayah, 3)}_${padZero(wordIdx, 3)}.mp3`;
@@ -396,12 +190,6 @@ export function Quran() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchCount, setSearchCount] = useState(0);
 
-  // إعراب (word-by-word meanings)
-  const [iraabData, setIraabData] = useState<IraabWord[] | null>(null);
-  const [iraabLoading, setIraabLoading] = useState(false);
-  const [iraabAyah, setIraabAyah] = useState<number | null>(null);
-
-
   const trackSurahSelection = useCallback((surahNum: number) => {
     const uid = auth.currentUser?.uid ?? getCurrentUid();
     if (!uid) return;
@@ -446,19 +234,6 @@ export function Quran() {
     const timer = setTimeout(() => { if (searchView === 'search') searchQuran(quranSearch); }, 500);
     return () => clearTimeout(timer);
   }, [quranSearch, searchView, searchQuran]);
-
-  // ── إعراب: fetch word-by-word (local JSON + API fallback) ──
-  const fetchIraab = useCallback(async (surahNum: number, ayahNum: number) => {
-    setIraabLoading(true);
-    setIraabData(null);
-    setIraabAyah(ayahNum);
-    try {
-      const words = await getIraabAyah(surahNum, ayahNum);
-      setIraabData(words);
-    } catch { setIraabData([]); }
-    setIraabLoading(false);
-  }, []);
-
 
   const increaseFontSize = () => setFontSize(prev => Math.min(prev + FONT_STEP, FONT_MAX));
   const decreaseFontSize = () => setFontSize(prev => Math.max(prev - FONT_STEP, FONT_MIN));
@@ -532,16 +307,12 @@ export function Quran() {
       setSelectedAyah(prev => prev === ayahNum ? null : ayahNum);
     } else if (mode === 'tafsir') {
       setActiveAyah(ayahNum);
-    } else if (mode === 'iraab') {
-      if (selectedSurah) fetchIraab(selectedSurah, ayahNum);
     }
   };
 
   const handleWordClick = (ayahNum: number, wordIdx: number) => {
     if (mode === 'listen' && selectedSurah) {
       playWord(selectedSurah, ayahNum, wordIdx);
-    } else if (mode === 'iraab' && selectedSurah) {
-      fetchIraab(selectedSurah, ayahNum);
     }
   };
 
@@ -875,7 +646,7 @@ export function Quran() {
               </button>
             )}
             <button
-              onClick={() => { setMode(mode === 'listen' ? 'normal' : 'listen'); setSelectedAyah(null); setIraabData(null); }}
+              onClick={() => { setMode(mode === 'listen' ? 'normal' : 'listen'); setSelectedAyah(null); }}
               className="p-2 rounded-full transition-all"
               title="الاستماع كلمة بكلمة"
               style={{
@@ -886,7 +657,7 @@ export function Quran() {
               <Headphones className="w-4 h-4" style={{ color: mode === 'listen' ? '#0f0c07' : '#C19A6B' }} />
             </button>
             <button
-              onClick={() => { setMode(mode === 'tafsir' ? 'normal' : 'tafsir'); setSelectedAyah(null); setIraabData(null); }}
+              onClick={() => { setMode(mode === 'tafsir' ? 'normal' : 'tafsir'); setSelectedAyah(null); }}
               className="p-2 rounded-full transition-all"
               title="التفسير"
               style={{
@@ -895,17 +666,6 @@ export function Quran() {
               }}
             >
               <FileText className="w-4 h-4" style={{ color: mode === 'tafsir' ? '#0f0c07' : '#C19A6B' }} />
-            </button>
-            <button
-              onClick={() => { setMode(mode === 'iraab' ? 'normal' : 'iraab'); setSelectedAyah(null); setIraabData(null); }}
-              className="p-2 rounded-full transition-all"
-              title="معاني الكلمات وإعرابها"
-              style={{
-                background: mode === 'iraab' ? '#C19A6B' : C.btnBg,
-                border: `1px solid ${C.btnBorder}`,
-              }}
-            >
-              <Languages className="w-4 h-4" style={{ color: mode === 'iraab' ? '#0f0c07' : '#C19A6B' }} />
             </button>
           </div>
         </div>
@@ -920,11 +680,6 @@ export function Quran() {
       {mode === 'tafsir' && (
         <div className="px-4 py-1.5 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
           <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض تفسيرها</p>
-        </div>
-      )}
-      {mode === 'iraab' && (
-        <div className="px-4 py-1.5 text-center flex-shrink-0" style={{ background: C.hinBg, borderBottom: `1px solid ${C.hintBorder}` }}>
-          <p className="text-xs font-bold" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>اضغط على أي آية لعرض معاني كلماتها وإعرابها</p>
         </div>
       )}
       {mode === 'normal' && (
@@ -1024,7 +779,6 @@ export function Quran() {
                 const isBookmarked = bookmark?.surah === selectedSurah && bookmark?.ayah === ayah.numberInSurah;
                 const isSelected = selectedAyah === ayah.numberInSurah;
                 const isActive = activeAyah === ayah.numberInSurah;
-                const isIraabActive = iraabAyah === ayah.numberInSurah && mode === 'iraab';
 
                 // Listen mode: clickable words
                 if (mode === 'listen') {
@@ -1070,14 +824,14 @@ export function Quran() {
                     style={{
                       background: isSelected
                         ? 'rgba(193,154,107,0.18)'
-                        : (isActive || isIraabActive)
+                        : isActive
                         ? 'rgba(193,154,107,0.22)'
                         : isBookmarked
                         ? 'rgba(193,154,107,0.1)'
                         : 'transparent',
                       borderBottom: isSelected
                         ? '2px solid rgba(193,154,107,0.7)'
-                        : (isActive || isIraabActive)
+                        : isActive
                         ? '2px solid #C19A6B'
                         : 'none',
                       paddingInline: '2px',
@@ -1148,92 +902,6 @@ export function Quran() {
         </Dialog.Portal>
       </Dialog.Root>
 
-      {/* ── إعراب bottom sheet ── */}
-      <AnimatePresence>
-        {mode === 'iraab' && (iraabLoading || iraabData !== null) && (
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl shadow-2xl"
-            style={{ background: C.modalBg, border: `1px solid ${C.modalBorder}`, borderBottom: 'none', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}
-            dir="rtl"
-          >
-            <div className="w-12 h-1.5 rounded-full mx-auto mt-4 mb-1 flex-shrink-0" style={{ background: 'rgba(193,154,107,0.4)' }} />
-            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${C.modalBorder}` }}>
-              <button
-                onClick={() => { setIraabData(null); setIraabAyah(null); }}
-                className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(193,154,107,0.12)' }}
-              >
-                <X size={15} style={{ color: '#C19A6B' }} />
-              </button>
-              <div className="flex items-center gap-2">
-                <Languages size={15} style={{ color: '#C19A6B' }} />
-                <span className="font-bold text-sm" style={{ color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}>
-                  إعراب كلمات الآية {iraabAyah}
-                </span>
-              </div>
-              <div className="w-8" />
-            </div>
-            <div className="overflow-y-auto flex-1 px-4 py-3 pb-8">
-              {iraabLoading ? (
-                <div className="flex items-center justify-center py-10 gap-2" style={{ color: '#C19A6B' }}>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span style={{ fontFamily: '"Tajawal", sans-serif', fontSize: '0.9rem' }}>جاري التحميل...</span>
-                </div>
-              ) : iraabData && iraabData.length === 0 ? (
-                <p className="text-center py-8 text-sm" style={{ color: C.subtleText, fontFamily: '"Tajawal", sans-serif' }}>لا توجد بيانات</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {iraabData?.map((word: IraabWord, i: number) => (
-                    <div
-                      key={i}
-                      className="rounded-xl p-3"
-                      style={{ background: C.itemBg, border: `1px solid ${C.itemBorder}` }}
-                      dir="rtl"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                          style={{ background: 'rgba(193,154,107,0.2)', color: '#C19A6B', fontFamily: '"Tajawal", sans-serif' }}
-                        >
-                          {i + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-2xl mb-1" style={{ fontFamily: '"Scheherazade New", "Amiri Quran", serif', color: C.ayahText, lineHeight: '2' }}>
-                            {word.text_uthmani}
-                          </p>
-                          {word.grammar && (
-                            <span
-                              className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mt-0.5"
-                              style={{
-                                background: 'rgba(193,154,107,0.18)',
-                                color: '#C19A6B',
-                                fontFamily: '"Tajawal", sans-serif',
-                                direction: 'rtl',
-                                letterSpacing: '0.01em',
-                              }}
-                            >
-                              {word.grammar}
-                            </span>
-                          )}
-                          {word.transliteration && (
-                            <p className="text-xs mt-1.5" style={{ color: C.subtleText, fontFamily: 'sans-serif', direction: 'ltr', textAlign: 'left' }}>
-                              {word.transliteration}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
