@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileCode, Loader2, Search } from "lucide-react";
+import { Download, FileArchive, FileCode, Loader2, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -101,9 +101,25 @@ export function DesignFiles() {
           <h1 className="text-3xl font-bold text-primary mb-1" data-testid="text-design-files-title">
             ملفات التصميم
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm mb-4">
             دوس على أي ملف لتحميله ({totalCount} ملف إجمالي)
           </p>
+          <Button
+            size="lg"
+            onClick={() => {
+              const a = document.createElement("a");
+              a.href = "/api/design-files/zip";
+              a.download = "noor-design-files.zip";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }}
+            data-testid="button-download-zip"
+            className="gap-2"
+          >
+            <FileArchive className="h-5 w-5" />
+            حمّل كل الملفات في ملف مضغوط (ZIP)
+          </Button>
         </header>
 
         <div className="relative mb-4">

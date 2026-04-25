@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { promises as fs } from "fs";
 import path from "path";
+import JSZip from "jszip";
 
 const router: IRouter = Router();
 
@@ -100,6 +101,52 @@ router.get("/design-files", async (_req, res) => {
 
     files.sort((a, b) => a.path.localeCompare(b.path));
     res.json({ files });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "internal error" });
+  }
+});
+
+router.get("/design-files/zip", async (_req, res) => {
+  try {
+    const zip = new JSZip();
+
+    for (const f of ALLOWED_FILES) {
+      try {
+        const content = await fs.readFile(f);
+        const rel = path.relative(NOOR_DIR, f);
+        zip.file(rel, content);
+      } catch {
+        /* ignore missing */
+      }
+    }
+
+    for (const dir of ALLOWED_DIRS) {
+      const entries = await walkDir(dir, NOOR_DIR);
+      for (const rel of entries) {
+        try {
+          const content = await fs.readFile(path.join(NOOR_DIR, rel));
+          zip.file(rel, content);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    const buffer = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+    });
+
+    const filename = "noor-design-files.zip";
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+    res.setHeader("Content-Length", String(buffer.length));
+    res.setHeader("Cache-Control", "no-store");
+    res.send(buffer);
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "internal error" });
   }
