@@ -79,7 +79,7 @@ task = "workflow.run"
 args = "Start application"
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "FULLSTACK_JS"
 expertMode = true
 
 [postMerge]
