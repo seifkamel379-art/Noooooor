@@ -33,7 +33,6 @@ import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
 import { Sunnah } from "@/pages/Sunnah";
 import { IslamicTV } from "@/pages/IslamicTV";
 import { HifzTest } from "@/pages/HifzTest";
-import { DesignFiles } from "@/pages/DesignFiles";
 
 import { onAuthStateChanged } from "firebase/auth";
 import { get, ref } from "firebase/database";
@@ -153,9 +152,6 @@ function Router() {
       <Route path="/hifz-test">
         <FullScreenShell><HifzTest /></FullScreenShell>
       </Route>
-      <Route path="/design-files">
-        <FullScreenShell><DesignFiles /></FullScreenShell>
-      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -220,15 +216,6 @@ function App() {
     window.addEventListener('app-logout', handleLogout);
     return () => window.removeEventListener('app-logout', handleLogout);
   }, []);
-
-  // Bypass auth/splash for the temporary design files page
-  if (typeof window !== "undefined" && window.location.pathname.endsWith("/design-files")) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <DesignFiles />
-      </QueryClientProvider>
-    );
-  }
 
   return (
     <>
