@@ -5,22 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SURAH_NAMES } from '@/lib/constants';
 import { useAudio } from '@/contexts/AudioContext';
 
-/* ── Still-pending reciters (photos not yet labeled) ── */
-import imgAlafasy      from '@assets/IMG-20260426-WA0031_1777219180350.jpg';  // مشاري العفاسي
-import imgMaher        from '@assets/IMG-20260426-WA0026_1777219180123.jpg';  // ماهر المعيقلي
-import imgShuraim      from '@assets/IMG-20260426-WA0029_1777219180082.jpg';  // الشريم
-import imgDosari       from '@assets/IMG-20260426-WA0027_1777219180166.jpg';  // الدوسري
-import imgTablawi      from '@assets/IMG-20260426-WA0020_1777219180387.jpg';  // الطبلاوي
-import imgMustafa      from '@assets/IMG-20260426-WA0017_1777219180031.jpg';  // مصطفى إسماعيل
-import imgJibreel      from '@assets/IMG-20260426-WA0008_1777221266351.jpg';  // محمد جبريل
-import imgShaatree     from '@assets/IMG-20260426-WA0011_1777221266301.jpg';  // الشاطري
-import imgAkhdar       from '@assets/IMG-20260426-WA0012_1777221265951.jpg';  // الأخضر
-import imgQahtaani     from '@assets/IMG-20260426-WA0009_1777221266405.jpg';  // القحطاني
-import imgQasim        from '@assets/IMG-20260426-WA0015_1777221265861.jpg';  // القاسم
-import imgBudair       from '@assets/IMG-20260426-WA0010_1777221266263.jpg';  // البدير
-import imgSowaid       from '@assets/IMG-20260426-WA0005_1777221266068.jpg';  // أيمن سويد
-import imgFares        from '@assets/IMG-20260426-WA0018_1777221266142.jpg';  // فارس عباد
-/* ── Confirmed labeled photos ── */
+/* ── All confirmed labeled photos ── */
+import imgAlafasy      from '@assets/myshary_elaphasy_1777223604376.jpg';     // مشاري العفاسي ✓
+import imgMaher        from '@assets/maher_elmeqly_1777223604347.jpg';        // ماهر المعيقلي ✓
+import imgShuraim      from '@assets/elshrem_1777223604399.jpg';              // الشريم ✓
+import imgDosari       from '@assets/yaser_eldosry_1777223604537.jpg';        // ياسر الدوسري ✓
+import imgTablawi      from '@assets/eltabalawy_1777223604322.jpg';           // الطبلاوي ✓
+import imgMustafa      from '@assets/mostafa_ismail_1777223604238.jpg';       // مصطفى إسماعيل ✓
+import imgJibreel      from '@assets/gebril_1777223604483.jpg';               // محمد جبريل ✓
+import imgShaatree     from '@assets/elshatry_1777223604202.jpg';             // أبو بكر الشاطري ✓
+import imgAkhdar       from '@assets/green_1777223604137.jpg';                // إبراهيم الأخضر ✓
+import imgQahtaani     from '@assets/khaled_elkahtany_1777223604453.jpg';     // خالد القحطاني ✓
+import imgQasim        from '@assets/elkasm_1777223604295.jpg';               // محسن القاسم ✓
+import imgBudair       from '@assets/salah_elbader_1777223604426.jpg';        // صلاح البدير ✓
+import imgSowaid       from '@assets/sewid_1777223604506.jpg';                // أيمن سويد ✓
+import imgFares        from '@assets/fares_abad_1777223604267.jpg';           // فارس عباد ✓
 import imgSudais       from '@assets/alsodis_1777223390350.jpg';              // السديس ✓
 import imgHusary       from '@assets/elhosary_1777223390375.jpg';             // الحصري ✓
 import imgHudhaify     from '@assets/elhozify_1777223390404.jpg';             // الحذيفي ✓
