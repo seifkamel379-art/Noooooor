@@ -7,6 +7,7 @@ import { SURAH_NAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { auth } from '@/lib/firebase';
 import { getSettingCache, queueRTDBUpdate, getCurrentUid } from '@/lib/rtdb';
+import { useToast } from '@/hooks/use-toast';
 
 type FavoriteReciter = {
   key: string;
@@ -330,6 +331,7 @@ function fmtTime(s: number) {
 export function Reciters() {
   const { data: reciters, isLoading } = useReciters();
   const audio = useAudio();
+  const { toast } = useToast();
 
   const [search, setSearch] = useState('');
   const [phase, setPhase] = useState<Phase>('reciters');
@@ -424,6 +426,10 @@ export function Reciters() {
     } catch {
       window.open(downloadUrl, '_blank', 'noopener,noreferrer');
     }
+    toast({
+      title: 'بدأ التحميل',
+      description: `جاري تحميل ${audio.surahName ? `سورة ${audio.surahName}` : 'السورة'} في المتصفح...`,
+    });
   };
 
   // ── PHASE: Reciters ──────────────────────────────────────────────────────
