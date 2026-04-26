@@ -23,7 +23,7 @@ import imgFares        from '@assets/fares_abad_1777223604267.jpg';           //
 import imgSudais       from '@assets/alsodis_1777223390350.jpg';              // السديس ✓
 import imgHusary       from '@assets/elhosary_1777223390375.jpg';             // الحصري ✓
 import imgHudhaify     from '@assets/elhozify_1777223390404.jpg';             // الحذيفي ✓
-import imgBasit        from '@assets/Abd_elbaset_Abd_elssmad_1777223390326.jpg'; // عبد الباسط ✓
+import imgBasit        from '@assets/Abd_elbaset_Abd_ALsamad_1777224102477.jpg'; // عبد الباسط ✓
 import imgMinshawi     from '@assets/almanshawy_1777223390219.jpg';           // المنشاوي ✓
 import imgBanna        from '@assets/elbana_1777223390242.jpg';               // البنا ✓
 import imgGhamdi       from '@assets/alghamdy_1777223390187.jpg';             // الغامدي ✓
