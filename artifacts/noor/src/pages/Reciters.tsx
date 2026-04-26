@@ -398,20 +398,31 @@ export function Reciters() {
     ? `${audio.serverUrl}${audio.surahNum.toString().padStart(3, '0')}.mp3`
     : null;
 
+  const mp3Filename = audio.surahName && audio.reciterName
+    ? `${audio.surahName} - ${audio.reciterName}.mp3`
+    : 'surah.mp3';
+
   const openDownloadInBrowser = () => {
     if (!directMp3) return;
-    // Open the direct mp3 URL in the system browser (Chrome) so it handles the
-    // download natively. On Capacitor (Android) `_system` opens the external
-    // browser; on the web it falls back to a new tab where Chrome streams /
-    // downloads the file.
+    // Build an ABSOLUTE URL to our proxy so it works when opened in Chrome /
+    // the external browser. The proxy sets `Content-Disposition: attachment`,
+    // which makes Chrome start the download automatically.
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : '';
+    const downloadUrl = `${origin}/api/download?url=${encodeURIComponent(directMp3)}&filename=${encodeURIComponent(mp3Filename)}`;
+    // `_system` makes Capacitor (Android app) open Chrome / the system
+    // browser; on the web it falls back to a new tab where Chrome handles the
+    // download. The proxy's attachment header makes the download start
+    // automatically once the page loads.
     try {
-      const win = window.open(directMp3, '_system');
+      const win = window.open(downloadUrl, '_system');
       if (!win) {
-        // Pop-up blocked or `_system` unsupported — fall back to `_blank`.
-        window.open(directMp3, '_blank', 'noopener,noreferrer');
+        window.open(downloadUrl, '_blank', 'noopener,noreferrer');
       }
     } catch {
-      window.open(directMp3, '_blank', 'noopener,noreferrer');
+      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
