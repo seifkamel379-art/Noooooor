@@ -406,29 +406,64 @@ export function Reciters() {
 
   const openDownloadInBrowser = () => {
     if (!directMp3) return;
-    // Build an ABSOLUTE URL to our proxy so it works when opened in Chrome /
-    // the external browser. The proxy sets `Content-Disposition: attachment`,
-    // which makes Chrome start the download automatically.
     const origin =
       typeof window !== 'undefined' && window.location?.origin
         ? window.location.origin
         : '';
     const downloadUrl = `${origin}/api/download?url=${encodeURIComponent(directMp3)}&filename=${encodeURIComponent(mp3Filename)}`;
-    // `_system` makes Capacitor (Android app) open Chrome / the system
-    // browser; on the web it falls back to a new tab where Chrome handles the
-    // download. The proxy's attachment header makes the download start
-    // automatically once the page loads.
+
+    // Strategy: try multiple methods so it works in all environments —
+    // regular browsers, Capacitor (`_system`), and WebView wrappers like
+    // App Creator 24 (which intercepts navigations via DownloadListener).
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    const isAndroidWebView = /\bwv\b|; wv\)|Version\/[\d.]+ Chrome\/[\d.]+ Mobile/.test(ua) || /AppCreator/i.test(ua);
+
+    let triggered = false;
+
+    // 1) Anchor with download attribute — works in most modern browsers and
+    //    in WebViews configured with a DownloadListener.
     try {
-      const win = window.open(downloadUrl, '_system');
-      if (!win) {
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = mp3Filename;
+      a.rel = 'noopener noreferrer';
+      a.target = '_blank';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      triggered = true;
+    } catch {
+      /* fall through */
+    }
+
+    // 2) For Android WebView wrappers, also navigate top-level so the
+    //    DownloadListener fires reliably when the response carries
+    //    Content-Disposition: attachment.
+    if (isAndroidWebView) {
+      try {
+        window.location.href = downloadUrl;
+        triggered = true;
+      } catch {
+        /* fall through */
+      }
+    }
+
+    // 3) Last-resort fallbacks for Capacitor / regular browsers.
+    if (!triggered) {
+      try {
+        const win = window.open(downloadUrl, '_system');
+        if (!win) {
+          window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+        }
+      } catch {
         window.open(downloadUrl, '_blank', 'noopener,noreferrer');
       }
-    } catch {
-      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
     }
+
     toast({
       title: 'بدأ التحميل',
-      description: `جاري تحميل ${audio.surahName ? `سورة ${audio.surahName}` : 'السورة'} في المتصفح...`,
+      description: `جاري تحميل ${audio.surahName ? `سورة ${audio.surahName}` : 'السورة'}...`,
     });
   };
 
