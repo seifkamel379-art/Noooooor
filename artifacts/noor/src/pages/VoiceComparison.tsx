@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Check, Play, Pause, RotateCcw, Loader2, Search, BookOpen, X } from 'lucide-react';
+import { ArrowLeft, Check, Play, Pause, RotateCcw, Search, BookOpen, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SURAH_NAMES } from '@/lib/constants';
 import { useAudio } from '@/contexts/AudioContext';
@@ -421,20 +421,20 @@ function MiniStepper({ value, min, max, onChange, label }: {
 /* ───────────── Comparison Card ───────────── */
 function ComparisonCard({
   reciter, surahNum, fromAyah, toAyah,
-  isActive, isLoading, currentAyah, progress,
+  isActive, isPaused, currentAyah, progress,
   onPlay, onPause,
   isCompact,
 }: {
   reciter: ReciterFull;
   surahNum: number; fromAyah: number; toAyah: number;
-  isActive: boolean; isLoading: boolean;
+  isActive: boolean; isPaused: boolean;
   currentAyah: number | null; progress: number;
   onPlay: () => void; onPause: () => void;
   isCompact: boolean;
 }) {
   const totalAyahs = toAyah - fromAyah + 1;
   const completedInRange = currentAyah ? currentAyah - fromAyah : 0;
-  const isPlaying = isActive && !isLoading;
+  const isPlaying = isActive && !isPaused;
 
   return (
     <motion.div
@@ -615,9 +615,7 @@ function ComparisonCard({
             boxShadow: isActive ? `0 8px 24px ${reciter.accent}77` : '0 6px 18px rgba(193,154,107,0.45)',
           }}
         >
-          {isLoading && isActive ? (
-            <Loader2 className="w-5 h-5 text-white animate-spin" />
-          ) : isPlaying ? (
+          {isPlaying ? (
             <Pause className="w-5 h-5 text-white fill-white" />
           ) : (
             <Play className="w-5 h-5 text-white fill-white translate-x-0.5" />
@@ -644,6 +642,7 @@ export function VoiceComparison() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [currentAyah, setCurrentAyah] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const stateRef = useRef({ activeIdx: null as number | null, currentAyah: null as number | null });
@@ -724,6 +723,7 @@ export function VoiceComparison() {
     setCurrentAyah(ayahNum);
     setProgress(0);
     setIsLoading(true);
+    setIsPaused(false);
 
     el.src = ayahUrl(reciter.folder, surahNum, ayahNum);
     el.load();
@@ -754,6 +754,7 @@ export function VoiceComparison() {
           setCurrentAyah(null);
           setProgress(0);
           setIsLoading(false);
+          setIsPaused(false);
         }
       }
     }
@@ -761,16 +762,17 @@ export function VoiceComparison() {
 
   const handlePlayCard = useCallback((cardIdx: number) => {
     const el = audioRef.current;
-    if (activeIdx === cardIdx && el && el.src && !el.ended) {
+    if (activeIdx === cardIdx && isPaused && el && el.src && !el.ended) {
       el.play().catch(() => {});
+      setIsPaused(false);
       return;
     }
     playAyah(cardIdx, fromAyah);
-  }, [activeIdx, fromAyah, playAyah]);
+  }, [activeIdx, isPaused, fromAyah, playAyah]);
 
   const handlePauseCard = useCallback(() => {
     const el = audioRef.current;
-    if (el) el.pause();
+    if (el) { el.pause(); setIsPaused(true); }
   }, []);
 
   useEffect(() => {
@@ -794,6 +796,7 @@ export function VoiceComparison() {
     setCurrentAyah(null);
     setProgress(0);
     setIsLoading(false);
+    setIsPaused(false);
   };
 
   /* ──────── Phase 1: Choose reciters ──────── */
@@ -1195,7 +1198,7 @@ export function VoiceComparison() {
               fromAyah={fromAyah}
               toAyah={toAyah}
               isActive={activeIdx === i}
-              isLoading={activeIdx === i && isLoading}
+              isPaused={activeIdx === i ? isPaused : false}
               currentAyah={activeIdx === i ? currentAyah : null}
               progress={activeIdx === i ? progress : 0}
               onPlay={() => handlePlayCard(i)}
