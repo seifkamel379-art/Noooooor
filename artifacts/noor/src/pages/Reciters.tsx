@@ -1,10 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useReciters } from '@/hooks/use-api';
-import { ArrowLeft, Search, ChevronRight, Download } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, Download, Heart, Star } from 'lucide-react';
 import { Link } from 'wouter';
 import { useAudio } from '@/contexts/AudioContext';
 import { SURAH_NAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { auth } from '@/lib/firebase';
+import { getSettingCache, queueRTDBUpdate, getCurrentUid } from '@/lib/rtdb';
+
+type FavoriteReciter = {
+  key: string;
+  reciterId: string;
+  name: string;
+  server: string;
+  moshafName: string;
+  country?: string;
+};
+
+type FavoritesMap = Record<string, FavoriteReciter>;
+
+function favKey(reciterId: string | number, moshafIdx: number): string {
+  return `${reciterId}-${moshafIdx}`;
+}
+
+function loadFavorites(): FavoritesMap {
+  const raw = getSettingCache<FavoritesMap | null>('favorite_reciters', null);
+  return raw ?? {};
+}
+
+function saveFavorites(next: FavoritesMap) {
+  const uid = auth.currentUser?.uid ?? getCurrentUid();
+  if (!uid) return;
+  queueRTDBUpdate(uid, { 'settings/favorite_reciters': next });
+}
 
 type Phase = 'reciters' | 'surahs' | 'player';
 
@@ -308,6 +336,32 @@ export function Reciters() {
   const [selectedReciter, setSelectedReciter] = useState<{
     id: string; name: string; server: string; moshafName: string; country?: string;
   } | null>(null);
+  const [favorites, setFavorites] = useState<FavoritesMap>(() => loadFavorites());
+
+  const isFav = (rid: string | number, mi: number) => !!favorites[favKey(rid, mi)];
+
+  const toggleFav = (r: any, moshaf: any, mi: number) => {
+    const k = favKey(r.id, mi);
+    setFavorites(prev => {
+      const next = { ...prev };
+      if (next[k]) {
+        delete next[k];
+      } else {
+        next[k] = {
+          key: k,
+          reciterId: String(r.id),
+          name: r.name,
+          server: moshaf.server,
+          moshafName: moshaf.name,
+          country: r.country,
+        };
+      }
+      saveFavorites(next);
+      return next;
+    });
+  };
+
+  const favoritesList = Object.values(favorites);
 
   // On mount: if audio is already playing, jump straight to player
   useEffect(() => {
@@ -343,12 +397,23 @@ export function Reciters() {
   const directMp3 = audio.serverUrl && audio.surahNum
     ? `${audio.serverUrl}${audio.surahNum.toString().padStart(3, '0')}.mp3`
     : null;
-  const mp3Filename = audio.surahName && audio.reciterName
-    ? `${audio.surahName} - ${audio.reciterName}.mp3`
-    : 'surah.mp3';
-  const mp3Url = directMp3
-    ? `/api/download?url=${encodeURIComponent(directMp3)}&filename=${encodeURIComponent(mp3Filename)}`
-    : null;
+
+  const openDownloadInBrowser = () => {
+    if (!directMp3) return;
+    // Open the direct mp3 URL in the system browser (Chrome) so it handles the
+    // download natively. On Capacitor (Android) `_system` opens the external
+    // browser; on the web it falls back to a new tab where Chrome streams /
+    // downloads the file.
+    try {
+      const win = window.open(directMp3, '_system');
+      if (!win) {
+        // Pop-up blocked or `_system` unsupported — fall back to `_blank`.
+        window.open(directMp3, '_blank', 'noopener,noreferrer');
+      }
+    } catch {
+      window.open(directMp3, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   // ── PHASE: Reciters ──────────────────────────────────────────────────────
   if (phase === 'reciters') {
@@ -388,24 +453,112 @@ export function Reciters() {
             </div>
           ) : (
             <div className="space-y-2 pb-6">
+              {/* ── القراء المفضلين ──────────────────────────────── */}
+              {favoritesList.length > 0 && search.trim() === '' && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <Star className="w-4 h-4 fill-primary text-primary" />
+                    <h2 className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                      القراء المفضلين
+                    </h2>
+                    <span className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                      ({favoritesList.length})
+                    </span>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {favoritesList.map(fav => (
+                      <div
+                        key={`fav-${fav.key}`}
+                        className="w-full bg-primary/5 p-4 rounded-2xl border border-primary/20 shadow-sm flex items-center justify-between"
+                        data-testid={`fav-row-${fav.key}`}
+                      >
+                        <button
+                          onClick={() => {
+                            setSelectedReciter({
+                              id: fav.reciterId,
+                              name: fav.name,
+                              server: fav.server,
+                              moshafName: fav.moshafName,
+                              country: fav.country,
+                            });
+                            setPhase('surahs');
+                          }}
+                          className="flex-1 flex items-center gap-3 text-right"
+                        >
+                          <div>
+                            <p className="font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>{fav.name}</p>
+                            <p className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                              {fav.moshafName}
+                            </p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFavorites(prev => {
+                              const next = { ...prev };
+                              delete next[fav.key];
+                              saveFavorites(next);
+                              return next;
+                            });
+                          }}
+                          className="p-2 rounded-full hover:bg-primary/10 transition-colors"
+                          data-testid={`button-unfav-${fav.key}`}
+                          title="إزالة من المفضلة"
+                        >
+                          <Heart className="w-5 h-5 fill-primary text-primary" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <h2 className="font-bold text-sm text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
+                      كل القراء
+                    </h2>
+                  </div>
+                </div>
+              )}
+
               {filtered?.map((r: any) =>
                 (r.moshaf ?? []).filter((m: any) => !!m.server).map((moshaf: any, mi: number) => {
+                  const fav = isFav(r.id, mi);
                   return (
-                    <button
+                    <div
                       key={`${r.id}-${mi}`}
-                      onClick={() => selectReciter(r, moshaf)}
                       className="w-full bg-card hover:bg-secondary/50 p-4 rounded-2xl border border-border shadow-sm flex items-center justify-between transition-colors"
                     >
-                      <div className="flex items-center gap-3 text-right">
+                      <button
+                        onClick={() => selectReciter(r, moshaf)}
+                        className="flex-1 flex items-center gap-3 text-right"
+                        data-testid={`button-reciter-${r.id}-${mi}`}
+                      >
                         <div>
                           <p className="font-bold" style={{ fontFamily: '"Tajawal", sans-serif' }}>{r.name}</p>
                           <p className="text-xs text-muted-foreground" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                             {moshaf.name}
                           </p>
                         </div>
+                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFav(r, moshaf, mi);
+                          }}
+                          className="p-2 rounded-full hover:bg-primary/10 transition-colors"
+                          data-testid={`button-fav-${r.id}-${mi}`}
+                          title={fav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
+                        >
+                          <Heart
+                            className={cn(
+                              'w-5 h-5 transition-all',
+                              fav ? 'fill-primary text-primary' : 'text-muted-foreground'
+                            )}
+                          />
+                        </button>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground rotate-180" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground rotate-180" />
-                    </button>
+                    </div>
                   );
                 })
               )}
@@ -483,17 +636,16 @@ export function Reciters() {
           <ArrowLeft className="w-5 h-5" style={{ color: '#C19A6B' }} />
         </button>
         <p className="text-sm font-bold" style={{ color: 'rgba(193,154,107,0.7)', fontFamily: '"Tajawal", sans-serif' }}>قيد التشغيل</p>
-        {mp3Url ? (
-          <a
-            href={mp3Url}
-            download
-            target="_self"
+        {directMp3 ? (
+          <button
+            onClick={openDownloadInBrowser}
             className="p-2 rounded-full transition-all flex items-center justify-center"
             style={{ background: 'rgba(193,154,107,0.15)', border: '1px solid rgba(193,154,107,0.25)' }}
             title="تحميل السورة"
+            data-testid="button-download-surah"
           >
             <Download className="w-5 h-5" style={{ color: '#C19A6B' }} />
-          </a>
+          </button>
         ) : (
           <div
             className="p-2 rounded-full opacity-30"
