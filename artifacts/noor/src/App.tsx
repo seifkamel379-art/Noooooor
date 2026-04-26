@@ -32,6 +32,7 @@ import { ProphetStories } from "@/pages/ProphetStories";
 import { IslamicQuizzes } from "@/pages/IslamicQuizzes";
 import { Sunnah } from "@/pages/Sunnah";
 import { IslamicTV } from "@/pages/IslamicTV";
+import { VoiceComparison } from "@/pages/VoiceComparison";
 import { HifzTest } from "@/pages/HifzTest";
 
 import { onAuthStateChanged } from "firebase/auth";
@@ -148,6 +149,9 @@ function Router() {
       </Route>
       <Route path="/tv">
         <FullScreenShell><IslamicTV /></FullScreenShell>
+      </Route>
+      <Route path="/voice-comparison">
+        <FullScreenShell><VoiceComparison /></FullScreenShell>
       </Route>
       <Route path="/hifz-test">
         <FullScreenShell><HifzTest /></FullScreenShell>
