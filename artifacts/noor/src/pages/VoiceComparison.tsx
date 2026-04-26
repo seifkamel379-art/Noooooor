@@ -5,36 +5,36 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SURAH_NAMES } from '@/lib/constants';
 import { useAudio } from '@/contexts/AudioContext';
 
-/* ── Batch 1 imports ── */
+/* ── Still-pending reciters (photos not yet labeled) ── */
 import imgAlafasy      from '@assets/IMG-20260426-WA0031_1777219180350.jpg';  // مشاري العفاسي
 import imgMaher        from '@assets/IMG-20260426-WA0026_1777219180123.jpg';  // ماهر المعيقلي
-import imgSudais       from '@assets/IMG-20260426-WA0024_1777219179930.jpg';  // السديس
 import imgShuraim      from '@assets/IMG-20260426-WA0029_1777219180082.jpg';  // الشريم
-import imgGhamdi       from '@assets/IMG-20260426-WA0007_1777221266182.jpg';  // الغامدي
 import imgDosari       from '@assets/IMG-20260426-WA0027_1777219180166.jpg';  // الدوسري
-import imgQatami       from '@assets/IMG-20260426-WA0028_1777219179988.jpg';  // القطامي
-import imgHudhaify     from '@assets/IMG-20260426-WA0030_1777219180276.jpg';  // الحذيفي
-import imgHusary       from '@assets/IMG-20260426-WA0023_1777219179884.jpg';  // الحصري
-import imgBasit        from '@assets/IMG-20260426-WA0019_1777219180311.jpg';  // عبد الباسط
-import imgMinshawi     from '@assets/IMG-20260426-WA0022_1777219180234.jpg';  // المنشاوي
 import imgTablawi      from '@assets/IMG-20260426-WA0020_1777219180387.jpg';  // الطبلاوي
-import imgBanna        from '@assets/IMG-20260426-WA0021_1777219180200.jpg';  // البنا
 import imgMustafa      from '@assets/IMG-20260426-WA0017_1777219180031.jpg';  // مصطفى إسماعيل
-/* ── Batch 2 imports ── */
 import imgJibreel      from '@assets/IMG-20260426-WA0008_1777221266351.jpg';  // محمد جبريل
-import imgAjamy        from '@assets/IMG-20260426-WA0025_1777219179659.jpg';  // العجمي
-import imgBasfar       from '@assets/IMG-20260426-WA0013_1777221266005.jpg';  // بصفر
 import imgShaatree     from '@assets/IMG-20260426-WA0011_1777221266301.jpg';  // الشاطري
-import imgRifai        from '@assets/IMG-20260426-WA0006_1777221266106.jpg';  // الرفاعي
 import imgAkhdar       from '@assets/IMG-20260426-WA0012_1777221265951.jpg';  // الأخضر
-import imgAyyoub       from '@assets/IMG-20260426-WA0004_1777221265907.jpg';  // أيوب
 import imgQahtaani     from '@assets/IMG-20260426-WA0009_1777221266405.jpg';  // القحطاني
-import imgBukhatir     from '@assets/IMG-20260426-WA0014_1777221265808.jpg';  // بوخاطر
 import imgQasim        from '@assets/IMG-20260426-WA0015_1777221265861.jpg';  // القاسم
-import imgJaber        from '@assets/IMG-20260426-WA0016_1777221266224.jpg';  // علي جابر
 import imgBudair       from '@assets/IMG-20260426-WA0010_1777221266263.jpg';  // البدير
-import imgSowaid       from '@assets/IMG-20260426-WA0005_1777221266068.jpg';  // سويد
+import imgSowaid       from '@assets/IMG-20260426-WA0005_1777221266068.jpg';  // أيمن سويد
 import imgFares        from '@assets/IMG-20260426-WA0018_1777221266142.jpg';  // فارس عباد
+/* ── Confirmed labeled photos ── */
+import imgSudais       from '@assets/alsodis_1777223390350.jpg';              // السديس ✓
+import imgHusary       from '@assets/elhosary_1777223390375.jpg';             // الحصري ✓
+import imgHudhaify     from '@assets/elhozify_1777223390404.jpg';             // الحذيفي ✓
+import imgBasit        from '@assets/Abd_elbaset_Abd_elssmad_1777223390326.jpg'; // عبد الباسط ✓
+import imgMinshawi     from '@assets/almanshawy_1777223390219.jpg';           // المنشاوي ✓
+import imgBanna        from '@assets/elbana_1777223390242.jpg';               // البنا ✓
+import imgGhamdi       from '@assets/alghamdy_1777223390187.jpg';             // الغامدي ✓
+import imgQatami       from '@assets/algatamy_1777223390489.jpg';             // القطامي ✓
+import imgAjamy        from '@assets/elagamy_1777223390098.jpg';              // العجمي ✓
+import imgBasfar       from '@assets/basfr_1777223390462.jpg';                // بصفر ✓
+import imgRifai        from '@assets/alrefa3y_1777223390265.jpg';             // الرفاعي ✓
+import imgAyyoub       from '@assets/ayop_1777223390300.jpg';                 // أيوب ✓
+import imgBukhatir     from '@assets/bokhatr_1777223390515.jpg';              // بوخاطر ✓
+import imgJaber        from '@assets/Ali_gaber_1777223390432.jpg';            // علي جابر ✓
 
 const RECITER_PHOTOS: Record<string, string> = {
   alafasy:        imgAlafasy,
@@ -498,7 +498,7 @@ function ComparisonCard({
                 <img
                   src={RECITER_PHOTOS[reciter.id]}
                   alt={reciter.name}
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-cover object-center"
                   loading="lazy"
                 />
               </div>
@@ -899,7 +899,7 @@ export function VoiceComparison() {
                           <img
                             src={RECITER_PHOTOS[r.id]}
                             alt={r.name}
-                            className="w-full h-full object-cover object-top"
+                            className="w-full h-full object-cover object-center"
                             loading="lazy"
                           />
                         </div>
@@ -998,7 +998,7 @@ export function VoiceComparison() {
                     <img
                       src={RECITER_PHOTOS[r.id]}
                       alt={r.name}
-                      className="w-full h-full object-cover object-top"
+                      className="w-full h-full object-cover object-center"
                       loading="lazy"
                     />
                   ) : (
