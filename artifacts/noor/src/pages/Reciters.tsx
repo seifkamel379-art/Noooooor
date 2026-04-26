@@ -412,52 +412,58 @@ export function Reciters() {
         : '';
     const downloadUrl = `${origin}/api/download?url=${encodeURIComponent(directMp3)}&filename=${encodeURIComponent(mp3Filename)}`;
 
-    // Strategy: try multiple methods so it works in all environments —
-    // regular browsers, Capacitor (`_system`), and WebView wrappers like
-    // App Creator 24 (which intercepts navigations via DownloadListener).
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-    const isAndroidWebView = /\bwv\b|; wv\)|Version\/[\d.]+ Chrome\/[\d.]+ Mobile/.test(ua) || /AppCreator/i.test(ua);
+    // Detect Android WebView wrappers (App Creator 24, WebToApp, etc.)
+    const isAndroid = /Android/i.test(ua);
+    const isWebView =
+      /\bwv\b|; wv\)/.test(ua) ||
+      /AppCreator|WebToApp|Median|MobiLoud/i.test(ua) ||
+      // Heuristic: Android Chrome WebView usually lacks the standalone Chrome
+      // browser's "Chrome/x Safari/x" without the wv marker, but to be safe
+      // for known wrappers we treat all Android non-standard UAs as WebView.
+      (isAndroid && !/Chrome\/[\d.]+ (?:Mobile )?Safari\/[\d.]+$/i.test(ua));
 
-    let triggered = false;
-
-    // 1) Anchor with download attribute — works in most modern browsers and
-    //    in WebViews configured with a DownloadListener.
-    try {
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = mp3Filename;
-      a.rel = 'noopener noreferrer';
-      a.target = '_blank';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      triggered = true;
-    } catch {
-      /* fall through */
-    }
-
-    // 2) For Android WebView wrappers, also navigate top-level so the
-    //    DownloadListener fires reliably when the response carries
-    //    Content-Disposition: attachment.
-    if (isAndroidWebView) {
+    if (isWebView) {
+      // Hidden iframe approach: the WebView's DownloadListener intercepts
+      // the navigation when the response has Content-Disposition: attachment,
+      // and no blank page is shown to the user.
       try {
-        window.location.href = downloadUrl;
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = downloadUrl;
+        document.body.appendChild(iframe);
+        // Clean up after 60s to release memory.
+        setTimeout(() => {
+          try { document.body.removeChild(iframe); } catch { /* noop */ }
+        }, 60000);
+      } catch {
+        // Fall back to direct navigation if iframe fails.
+        try { window.location.href = downloadUrl; } catch { /* noop */ }
+      }
+    } else {
+      // Regular browsers and Capacitor: anchor with download attribute,
+      // then `_system` for Capacitor, then a new tab as last resort.
+      let triggered = false;
+      try {
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = mp3Filename;
+        a.rel = 'noopener noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         triggered = true;
       } catch {
         /* fall through */
       }
-    }
-
-    // 3) Last-resort fallbacks for Capacitor / regular browsers.
-    if (!triggered) {
-      try {
-        const win = window.open(downloadUrl, '_system');
-        if (!win) {
+      if (!triggered) {
+        try {
+          const win = window.open(downloadUrl, '_system');
+          if (!win) window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+        } catch {
           window.open(downloadUrl, '_blank', 'noopener,noreferrer');
         }
-      } catch {
-        window.open(downloadUrl, '_blank', 'noopener,noreferrer');
       }
     }
 
