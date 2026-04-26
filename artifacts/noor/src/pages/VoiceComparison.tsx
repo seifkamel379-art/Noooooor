@@ -1,9 +1,43 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Check, Play, Pause, RotateCcw, Loader2, Search, BookOpen, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Check, Play, Pause, RotateCcw, Loader2, Search, BookOpen, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SURAH_NAMES } from '@/lib/constants';
 import { useAudio } from '@/contexts/AudioContext';
+
+import imgAlafasy    from '@assets/IMG-20260426-WA0031_1777219180350.jpg';
+import imgMaher      from '@assets/IMG-20260426-WA0026_1777219180123.jpg';
+import imgSudais     from '@assets/IMG-20260426-WA0024_1777219179930.jpg';
+import imgShuraim    from '@assets/IMG-20260426-WA0029_1777219180082.jpg';
+import imgGhamdi     from '@assets/IMG-20260426-WA0025_1777219179659.jpg';
+import imgDosari     from '@assets/IMG-20260426-WA0027_1777219180166.jpg';
+import imgQatami     from '@assets/IMG-20260426-WA0028_1777219179988.jpg';
+import imgHudhaify   from '@assets/IMG-20260426-WA0030_1777219180276.jpg';
+import imgHusary     from '@assets/IMG-20260426-WA0023_1777219179884.jpg';
+import imgBasit      from '@assets/IMG-20260426-WA0019_1777219180311.jpg';
+import imgMinshawi   from '@assets/IMG-20260426-WA0022_1777219180234.jpg';
+import imgTablawi    from '@assets/IMG-20260426-WA0020_1777219180387.jpg';
+import imgBanna      from '@assets/IMG-20260426-WA0021_1777219180200.jpg';
+import imgMustafa    from '@assets/IMG-20260426-WA0017_1777219180031.jpg';
+
+const RECITER_PHOTOS: Record<string, string> = {
+  alafasy:      imgAlafasy,
+  maher:        imgMaher,
+  sudais:       imgSudais,
+  shuraim:      imgShuraim,
+  ghamdi:       imgGhamdi,
+  dosari:       imgDosari,
+  qatami:       imgQatami,
+  hudhaify:     imgHudhaify,
+  husary_mur:   imgHusary,
+  husary_muj:   imgHusary,
+  basit_mur:    imgBasit,
+  basit_muj:    imgBasit,
+  minshawi_muj: imgMinshawi,
+  tablawi:      imgTablawi,
+  banna:        imgBanna,
+  mustafa_ismail: imgMustafa,
+};
 
 const SURAH_AYAH_COUNT: Record<number, number> = {
   1:7,2:286,3:200,4:176,5:120,6:165,7:206,8:75,9:129,10:109,11:123,12:111,13:43,14:52,15:99,
@@ -51,20 +85,13 @@ const RECITERS_RAW: Reciter[] = [
   { id: 'banna',            name: 'محمود علي البنا',         shortName: 'البنا',          initial: 'ن', folder: 'Mahmoud_Ali_Al_Banna_32kbps',                  country: 'مصر',     flag: 'eg' },
   { id: 'mustafa_ismail',   name: 'مصطفى إسماعيل',          shortName: 'مصطفى إسماعيل',   initial: 'إ', folder: 'Mustafa_Ismail_48kbps',                        country: 'مصر',     flag: 'eg' },
   { id: 'jibreel',          name: 'محمد جبريل',              shortName: 'جبريل',          initial: 'ج', folder: 'Muhammad_Jibreel_128kbps',                     country: 'مصر',     flag: 'eg' },
-  { id: 'suesy',            name: 'علي حجاج السويسي',       shortName: 'السويسي',        initial: 'و', folder: 'Ali_Hajjaj_AlSuesy_128kbps',                   country: 'مصر',     flag: 'eg' },
   { id: 'ajamy',            name: 'أحمد بن علي العجمي',     shortName: 'العجمي',         initial: 'ج', folder: 'Ahmed_ibn_Ali_al-Ajamy_128kbps_ketaballah.net', country: 'السعودية', flag: 'sa' },
   { id: 'basfar',           name: 'عبد الله بصفر',            shortName: 'بصفر',           initial: 'ص', folder: 'Abdullah_Basfar_192kbps',                      country: 'السعودية', flag: 'sa' },
-  { id: 'matroud',          name: 'عبد الله مطرود',          shortName: 'مطرود',          initial: 'ط', folder: 'Abdullah_Matroud_128kbps',                     country: 'السعودية', flag: 'sa' },
   { id: 'shaatree',         name: 'أبو بكر الشاطري',         shortName: 'الشاطري',        initial: 'ر', folder: 'Abu_Bakr_Ash-Shaatree_128kbps',                country: 'اليمن',   flag: 'ye' },
   { id: 'rifai',            name: 'هاني الرفاعي',            shortName: 'الرفاعي',        initial: 'ر', folder: 'Hani_Rifai_192kbps',                           country: 'السعودية', flag: 'sa' },
   { id: 'akhdar',           name: 'إبراهيم الأخضر',          shortName: 'الأخضر',         initial: 'خ', folder: 'Ibrahim_Akhdar_32kbps',                        country: 'السعودية', flag: 'sa' },
   { id: 'ayyoub',           name: 'محمد أيوب',                shortName: 'أيوب',           initial: 'أ', folder: 'Muhammad_Ayyoub_128kbps',                      country: 'السعودية', flag: 'sa' },
   { id: 'qahtaani',         name: 'خالد القحطاني',           shortName: 'القحطاني',       initial: 'ط', folder: 'Khaalid_Abdullaah_al-Qahtaanee_192kbps',       country: 'السعودية', flag: 'sa' },
-  { id: 'alili',            name: 'عزيز عليلي',              shortName: 'عليلي',          initial: 'ل', folder: 'Aziz_Alili_128kbps',                           country: 'الإمارات', flag: 'ae' },
-  { id: 'juhaynee',         name: 'عبد الله الجهني',         shortName: 'الجهني',         initial: 'ه', folder: 'Abdullaah_3awwaad_Al-Juhaynee_128kbps',        country: 'السعودية', flag: 'sa' },
-  { id: 'aalaqimy',         name: 'أكرم العلاقمي',           shortName: 'العلاقمي',       initial: 'ك', folder: 'Akram_AlAlaqimy_128kbps',                      country: 'السعودية', flag: 'sa' },
-  { id: 'tunaiji',          name: 'خليفة الطنيجي',           shortName: 'الطنيجي',        initial: 'ط', folder: 'khalefa_al_tunaiji_64kbps',                    country: 'الإمارات', flag: 'ae' },
-  { id: 'mansoori',         name: 'كريم المنصوري',           shortName: 'المنصوري',       initial: 'ك', folder: 'Karim_Mansoori_40kbps',                        country: 'إيران',   flag: 'ir' },
   { id: 'bukhatir',         name: 'صلاح بوخاطر',             shortName: 'بوخاطر',         initial: 'خ', folder: 'Salaah_AbdulRahman_Bukhatir_128kbps',          country: 'الإمارات', flag: 'ae' },
   { id: 'qasim',            name: 'محسن القاسم',             shortName: 'القاسم',         initial: 'ق', folder: 'Muhsin_Al_Qasim_192kbps',                      country: 'السعودية', flag: 'sa' },
   { id: 'jaber',            name: 'علي جابر',                shortName: 'علي جابر',        initial: 'ج', folder: 'Ali_Jaber_64kbps',                             country: 'السعودية', flag: 'sa' },
@@ -415,42 +442,59 @@ function ComparisonCard({
           </span>
         </div>
 
-        {/* Calligraphic initial */}
+        {/* Photo or Calligraphic initial */}
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div
-            animate={isPlaying ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+            animate={isPlaying ? { scale: [1, 1.05, 1] } : { scale: 1 }}
             transition={{ duration: 2, repeat: isPlaying ? Infinity : 0, ease: 'easeInOut' }}
-            className="relative"
+            className="relative flex items-center justify-center"
           >
             <div
-              className="absolute inset-0 rounded-full"
+              className="absolute rounded-full"
               style={{
-                width: isCompact ? 78 : 100, height: isCompact ? 78 : 100,
-                border: `2px dashed ${reciter.accent}`, opacity: 0.4,
-                transform: 'scale(1.15)',
+                width: (isCompact ? 78 : 100) + 14, height: (isCompact ? 78 : 100) + 14,
+                border: `2px dashed ${reciter.accent}`, opacity: 0.45,
               }}
             />
-            <div
-              className="rounded-full flex items-center justify-center backdrop-blur-sm"
-              style={{
-                width: isCompact ? 78 : 100, height: isCompact ? 78 : 100,
-                background: 'rgba(255,255,255,0.12)',
-                border: '1.5px solid rgba(255,255,255,0.25)',
-                boxShadow: `0 8px 32px ${reciter.accent}66, inset 0 0 24px rgba(255,255,255,0.08)`,
-              }}
-            >
-              <span
-                className="font-bold leading-none"
+            {RECITER_PHOTOS[reciter.id] ? (
+              <div
+                className="rounded-full overflow-hidden"
                 style={{
-                  fontFamily: '"Amiri", serif',
-                  fontSize: isCompact ? 44 : 56,
-                  color: '#fff',
-                  textShadow: `0 2px 12px ${reciter.accent}99, 0 0 24px rgba(255,255,255,0.3)`,
+                  width: isCompact ? 78 : 100, height: isCompact ? 78 : 100,
+                  border: `2.5px solid ${reciter.accent}88`,
+                  boxShadow: `0 8px 32px ${reciter.accent}66`,
                 }}
               >
-                {reciter.initial}
-              </span>
-            </div>
+                <img
+                  src={RECITER_PHOTOS[reciter.id]}
+                  alt={reciter.name}
+                  className="w-full h-full object-cover object-top"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div
+                className="rounded-full flex items-center justify-center backdrop-blur-sm"
+                style={{
+                  width: isCompact ? 78 : 100, height: isCompact ? 78 : 100,
+                  background: 'rgba(255,255,255,0.12)',
+                  border: '1.5px solid rgba(255,255,255,0.25)',
+                  boxShadow: `0 8px 32px ${reciter.accent}66, inset 0 0 24px rgba(255,255,255,0.08)`,
+                }}
+              >
+                <span
+                  className="font-bold leading-none"
+                  style={{
+                    fontFamily: '"Amiri", serif',
+                    fontSize: isCompact ? 44 : 56,
+                    color: '#fff',
+                    textShadow: `0 2px 12px ${reciter.accent}99, 0 0 24px rgba(255,255,255,0.3)`,
+                  }}
+                >
+                  {reciter.initial}
+                </span>
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -814,15 +858,32 @@ export function VoiceComparison() {
                   <div className="relative h-16" style={{ background: r.grad }}>
                     <PatternBg />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm"
-                        style={{
-                          background: 'rgba(255,255,255,0.15)',
-                          border: '1.5px solid rgba(255,255,255,0.25)',
-                        }}
-                      >
-                        <span className="font-bold text-xl text-white" style={{ fontFamily: '"Amiri", serif' }}>{r.initial}</span>
-                      </div>
+                      {RECITER_PHOTOS[r.id] ? (
+                        <div
+                          className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0"
+                          style={{
+                            border: '2px solid rgba(255,255,255,0.35)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                          }}
+                        >
+                          <img
+                            src={RECITER_PHOTOS[r.id]}
+                            alt={r.name}
+                            className="w-full h-full object-cover object-top"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm"
+                          style={{
+                            background: 'rgba(255,255,255,0.15)',
+                            border: '1.5px solid rgba(255,255,255,0.25)',
+                          }}
+                        >
+                          <span className="font-bold text-xl text-white" style={{ fontFamily: '"Amiri", serif' }}>{r.initial}</span>
+                        </div>
+                      )}
                     </div>
                     {isSel && (
                       <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-[11px] shadow-md"
@@ -900,10 +961,24 @@ export function VoiceComparison() {
                 style={{ background: `${r.accent}20`, border: `1px solid ${r.accent}50` }}
               >
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm"
-                  style={{ background: r.grad, color: '#fff', fontFamily: '"Amiri", serif' }}
+                  className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0"
+                  style={{ border: `1.5px solid ${r.accent}70` }}
                 >
-                  {r.initial}
+                  {RECITER_PHOTOS[r.id] ? (
+                    <img
+                      src={RECITER_PHOTOS[r.id]}
+                      alt={r.name}
+                      className="w-full h-full object-cover object-top"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center font-bold text-sm"
+                      style={{ background: r.grad, color: '#fff', fontFamily: '"Amiri", serif' }}
+                    >
+                      {r.initial}
+                    </div>
+                  )}
                 </div>
                 <span className="text-xs font-bold text-foreground whitespace-nowrap" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                   {i + 1}. {r.shortName}
@@ -972,8 +1047,7 @@ export function VoiceComparison() {
           {/* AYAH RANGE CARD */}
           <div className="rounded-3xl bg-card border border-border shadow-md p-4 mb-5">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-sm flex items-center gap-1.5" style={{ fontFamily: '"Tajawal", sans-serif' }}>
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <h3 className="font-bold text-sm" style={{ fontFamily: '"Tajawal", sans-serif' }}>
                 نطاق الآيات
               </h3>
               <span
