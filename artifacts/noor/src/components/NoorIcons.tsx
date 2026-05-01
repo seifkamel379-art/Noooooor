@@ -813,3 +813,28 @@ export function HifzIcon({ className = '', size = 24, style }: P) {
     </svg>
   );
 }
+
+export function QuranVideoIcon({ className = '', size = 24 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+      {/* Phone frame shadow */}
+      <rect x="4.35" y="2.35" width="15.3" height="19.3" rx="3.3" fill="currentColor" fillOpacity="0.15" />
+      {/* Phone frame */}
+      <rect x="4" y="2" width="15.3" height="19.3" rx="3.2" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.08" />
+      {/* Screen gradient overlay */}
+      <rect x="5.5" y="3.5" width="12.3" height="16.3" rx="2" fill="currentColor" fillOpacity="0.12" />
+      {/* Star top-left */}
+      <circle cx="8" cy="7.5" r="0.7" fill="currentColor" fillOpacity="0.55" />
+      <circle cx="10.5" cy="6" r="0.45" fill="currentColor" fillOpacity="0.38" />
+      <circle cx="14" cy="7" r="0.55" fill="currentColor" fillOpacity="0.45" />
+      {/* Arabic text lines */}
+      <rect x="7" y="10" width="10" height="1.4" rx="0.7" fill="currentColor" fillOpacity="0.75" />
+      <rect x="7.5" y="12.3" width="9" height="1.4" rx="0.7" fill="currentColor" fillOpacity="0.6" />
+      <rect x="8.5" y="14.6" width="7" height="1.2" rx="0.6" fill="currentColor" fillOpacity="0.45" />
+      {/* Play button circle */}
+      <circle cx="19.5" cy="18.5" r="4" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="19.5" cy="18.5" r="3.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M18.3 17.3 L21.2 18.5 L18.3 19.7 Z" fill="currentColor" />
+    </svg>
+  );
+}
