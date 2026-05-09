@@ -1,12 +1,11 @@
 #!/bin/bash
-# Workflow: artifacts/noor: web
-# Starts a standalone Vite dev server on the platform-assigned port (8080).
-# Uses a separate API server port (3002) to avoid conflicts with "Start application".
+# Workflow: Start application
+# Starts Vite dev server (port 5000) + API server (port 3001)
 
 ARTIFACT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$ARTIFACT_DIR/../.." && pwd)"
-TARGET_PORT="${PORT:-8080}"
-API_PORT=3002
+TARGET_PORT="${PORT:-5000}"
+API_PORT="${API_SERVER_PORT:-3001}"
 
 cleanup() {
   kill $(jobs -p) 2>/dev/null
@@ -17,12 +16,12 @@ trap cleanup SIGTERM SIGINT
 
 export BASE_PATH=/
 
-# Start API server on a separate port to avoid conflict with "Start application"
+# Start API server
 echo "Starting API server on port $API_PORT..."
 (cd "$ROOT_DIR/artifacts/api-server" && PORT=$API_PORT NODE_ENV=development \
   pnpm exec tsx ./src/index.ts 2>&1) &
 
-# Start Vite on the artifact port
+# Start Vite on port 5000
 echo "Starting Vite on port $TARGET_PORT..."
 cd "$ARTIFACT_DIR" && exec env PORT=$TARGET_PORT API_SERVER_PORT=$API_PORT \
   pnpm exec vite --config vite.config.ts
